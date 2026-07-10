@@ -1,0 +1,26 @@
+---
+import {
+  createDocsSidebarContext,
+  createDocsSidebarEntries,
+  getDocsSidebarHash,
+} from "../docs/sidebar-model";
+import DocsSidebar from "./DocsSidebar";
+import SidebarFooter from "./SidebarFooter.astro";
+
+const { sidebar } = Astro.locals.starlightRoute;
+const entries = createDocsSidebarEntries(sidebar);
+const context = createDocsSidebarContext(Astro.url.pathname);
+const sidebarHash = getDocsSidebarHash(entries);
+---
+
+<DocsSidebar {context} {entries} {sidebarHash} client:load />
+
+<div class="docs-sidebar-footer">
+  <SidebarFooter />
+</div>
+
+<style>
+  .docs-sidebar-footer {
+    margin-block-start: auto;
+  }
+</style>

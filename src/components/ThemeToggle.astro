@@ -1,0 +1,149 @@
+---
+import { Icon } from "@astrojs/starlight/components";
+---
+
+<astilba-theme-toggle>
+  <button
+    aria-label="Toggle color theme"
+    class="theme-toggle"
+    title="Toggle color theme"
+    type="button"
+  >
+    <span class="theme-toggle-icon theme-toggle-icon-light">
+      <Icon name="sun" />
+    </span>
+    <span class="theme-toggle-icon theme-toggle-icon-dark">
+      <Icon name="moon" />
+    </span>
+  </button>
+</astilba-theme-toggle>
+
+<script>
+  type Theme = "dark" | "light";
+
+  const storageKey = "starlight-theme";
+  const themeToggleName = "astilba-theme-toggle";
+
+  const getCurrentTheme = (): Theme =>
+    document.documentElement.dataset.theme === "light" ? "light" : "dark";
+
+  const getNextTheme = (theme: Theme): Theme =>
+    theme === "light" ? "dark" : "light";
+
+  const getActionLabel = (theme: Theme): string =>
+    `Switch to ${getNextTheme(theme)} theme`;
+
+  const storeTheme = (theme: Theme): void => {
+    try {
+      localStorage.setItem(storageKey, theme);
+    } catch {
+      // Theme switching still works when storage is unavailable.
+    }
+  };
+
+  class AstilbaThemeToggle extends HTMLElement {
+    connectedCallback(): void {
+      if (this.dataset.ready !== undefined) {
+        this.sync();
+        return;
+      }
+
+      const button = this.querySelector("button");
+
+      if (!(button instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      this.dataset.ready = "";
+      this.sync();
+      button.addEventListener("click", () => {
+        const nextTheme = getNextTheme(getCurrentTheme());
+        document.documentElement.dataset.theme = nextTheme;
+        storeTheme(nextTheme);
+        this.sync();
+      });
+    }
+
+    sync(): void {
+      const button = this.querySelector("button");
+
+      if (!(button instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      const label = getActionLabel(getCurrentTheme());
+      button.setAttribute("aria-label", label);
+      button.title = label;
+    }
+  }
+
+  if (!customElements.get(themeToggleName)) {
+    customElements.define(themeToggleName, AstilbaThemeToggle);
+  }
+</script>
+
+<style>
+  astilba-theme-toggle {
+    display: block;
+  }
+
+  .theme-toggle {
+    position: relative;
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    place-items: center;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    background: transparent;
+    color: var(--sl-color-gray-2);
+    cursor: pointer;
+  }
+
+  .theme-toggle:hover,
+  .theme-toggle:focus-visible {
+    background: color-mix(in oklab, var(--sl-color-white) 4%, transparent);
+    color: var(--sl-color-white);
+  }
+
+  .theme-toggle:active {
+    background: color-mix(in oklab, var(--sl-color-white) 7%, transparent);
+  }
+
+  .theme-toggle:focus-visible {
+    outline: 0.125rem solid var(--astilba-signal);
+    outline-offset: -0.125rem;
+  }
+
+  .theme-toggle-icon {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    transform: rotate(-20deg) scale(0.8);
+    transition:
+      opacity 160ms cubic-bezier(0.16, 1, 0.3, 1),
+      transform 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    pointer-events: none;
+  }
+
+  :global(:root[data-theme="dark"]) .theme-toggle-icon-light,
+  :global(:root[data-theme="light"]) .theme-toggle-icon-dark {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+
+  @media (min-width: 50rem) {
+    .theme-toggle {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .theme-toggle-icon {
+      transition-duration: 0.01ms;
+    }
+  }
+</style>

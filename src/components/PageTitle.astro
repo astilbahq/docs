@@ -1,0 +1,6 @@
+---
+const { title, description } = Astro.locals.starlightRoute.entry.data;
+---
+
+<h1 id="_top">{title}</h1>
+{description && <p class="page-description">{description}</p>}

@@ -1,55 +1,53 @@
-# Mintlify Starter Kit
+# Astilba documentation
 
-Use the starter kit to get your docs deployed and ready to customize.
+The public documentation site for Astilba products, built with Astro Starlight.
 
-Click the green **Use this template** button at the top of this repo to copy the Mintlify starter kit. The starter kit contains examples with
+The structure borrows TanStack's useful multi-library context and Better Auth's concise, task-focused writing, while keeping documentation navigation free of sponsor rails, ads, and duplicated marketing links.
 
-- Guide pages
-- Navigation
-- Customizations
-- API reference pages
-- Use of popular components
+## Visual system
 
-**[Follow the full quickstart guide](https://starter.mintlify.com/quickstart)**
+- Starlight retains ownership of the global shell, responsive behavior, search, and code rendering.
+- One Base UI React island owns the accessible product/version menus and animated sidebar disclosures.
+- The header is reserved for branding and search; repository and appearance controls live in the sidebar footer.
+- Geist and Geist Mono provide a compact technical register.
+- True white and black surfaces, warm-neutral dividers, square controls, and restrained type hierarchy carry the interface.
+- The official Astilba flower mark adapts to light and dark themes.
+- A warm signal accent is reserved for focus, links, and small state details rather than navigation backgrounds.
+- Page descriptions come from frontmatter through the `PageTitle` override.
 
-## AI-assisted writing
+## Current scope
 
-Set up your AI coding tool to work with Mintlify:
-
-```bash
-npx skills add https://mintlify.com/docs
-```
-
-This command installs Mintlify's documentation skill for your configured AI tools like Claude Code, Cursor, Windsurf, and others. The skill includes component reference, writing standards, and workflow guidance.
-
-See the [AI tools guides](/ai-tools) for tool-specific setup.
+- One documented product: Cache.
+- Seven concise preview pages backed only by the public repository surface.
+- Base UI context switching and animated, session-persisted sidebar sections.
+- Starlight table of contents, theme control, code presentation, and Pagefind search.
+- Visible release-status language wherever a surface is not yet shipped.
+- Markdown content under `src/content/docs/`, with products, independent versions, page order, and destination icons defined in `src/docs/`.
 
 ## Development
 
-Install the [Mintlify CLI](https://www.npmjs.com/package/mint) to preview your documentation changes locally. To install, use the following command:
-
-```
-npm i -g mint
-```
-
-Run the following command at the root of your documentation, where your `docs.json` is located:
-
-```
-mint dev
+```bash
+pnpm install
+pnpm dev
 ```
 
-View your local preview at `http://localhost:3000`.
+The local site runs at `http://localhost:4321` by default.
 
-## Publishing changes
+## Documentation catalog
 
-Install our GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app) to propagate changes from your repo to your deployment. Changes are deployed to production automatically after pushing to the default branch.
+Each product has one typed catalog file under `src/docs/products/`. A product declares its default page, independent versions, stable page keys, sidebar sections, and destination icons. Version `basePath` values own their public URLs, so a future archived release can coexist with the current release without imposing one global docs version.
 
-## Need help?
+Keep the default version pointed at the release readers should land on. The selectors preserve a stable page key across products and versions when that page exists, then fall back to the destination product's overview.
 
-### Troubleshooting
+## Checks
 
-- If your dev environment isn't running: Run `mint update` to ensure you have the most recent version of the CLI.
-- If a page loads as a 404: Make sure you are running in a folder with a valid `docs.json`.
+```bash
+pnpm check
+pnpm build
+```
 
-### Resources
-- [Mintlify documentation](https://mintlify.com/docs)
+The production build creates the Pagefind search index. Run `pnpm preview` to test the built site locally.
+
+## Content boundary
+
+This is a public documentation repository. Never copy private handbook prose, ADR rationale, research, red-team material, or incident narrative into it. Public facts must come from released code, public types, public tests, or explicitly approved launch copy.

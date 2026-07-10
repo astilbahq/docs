@@ -1,0 +1,100 @@
+---
+import config from "virtual:starlight/user-config";
+import LanguageSelect from "virtual:starlight/components/LanguageSelect";
+import { Icon } from "@astrojs/starlight/components";
+import ThemeToggle from "./ThemeToggle.astro";
+
+const socialLinks = config.social ?? [];
+---
+
+<div
+  aria-label="Sidebar actions"
+  class="sidebar-footer"
+  role="group"
+>
+  {
+    socialLinks.length > 0 && (
+      <div class="sidebar-footer-links">
+        {socialLinks.map(({ label, href, icon }) => (
+          <a
+            aria-label={label}
+            class="sidebar-footer-link"
+            {href}
+            rel="me"
+            title={label}
+          >
+            <Icon class="sidebar-footer-icon" name={icon} size="1rem" />
+          </a>
+        ))}
+      </div>
+    )
+  }
+  <div class="sidebar-footer-controls">
+    <ThemeToggle />
+    <LanguageSelect />
+  </div>
+</div>
+
+<style>
+  .sidebar-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem 0.75rem;
+    border-top: 1px solid var(--sl-color-hairline-shade);
+    padding: 0.75rem;
+  }
+
+  .sidebar-footer-links {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 0;
+    margin-inline-end: auto;
+  }
+
+  .sidebar-footer-link {
+    display: grid;
+    width: 2.75rem;
+    height: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0;
+    padding: 0;
+    color: var(--sl-color-gray-2);
+    text-decoration: none;
+  }
+
+  .sidebar-footer-link:hover,
+  .sidebar-footer-link:focus-visible {
+    background: color-mix(in oklab, var(--sl-color-white) 4%, transparent);
+    color: var(--sl-color-white);
+  }
+
+  .sidebar-footer-link:active {
+    background: color-mix(in oklab, var(--sl-color-white) 7%, transparent);
+  }
+
+  .sidebar-footer-link:focus-visible {
+    outline: 0.125rem solid var(--astilba-signal);
+    outline-offset: -0.125rem;
+  }
+
+  :global(.sidebar-footer-icon) {
+    flex: 0 0 auto;
+  }
+
+  .sidebar-footer-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  @media (min-width: 50rem) {
+    .sidebar-footer-link {
+      width: 2.5rem;
+      height: 2.5rem;
+    }
+  }
+</style>

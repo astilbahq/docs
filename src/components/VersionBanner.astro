@@ -1,0 +1,78 @@
+---
+import DefaultBanner from "@astrojs/starlight/components/Banner.astro";
+import { Icon } from "@astrojs/starlight/components";
+import {
+  findDocsContext,
+  getDefaultVersion,
+  getVersionPageHref,
+} from "../docs/catalog";
+
+const context = findDocsContext(Astro.url.pathname);
+const currentVersion = context?.version;
+const defaultVersion = context ? getDefaultVersion(context.product) : undefined;
+const isOutdated =
+  context && defaultVersion
+    ? currentVersion?.id !== defaultVersion.id &&
+      (currentVersion?.lifecycle === "archived" ||
+        currentVersion?.lifecycle === "maintained")
+    : false;
+const latestHref =
+  context && defaultVersion
+    ? getVersionPageHref(context.product, defaultVersion, context.page.key)
+    : undefined;
+---
+
+<DefaultBanner />
+
+{
+  isOutdated && context && defaultVersion && latestHref && (
+    <aside class="version-notice" aria-label="Documentation version notice" data-pagefind-ignore>
+      <Icon name="information" size="1rem" />
+      <span>
+        You are reading {context.product.label} {context.version.label}. {" "}
+        {context.version.lifecycle === "archived"
+          ? "This version is archived."
+          : "A newer version is available."}
+      </span>
+      <a href={latestHref}>View {defaultVersion.label}</a>
+    </aside>
+  )
+}
+
+<style>
+  .version-notice {
+    display: flex;
+    min-height: 2.75rem;
+    align-items: center;
+    gap: 0.625rem;
+    border-bottom: 1px solid var(--sl-color-hairline-shade);
+    padding: 0.625rem var(--sl-content-pad-x);
+    background: color-mix(in oklab, var(--sl-color-white) 3%, transparent);
+    color: var(--sl-color-gray-2);
+    font-size: 0.8125rem;
+    line-height: 1.4;
+  }
+
+  .version-notice svg {
+    flex: 0 0 auto;
+  }
+
+  .version-notice a {
+    margin-inline-start: auto;
+    color: var(--sl-color-white);
+    font-weight: 550;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 30rem) {
+    .version-notice {
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .version-notice a {
+      width: 100%;
+      margin-inline-start: 1.625rem;
+    }
+  }
+</style>
