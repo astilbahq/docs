@@ -7,11 +7,13 @@ The structure borrows TanStack's useful multi-library context and Better Auth's 
 ## Visual system
 
 - Starlight retains ownership of the global shell, responsive behavior, search, and code rendering.
+- Panda CSS owns Astilba's role-based semantic tokens and the styles for markup rendered by this repository. The Starlight bridge translates those owned roles without exposing a generic colour scale. Panda's reset is intentionally disabled so it does not compete with Starlight.
+- Small compatibility stylesheets under `src/styles/starlight/` target markup rendered by Starlight, Pagefind, and Expressive Code.
 - One Base UI React island owns the accessible product/version menus and animated sidebar disclosures.
-- The header is reserved for branding and search; repository and appearance controls live in the sidebar footer.
-- Geist and Geist Mono provide a compact technical register.
-- True white and black surfaces, warm-neutral dividers, square controls, and restrained type hierarchy carry the interface.
-- The official Astilba flower mark adapts to light and dark themes.
+- The header keeps branding, search, repository, sponsorship, and appearance controls together; the sidebar stays focused on product navigation.
+- Geist, Inter, and JetBrains Mono provide a compact technical register.
+- Near-black ink, near-white canvas, square controls, and a restrained type hierarchy carry the interface.
+- The official Astilba logomark adapts to light and dark themes beside the inline site title.
 - A warm signal accent is reserved for focus, links, and small state details rather than navigation backgrounds.
 - Page descriptions come from frontmatter through the `PageTitle` override.
 
@@ -31,7 +33,7 @@ pnpm install
 pnpm dev
 ```
 
-The local site runs at `http://localhost:4321` by default.
+Installation generates Panda's ignored `styled-system/` bindings. Run `pnpm panda:codegen` after changing `panda.config.ts`; the dev and build commands extract component styles automatically. The local site runs at `http://localhost:4321` by default.
 
 ## Documentation catalog
 

@@ -7,17 +7,19 @@ import {
   useMemo,
   useState,
 } from "react";
+import { cx } from "../../styled-system/css";
 import type { DocsBadge as DocsBadgeModel } from "../docs/types";
 import type {
   DocsContextRow,
   DocsSidebarContextModel,
   DocsSidebarEntryModel,
-  DocsSidebarGroupModel,
 } from "../docs/sidebar-model";
+import { collectDocsSidebarGroupIds } from "../docs/sidebar-model";
 import { DocsIcon } from "./DocsIcon";
-import "./DocsSidebar.css";
+import { docsSidebarStyles as styles } from "./DocsSidebar.styles";
 
 const desktopMediaQuery = "(min-width: 50em)";
+const sidebarBootstrapStyleId = "astilba-docs-sidebar-bootstrap-style";
 const sidebarStorageKey = "astilba-docs-sidebar-state-v1";
 const useBrowserLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -40,19 +42,6 @@ interface SidebarListProps {
   onOpenChange: (id: string, open: boolean) => void;
   openGroups: string[];
 }
-
-const collectGroupIds = (
-  entries: DocsSidebarEntryModel[],
-  predicate: (entry: DocsSidebarGroupModel) => boolean
-): string[] =>
-  entries.flatMap((entry) => {
-    if (entry.type === "link") {
-      return [];
-    }
-
-    const nestedIds = collectGroupIds(entry.entries, predicate);
-    return predicate(entry) ? [entry.id, ...nestedIds] : nestedIds;
-  });
 
 const parseStoredState = (
   sidebarHash: string
@@ -77,36 +66,50 @@ const parseStoredState = (
 };
 
 const DocsBadge = ({ badge }: { badge: DocsBadgeModel }) => (
-  <span className={`docs-badge ${badge.variant}`}>{badge.text}</span>
+  <span className={styles.badge} data-variant={badge.variant}>
+    {badge.text}
+  </span>
 );
 
 const ContextRowContent = ({ row }: { row: DocsContextRow }) => (
   <>
-    <DocsIcon className="docs-context-icon" name={row.icon} size="1rem" />
-    <span className="docs-context-label">{row.label}</span>
+    <DocsIcon className={styles.contextIcon} name={row.icon} size={16} />
+    <span className={styles.contextLabel}>{row.label}</span>
     {row.status && <DocsBadge badge={row.status} />}
-    {row.meta && <span className="docs-context-meta">{row.meta}</span>}
+    {row.meta && (
+      <span className={cx(styles.meta, styles.contextMeta)}>{row.meta}</span>
+    )}
   </>
 );
 
 const DocsContextMenu = ({ row }: { row: DocsContextRow }) => {
   const options = row.options ?? [];
+  const [inputModality, setInputModality] = useState<
+    "keyboard" | "pointer"
+  >("pointer");
 
   return (
     <Menu.Root modal={false}>
-      <Menu.Trigger aria-label={row.ariaLabel} className="docs-context-control">
+      <Menu.Trigger
+        aria-label={row.ariaLabel}
+        className={cx(styles.contextControl, styles.contextTrigger)}
+        data-has-context-meta={row.meta ? "" : undefined}
+        onKeyDown={() => setInputModality("keyboard")}
+        onPointerDown={() => setInputModality("pointer")}
+      >
         <ContextRowContent row={row} />
         <DocsIcon
-          className="docs-context-chevron"
+          className={styles.chevron}
           name="down-caret"
-          size="0.875rem"
+          size={14}
+          strokeWidth={0.75}
         />
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner
           align="start"
           alignOffset={8}
-          className="docs-selector-positioner"
+          className={styles.selectorPositioner}
           collisionAvoidance={{
             align: "shift",
             fallbackAxisSide: "none",
@@ -116,26 +119,31 @@ const DocsContextMenu = ({ row }: { row: DocsContextRow }) => {
           side="bottom"
           sideOffset={4}
         >
-          <Menu.Popup className="docs-selector-menu">
+          <Menu.Popup
+            className={styles.selectorMenu}
+            data-input-modality={inputModality}
+            onKeyDownCapture={() => setInputModality("keyboard")}
+            onPointerMoveCapture={() => setInputModality("pointer")}
+          >
             {options.map((option) => (
               <Menu.LinkItem
                 aria-current={option.selected ? "true" : undefined}
-                className="docs-selector-option"
+                className={styles.selectorOption}
                 closeOnClick
                 href={option.href}
                 key={option.id}
                 label={option.label}
               >
-                <DocsIcon name={option.icon} size="1rem" />
-                <span className="docs-selector-label">{option.label}</span>
+                <DocsIcon name={option.icon} size={16} />
+                <span className={styles.selectorLabel}>{option.label}</span>
                 {option.status && <DocsBadge badge={option.status} />}
                 {(option.meta || option.selected) && (
-                  <span className="docs-selector-trailing">
+                  <span className={styles.selectorTrailing}>
                     {option.meta && (
-                      <span className="docs-selector-meta">{option.meta}</span>
+                      <span className={styles.meta}>{option.meta}</span>
                     )}
                     {option.selected && (
-                      <DocsIcon name="approve-check" size="0.875rem" />
+                      <DocsIcon name="approve-check" size={14} />
                     )}
                   </span>
                 )}
@@ -151,7 +159,7 @@ const DocsContextMenu = ({ row }: { row: DocsContextRow }) => {
 const DocsContext = ({ context }: { context: DocsSidebarContextModel }) => (
   <div
     aria-label="Documentation context"
-    className="docs-context"
+    className={styles.context}
     role="group"
   >
     <DocsContextMenu row={context.product} />
@@ -161,7 +169,7 @@ const DocsContext = ({ context }: { context: DocsSidebarContextModel }) => (
       ) : (
         <div
           aria-label={context.version.ariaLabel}
-          className="docs-context-control is-static"
+          className={styles.contextControl}
           role="group"
         >
           <ContextRowContent row={context.version} />
@@ -176,9 +184,7 @@ const SidebarList = ({
   onOpenChange,
   openGroups,
 }: SidebarListProps) => (
-  <ul
-    className={`docs-sidebar-tree${nested ? "" : " docs-sidebar-top-level"}`}
-  >
+  <ul className={styles.tree} data-top-level={nested ? undefined : ""}>
     {entries.map((entry) => {
       if (entry.type === "link") {
         return (
@@ -186,15 +192,14 @@ const SidebarList = ({
             <a
               {...entry.attrs}
               aria-current={entry.isCurrent ? "page" : undefined}
-              className={`docs-nav-link${
-                entry.className ? ` ${entry.className}` : ""
-              }`}
+              className={cx(styles.navLink, entry.className)}
+              data-docs-nav-link=""
               href={entry.href}
             >
-              <span aria-hidden="true" className="docs-nav-icon">
-                {entry.icon && <DocsIcon name={entry.icon} size="1rem" />}
+              <span aria-hidden="true" className={styles.navIcon}>
+                {entry.icon && <DocsIcon name={entry.icon} size={14} />}
               </span>
-              <span className="docs-nav-label">{entry.label}</span>
+              <span className={styles.navLabel}>{entry.label}</span>
               {entry.badge && <DocsBadge badge={entry.badge} />}
             </a>
           </li>
@@ -203,24 +208,31 @@ const SidebarList = ({
 
       return (
         <Collapsible.Root
-          className="docs-sidebar-group"
+          data-docs-sidebar-group={entry.id}
           key={entry.id}
           onOpenChange={(open) => onOpenChange(entry.id, open)}
           open={openGroups.includes(entry.id)}
           render={<li />}
         >
-          <Collapsible.Trigger className="docs-group-trigger">
-            <span className="docs-group-label">
+          <Collapsible.Trigger
+            className={styles.groupTrigger}
+            data-docs-sidebar-trigger=""
+          >
+            <span className={styles.groupLabel}>
               <span>{entry.label}</span>
               {entry.badge && <DocsBadge badge={entry.badge} />}
             </span>
             <DocsIcon
-              className="docs-group-caret"
-              name="right-caret"
-              size="1rem"
+              className={styles.chevron}
+              name="down-caret"
+              size={14}
+              strokeWidth={0.75}
             />
           </Collapsible.Trigger>
-          <Collapsible.Panel className="docs-collapsible-panel">
+          <Collapsible.Panel
+            className={styles.collapsiblePanel}
+            data-docs-sidebar-panel=""
+          >
             <SidebarList
               entries={entry.entries}
               nested
@@ -240,19 +252,20 @@ export default function DocsSidebar({
   sidebarHash,
 }: DocsSidebarProps) {
   const activeGroupIds = useMemo(
-    () => collectGroupIds(entries, (entry) => entry.containsCurrent),
+    () =>
+      collectDocsSidebarGroupIds(entries, (entry) => entry.containsCurrent),
     [entries]
   );
   const defaultOpenGroupIds = useMemo(
     () =>
-      collectGroupIds(
+      collectDocsSidebarGroupIds(
         entries,
         (entry) => entry.containsCurrent || !entry.collapsed
       ),
     [entries]
   );
   const allGroupIds = useMemo(
-    () => new Set(collectGroupIds(entries, () => true)),
+    () => new Set(collectDocsSidebarGroupIds(entries, () => true)),
     [entries]
   );
   const [openGroups, setOpenGroups] = useState(defaultOpenGroupIds);
@@ -280,13 +293,26 @@ export default function DocsSidebar({
     }
 
     setOpenGroups(nextOpenGroups);
-    setRestored(true);
+
+    const revealFrame = window.requestAnimationFrame(() => {
+      setRestored(true);
+    });
+
+    return () => window.cancelAnimationFrame(revealFrame);
   }, [
     activeGroupIds,
     allGroupIds,
     defaultOpenGroupIds,
     sidebarHash,
   ]);
+
+  useBrowserLayoutEffect(() => {
+    if (!restored) {
+      return;
+    }
+
+    document.getElementById(sidebarBootstrapStyleId)?.remove();
+  }, [restored]);
 
   const storeState = useCallback(
     (groups: string[]) => {
@@ -344,7 +370,8 @@ export default function DocsSidebar({
 
   return (
     <div
-      className="docs-sidebar-root"
+      className={styles.root}
+      data-docs-sidebar-root=""
       data-restoring={restored ? undefined : ""}
     >
       <DocsContext context={context} />

@@ -23,12 +23,24 @@ entry.durable // false — principal-derived values stay local
 
 ## Public is an enforced claim
 
-In development mode, reading guarded request data inside an explicitly public factory demotes that fill from shared storage. The runtime can protect the identity it can see; it cannot inspect values captured invisibly in arbitrary closures.
+With <code>dev: true</code>, reading guarded request data inside an explicitly public factory demotes that fill from shared storage. The runtime can protect the identity it can see; it cannot inspect values captured invisibly in arbitrary closures.
 
 ## Tenant sharing is deliberate
 
 A tenant-only request still contains visible identity. Use an explicit tenant scope when anonymous traffic within one tenant should share a durable value.
 
+~~~ts title="tenant-settings.ts"
+await cache.getOrSet({
+  key: "settings",
+  scope: { tenant: tenantId },
+  factory: async () => loadTenantSettings(tenantId),
+})
+~~~
+
+:::caution[Contextless work must declare identity]
+Queue consumers, cron jobs, and other contextless code default to shared storage when no principal is visible. Set an explicit scope whenever that code caches user-derived data.
+:::
+
 ## Telemetry follows the same posture
 
-Hosted telemetry pseudonymizes emitted string fields with a project salt; the event type remains structural. Raw keys and tags do not belong in a hosted event stream.
+When telemetry is configured as hosted, the kernel pseudonymizes emitted string fields with a project salt; the event type remains structural. Raw keys and tags do not belong in a hosted event stream.

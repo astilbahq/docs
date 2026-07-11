@@ -9,7 +9,7 @@ Tags describe what a value depends on. Invalidation changes how every matching e
 
 | Operation | Effect |
 | --- | --- |
-| <code>expire()</code> — soft | Marks matching values stale. An eventual read may serve the stale value while refresh work runs. |
+| <code>expire()</code> — soft | Marks matching values stale. An eventual read may return the stale value while the preview performs a best-effort refresh for a later read. |
 | <code>delete()</code> — hard | Makes matching values unreadable wherever that invalidation is visible. Grace cannot resurrect them. |
 
 ~~~ts title="invalidation.ts"
@@ -25,6 +25,10 @@ await cache.delete({ tag: articleTag })
 await cache.expire({ key: `article:${articleId}` })
 ~~~
 
+:::caution[Change the source first]
+Invalidating a cached representation does not remove or update the underlying record. Apply the source-of-truth change before issuing a hard invalidation so a refill cannot reproduce the old value.
+:::
+
 ## Build unambiguous tags
 
 <code>compound()</code> encodes each positional part so delimiters and empty values cannot collapse distinct dependency vectors into the same tag.
@@ -37,6 +41,10 @@ User tags beginning with <code>__</code> are rejected. Per-key and per-namespace
 
 <code>clear()</code> advances the local namespace version and emits a hard namespace invalidation. New keys and lagging readers therefore converge through the same mechanism.
 
-## Adapter status
+## Completion status
 
-The invalidation semantics are implemented and verified against deterministic drivers. Real registry and bus adapters are still being built, so this is an API preview rather than a production setup guide.
+<code>expire()</code>, <code>delete()</code>, and <code>clear()</code> return an epoch and a best-effort <code>matchedHint</code>. In the current preview, <code>flushed()</code> and <code>edgePurged()</code> resolve without measuring mirror or edge completion. Do not use those promises as deployment guarantees yet.
+
+## Runtime status
+
+The invalidation semantics are implemented and verified against deterministic drivers. A Cloudflare Coordinator and registry client now run in the workerd integration lane, together with a KV replication mirror and conservative reader. The production bus, edge purge path, and supported adapter exports are still missing.

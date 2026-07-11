@@ -4,14 +4,16 @@ description: Preview one Cache read from typed drivers to a filled value. Cache 
 ---
 
 :::caution[Not an installation guide]
-Cache cannot yet be installed for production use. This walkthrough previews the public API while the package and official adapters are still in development.
+Cache cannot yet be installed for production use. This walkthrough previews the public API while its tested Cloudflare components remain internal and unsupported as package imports.
 :::
 
 A cache operation starts with explicit runtime dependencies, then reads a key or asks its factory to produce the value.
 
 ## Before you start
 
-The current API expects configured <code>Clock</code>, <code>Rng</code>, <code>Store</code>, <code>Registry</code>, and <code>Bus</code> drivers. Official production implementations are not shipped yet.
+Every cache instance needs a <code>Clock</code> and <code>Rng</code>. A fill currently also needs an application-supplied L2 <code>Store</code>.
+
+Add a <code>Registry</code> and <code>Bus</code> together when you want coordinated invalidation. That configuration also uses L2 to recover invalidation state after a transport gap. The example below assumes you have supplied those drivers; the internal Cloudflare implementations are not public exports yet.
 
 ## Read or fill one article
 

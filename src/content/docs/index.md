@@ -10,6 +10,6 @@ Astilba builds portable infrastructure libraries with explicit correctness bound
 
 ### [Cache](/cache/overview/)
 
-A portable TypeScript caching library with tag invalidation, stale-on-error resilience, and privacy-aware scopes.
+A portable TypeScript caching library with tag invalidation, stale-if-error resilience, and privacy-aware scopes.
 
-Cache is currently a development preview. Start with the [overview](/cache/overview/) or inspect the [driver and release status](/cache/drivers-and-status/).
+Cache is currently a development preview. Start with the [overview](/cache/overview/) or inspect the [current API status](/cache/api-status/).

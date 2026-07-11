@@ -23,14 +23,17 @@ Application code reads and invalidates through one cache instance. Typed drivers
 
 | Surface | Status | Detail |
 | --- | --- | --- |
-| Correctness kernel | Ready | Core behavior is covered by the deterministic invariant suite. |
-| Conformance layer | Ready | Driver contracts exist and reference implementations pass them. |
-| Cloudflare path | In progress | The Durable Object shell is under active development. |
-| Public package | Not shipped | There is no supported install or production adapter bundle yet. |
+| Correctness kernel | Implemented | Read, fill, scope, codec, resilience, and invalidation behavior is exercised by deterministic tests. |
+| Driver contracts | Implemented | The Cloudflare KV store and Durable Object registry pass the same applicable contracts as the reference drivers. |
+| Cloudflare path | Internal preview | The KV store, Coordinator, registry client, and replication path run under workerd. The production bus and supported package exports are still missing. |
+| Public package | Not released | The repository is versioned as an unreleased package and has no supported installation path. |
+
+The internal Cloudflare modules are implementation evidence, not public entry points. Keep using the Unreleased docs until the complete runtime path is packaged and supported.
 
 ## Choose a path
 
 - [Walk through a first operation](/cache/quickstart/) to preview one read without treating the package as production-ready.
 - [Read and fill a value](/cache/reading-and-filling/) to understand the value and metadata forms.
 - [Invalidate cached data](/cache/tags-and-invalidation/) to choose between soft and hard invalidation.
+- [Check the API status](/cache/api-status/) before relying on a helper or metadata field.
 - [Check driver status](/cache/drivers-and-status/) to see which integrations are real today.

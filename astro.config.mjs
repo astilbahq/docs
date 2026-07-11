@@ -21,15 +21,12 @@ export default defineConfig({
           label: "Astilba on GitHub",
           href: "https://github.com/astilbahq",
         },
-        {
-          icon: "x.com",
-          label: "Astilba on X",
-          href: "https://x.com/astilba_",
-        },
       ],
       customCss: [
+        "@fontsource-variable/inter",
         "@fontsource-variable/geist",
-        "@fontsource-variable/geist-mono",
+        "@fontsource-variable/jetbrains-mono",
+        "./src/styles/panda.css",
         "./src/styles/starlight.css",
       ],
       components: {

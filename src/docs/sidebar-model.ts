@@ -63,6 +63,19 @@ export type DocsSidebarEntryModel =
   | DocsSidebarGroupModel
   | DocsSidebarLinkModel;
 
+export const collectDocsSidebarGroupIds = (
+  entries: DocsSidebarEntryModel[],
+  predicate: (entry: DocsSidebarGroupModel) => boolean
+): string[] =>
+  entries.flatMap((entry) => {
+    if (entry.type === "link") {
+      return [];
+    }
+
+    const nestedIds = collectDocsSidebarGroupIds(entry.entries, predicate);
+    return predicate(entry) ? [entry.id, ...nestedIds] : nestedIds;
+  });
+
 const toBadge = (
   badge: StarlightSidebarEntry["badge"]
 ): DocsBadge | undefined => {

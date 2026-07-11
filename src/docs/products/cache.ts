@@ -51,6 +51,12 @@ const cacheSections = [
     label: "Reference",
     items: [
       {
+        key: "api-status",
+        label: "API status",
+        slug: "api-status",
+        icon: "approve-check-circle",
+      },
+      {
         key: "drivers-and-status",
         label: "Drivers and status",
         slug: "drivers-and-status",
