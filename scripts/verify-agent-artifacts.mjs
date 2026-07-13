@@ -45,6 +45,7 @@ const assertLink = (html, rel, href) => {
 };
 
 const requiredArtifacts = [
+  "_headers",
   "_llms-txt/astilba-cache.txt",
   "cache/overview.md",
   "cache/overview/index.html",
@@ -62,6 +63,19 @@ const artifacts = new Map();
 for (const artifact of requiredArtifacts) {
   artifacts.set(artifact, await readArtifact(artifact));
 }
+
+const staticHeaders = artifacts.get("_headers");
+assertIncludes("_headers", staticHeaders, "/*.md");
+assertIncludes(
+  "_headers",
+  staticHeaders,
+  "Content-Type: text/markdown; charset=utf-8"
+);
+assertIncludes(
+  "_headers",
+  staticHeaders,
+  "X-Content-Type-Options: nosniff"
+);
 
 const pageUrl = new URL("/cache/overview/", site).href;
 const markdownUrl = new URL("/cache/overview.md", site).href;
@@ -88,6 +102,11 @@ assertLink(html, "describedby", llmsUrl);
 
 const markdown = artifacts.get("cache/overview.md");
 assertIncludes("cache/overview.md", markdown, `canonical: ${JSON.stringify(pageUrl)}`);
+assertIncludes(
+  "cache/overview.md",
+  markdown,
+  "For React applications, “server-side” means"
+);
 
 for (const field of [
   "title",

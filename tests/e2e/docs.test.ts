@@ -28,7 +28,11 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   expect(markdownResponse.headers()["content-type"]).toContain(
     "text/markdown"
   );
-  expect(await markdownResponse.text()).toContain("# Overview");
+  const markdown = await markdownResponse.text();
+  expect(markdown).toContain("# Overview");
+  expect(markdown).toContain(
+    "For React applications, “server-side” means"
+  );
 
   await page.goto("/cache/overview/");
   const copyMarkdown = page.getByRole("button", {
