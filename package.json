@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "astro build && node scripts/verify-agent-artifacts.mjs",
+    "build": "astro build && node scripts/generate-agent-headers.mjs && node scripts/verify-agent-artifacts.mjs",
     "build:production": "ASTILBA_DOCS_SITE=https://docs.astilba.com pnpm build",
     "check": "astro check",
     "deploy": "pnpm build:production && wrangler deploy",

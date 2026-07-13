@@ -8,6 +8,7 @@ export const GET: APIRoute = ({ site }) => {
     : undefined;
   const body = [
     "User-agent: *",
+    "Content-Signal: ai-train=no, search=yes, ai-input=yes",
     "Allow: /",
     sitemapUrl ? "" : undefined,
     sitemapUrl ? `Sitemap: ${sitemapUrl.href}` : undefined,

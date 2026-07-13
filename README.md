@@ -80,7 +80,7 @@ GitHub Actions automatically runs the same deployment after the verification job
 
 Each catalogued documentation page has a sibling `.md` representation with YAML provenance for its canonical page, product, documentation version, lifecycle, and public source file. HTML pages advertise that representation with `rel="alternate"` and point to the site-wide `llms.txt` index with `rel="describedby"`.
 
-Production builds also create `llms-small.txt`, `llms-full.txt`, a Cache-specific document set under `_llms-txt/`, `robots.txt`, and the sitemap. The Cache document set follows the typed sidebar order and states that the package is unreleased and not installable. `robots.txt` allows public crawling and deliberately makes no AI-training policy claim; changing that policy requires an explicit product decision.
+Production builds also create `llms-small.txt`, `llms-full.txt`, a Cache-specific document set under `_llms-txt/`, `robots.txt`, and the sitemap. The Cache document set follows the typed sidebar order and states that the package is unreleased and not installable. HTTP responses and `robots.txt` allow search indexing and real-time AI input while reserving the documentation from model training. The production artifact check keeps those signals aligned and verifies the response-level links to Markdown and `llms.txt`.
 
 ## Keeping product status current
 
