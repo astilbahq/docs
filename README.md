@@ -44,13 +44,17 @@ Keep the default version pointed at the release readers should land on. The sele
 ## Checks
 
 ```bash
-pnpm check
-ASTILBA_DOCS_SITE=https://docs.astilba.com pnpm build
+pnpm test:browser:install
+pnpm verify
 ```
 
 Development and type checks do not require a deployed origin. Production builds do: `ASTILBA_DOCS_SITE` must be the public HTTP or HTTPS origin, with no path, so canonical links and generated agent resources cannot silently point at the wrong host.
 
-The production build creates the Pagefind search index, validates internal links, and then verifies the deployed artifact set in `dist/`. Run `pnpm preview` to test the built site locally.
+`pnpm verify` regenerates Panda bindings, checks Astro and TypeScript, runs focused Vitest coverage, checks unused code and dependencies with Knip, builds and validates the Wrangler bundle without uploading it, and drives the production build in Chromium with Playwright and axe. The browser suite covers Pagefind, mobile navigation, persisted sidebar state, themes, page actions, raw Markdown routes, and representative light/dark/overlay accessibility states. Install Chromium once per machine with `pnpm test:browser:install`.
+
+The production build creates the Pagefind search index, validates internal links, and then verifies the deployed artifact set in `dist/`. Run `pnpm preview` to inspect that build locally.
+
+Repository automation also runs Actionlint, Zizmor, dependency review, a complete-lockfile OSV scan, and Conventional Commit PR-title validation. Renovate keeps exact package and immutable workflow pins current on a weekly cadence; major changes always require manual review.
 
 ## Deployment
 
@@ -69,6 +73,8 @@ pnpm deploy
 ```
 
 `wrangler.jsonc` is the deployment source of truth. Its Custom Domain route lets Cloudflare own the `docs.astilba.com` DNS record and certificate rather than proxying an external origin.
+
+GitHub Actions automatically runs the same deployment after the verification job succeeds on `main`. The `production` environment scopes `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`; pull requests can validate Wrangler but cannot access those credentials or deploy. Cloudflare recommends a custom API token restricted to Workers editing for the Astilba account.
 
 ## Agent-readable documentation
 

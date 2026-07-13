@@ -11,7 +11,7 @@ export const docsIcons = [
 
 export type DocsIcon = (typeof docsIcons)[number];
 
-export type DocsBadgeVariant =
+type DocsBadgeVariant =
   | "caution"
   | "danger"
   | "default"
@@ -32,12 +32,12 @@ export interface DocsPage {
   slug: string;
 }
 
-export interface DocsSection {
+interface DocsSection {
   items: DocsPage[];
   label: string;
 }
 
-export type DocsVersionLifecycle =
+type DocsVersionLifecycle =
   | "archived"
   | "latest"
   | "maintained"

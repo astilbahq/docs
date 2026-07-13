@@ -13,7 +13,7 @@ import type { DocsBadge, DocsIcon } from "./types";
 
 type StarlightSidebarEntry = StarlightRouteData["sidebar"][number];
 
-export interface DocsMenuOption {
+interface DocsMenuOption {
   href: string;
   icon: DocsIcon;
   id: string;
@@ -43,7 +43,7 @@ interface DocsSidebarEntryBase {
   label: string;
 }
 
-export interface DocsSidebarLinkModel extends DocsSidebarEntryBase {
+interface DocsSidebarLinkModel extends DocsSidebarEntryBase {
   attrs: Record<string, boolean | number | string>;
   className?: string;
   href: string;

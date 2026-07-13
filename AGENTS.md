@@ -54,5 +54,10 @@ This repository contains the public documentation experience for Astilba product
 - `pnpm dev` starts the local site.
 - `pnpm panda:codegen` regenerates the ignored typed styling bindings after Panda configuration changes.
 - `pnpm check` validates Astro, content, and TypeScript.
+- `pnpm test` runs focused Vitest coverage for the documentation model and generated destinations.
+- `pnpm knip` checks for unused files, exports, and dependencies.
+- `pnpm test:browser` builds the production site and runs Chromium and axe coverage. Install Chromium once with `pnpm test:browser:install`.
+- `pnpm verify` runs the complete local verification sequence against the already-installed browser.
 - `pnpm build` produces the static site and Pagefind search index.
+- A successful `main` verification deploys the static build through the GitHub `production` environment. Pull requests must never receive deployment credentials.
 - Keep dependency versions exact.
