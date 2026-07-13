@@ -73,18 +73,10 @@ const actionLabelClass = css({
     border: 0,
   },
 });
-const githubStarCountClass = css({
-  color: "inherit",
-  fontFamily: "mono",
-  fontSize: "0.6875rem",
-  fontVariantNumeric: "tabular-nums",
-});
-
 const githubHref =
   config.social?.find(({ icon }) => icon === "github")?.href ??
   "https://github.com/astilbahq";
 const sponsorHref = "https://github.com/sponsors/astilbahq";
-const placeholderStarCount = "128";
 ---
 
 <div class={headerClass}>
@@ -109,7 +101,7 @@ const placeholderStarCount = "128";
   <div aria-label="Site actions" class:list={[actionsClass, "print:hidden"]} role="group">
     {shouldRenderSearch && <HeaderSearch />}
     <LinkButton
-      aria-label={`Astilba on GitHub, ${placeholderStarCount} stars`}
+      aria-label="Astilba on GitHub"
       href={githubHref}
       rel="me"
       title="Astilba on GitHub"
@@ -119,9 +111,6 @@ const placeholderStarCount = "128";
         name="github"
         size="1rem"
       />
-      <span aria-hidden="true" class={githubStarCountClass}>
-        {placeholderStarCount}
-      </span>
     </LinkButton>
     <LinkButton
       aria-label="Sponsor Astilba on GitHub"

@@ -28,4 +28,10 @@ describe("documentation source links", () => {
       "https://github.com/astilbahq/docs/blob/main/src/content/docs/cache/overview.md"
     );
   });
+
+  it("preserves an MDX extension when a source path is outside the content root", () => {
+    expect(
+      getDocsSourcePath("/generated/cache/example.mdx", "cache/example")
+    ).toBe("src/content/docs/cache/example.mdx");
+  });
 });

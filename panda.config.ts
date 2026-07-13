@@ -4,6 +4,23 @@ const themedColor = (dark: string, light: string) => ({
   value: { base: dark, _light: light },
 });
 
+const themeColorValues = {
+  dark: {
+    signal: "oklch(0.72 0.17 32)",
+    ink: "#ffffff",
+    canvas: "#121212",
+    accentLow: "oklch(0.22 0.04 32)",
+    accentHigh: "oklch(0.91 0.04 32)",
+  },
+  light: {
+    signal: "oklch(0.55 0.19 32)",
+    ink: "#0d0d0d",
+    canvas: "#fdfdfd",
+    accentLow: "oklch(0.95 0.025 32)",
+    accentHigh: "oklch(0.35 0.13 32)",
+  },
+} as const;
+
 export default defineConfig({
   preflight: false,
   presets: ["@pandacss/preset-base"],
@@ -45,24 +62,6 @@ export default defineConfig({
         wide: "72rem",
       },
       tokens: {
-        colors: {
-          palette: {
-            dark: {
-              signal: { value: "oklch(0.72 0.17 32)" },
-              ink: { value: "#ffffff" },
-              canvas: { value: "#121212" },
-              accentLow: { value: "oklch(0.22 0.04 32)" },
-              accentHigh: { value: "oklch(0.91 0.04 32)" },
-            },
-            light: {
-              signal: { value: "oklch(0.55 0.19 32)" },
-              ink: { value: "#0d0d0d" },
-              canvas: { value: "#fdfdfd" },
-              accentLow: { value: "oklch(0.95 0.025 32)" },
-              accentHigh: { value: "oklch(0.35 0.13 32)" },
-            },
-          },
-        },
         fonts: {
           body: { value: '"Geist Variable"' },
           heading: { value: '"Inter Variable"' },
@@ -107,13 +106,13 @@ export default defineConfig({
       semanticTokens: {
         colors: {
           signal: themedColor(
-            "{colors.palette.dark.signal}",
-            "{colors.palette.light.signal}"
+            themeColorValues.dark.signal,
+            themeColorValues.light.signal
           ),
           ink: {
             strong: themedColor(
-              "{colors.palette.dark.ink}",
-              "{colors.palette.light.ink}"
+              themeColorValues.dark.ink,
+              themeColorValues.light.ink
             ),
             default: themedColor("#ffffff", "#0d0d0d"),
             muted: themedColor("rgba(202, 202, 202, 0.7)", "#6c6c6c"),
@@ -126,26 +125,26 @@ export default defineConfig({
             ),
             onBanner: themedColor("#e3e3e3", "#17181c"),
             inverse: themedColor(
-              "{colors.palette.dark.canvas}",
-              "{colors.palette.light.canvas}"
+              themeColorValues.dark.canvas,
+              themeColorValues.light.canvas
             ),
           },
           canvas: themedColor(
-            "{colors.palette.dark.canvas}",
-            "{colors.palette.light.canvas}"
+            themeColorValues.dark.canvas,
+            themeColorValues.light.canvas
           ),
           accent: {
             DEFAULT: themedColor(
-              "{colors.palette.dark.signal}",
-              "{colors.palette.light.signal}"
+              themeColorValues.dark.signal,
+              themeColorValues.light.signal
             ),
             low: themedColor(
-              "{colors.palette.dark.accentLow}",
-              "{colors.palette.light.accentLow}"
+              themeColorValues.dark.accentLow,
+              themeColorValues.light.accentLow
             ),
             high: themedColor(
-              "{colors.palette.dark.accentHigh}",
-              "{colors.palette.light.accentHigh}"
+              themeColorValues.dark.accentHigh,
+              themeColorValues.light.accentHigh
             ),
           },
           border: {
@@ -232,8 +231,8 @@ export default defineConfig({
             codeBlock: themedColor("#181818", "#f7f7f7"),
             kbd: themedColor("rgba(255, 255, 255, 0.07)", "#f4f4f4"),
             selection: themedColor(
-              "color-mix(in oklab, {colors.palette.dark.signal} 32%, transparent)",
-              "color-mix(in oklab, {colors.palette.light.signal} 32%, transparent)"
+              `color-mix(in oklab, ${themeColorValues.dark.signal} 32%, transparent)`,
+              `color-mix(in oklab, ${themeColorValues.light.signal} 32%, transparent)`
             ),
             scrim: themedColor(
               "hsla(223, 13%, 10%, 0.66)",
@@ -242,12 +241,12 @@ export default defineConfig({
           },
           link: {
             DEFAULT: themedColor(
-              "{colors.palette.dark.ink}",
-              "{colors.palette.light.ink}"
+              themeColorValues.dark.ink,
+              themeColorValues.light.ink
             ),
             hover: themedColor(
-              "{colors.palette.dark.signal}",
-              "{colors.palette.light.signal}"
+              themeColorValues.dark.signal,
+              themeColorValues.light.signal
             ),
           },
           callout: {

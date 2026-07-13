@@ -27,8 +27,13 @@ Once a runtime has created a <code>cache</code> instance, application code shoul
 
 ~~~ts title="load-product.ts"
 import { compound } from "@astilba/cache"
+import type { Cache } from "@astilba/cache"
 
-export async function getProduct(productId: string) {
+export async function getProduct<T>(
+  cache: Cache,
+  productId: string,
+  loadProduct: (productId: string, signal: AbortSignal) => Promise<T>,
+): Promise<T> {
   return cache.getOrSet({
     key: `product:${productId}`,
     tags: [compound("product", productId)],
@@ -43,9 +48,17 @@ After a mutation, change the source first and then invalidate the dependency:
 
 ~~~ts title="update-product.ts"
 import { compound } from "@astilba/cache"
+import type { Cache } from "@astilba/cache"
 
-await saveProduct(productId, input)
-await cache.delete({ tag: compound("product", productId) })
+export async function updateProduct<TInput>(
+  cache: Cache,
+  productId: string,
+  input: TInput,
+  saveProduct: (productId: string, input: TInput) => Promise<void>,
+): Promise<void> {
+  await saveProduct(productId, input)
+  await cache.delete({ tag: compound("product", productId) })
+}
 ~~~
 
 That invalidation call currently requires a Registry. Supported framework packages should configure it rather than making every application construct coordination drivers by hand.

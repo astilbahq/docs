@@ -157,7 +157,7 @@ See [Invalidating data](/cache/tags-and-invalidation/) for safe mutation order a
 | Export | Purpose and current boundary |
 | --- | --- |
 | <code>Tag</code> | Branded string accepted by cache reads and invalidation selectors. |
-| <code>TagPart</code> | <code>string | number</code> input used by tag helpers. |
+| <code>TagPart</code> | <code>string &#124; number</code> input used by tag helpers. |
 | <code>compound(...parts)</code> | Implemented positional tag builder with escaping and explicit arity. |
 | <code>t</code> | Tagged-template builder declared for readable tags; currently throws <code>NotImplementedError</code>. |
 | <code>globalTag(name)</code> | Declared globally scoped tag helper; currently throws <code>NotImplementedError</code>. |

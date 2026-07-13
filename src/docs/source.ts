@@ -9,10 +9,12 @@ export const getDocsSourcePath = (
 ): string => {
   const normalizedFilePath = filePath?.replaceAll("\\", "/") ?? "";
   const sourceMarkerIndex = normalizedFilePath.indexOf(DOCS_CONTENT_ROOT);
+  const sourceExtension =
+    normalizedFilePath.match(/\.(?:md|mdx)$/i)?.[0].toLowerCase() ?? ".md";
 
   return sourceMarkerIndex >= 0
     ? normalizedFilePath.slice(sourceMarkerIndex)
-    : `${DOCS_CONTENT_ROOT}${entryId}.md`;
+    : `${DOCS_CONTENT_ROOT}${entryId}${sourceExtension}`;
 };
 
 export const getDocsSourceUrl = (

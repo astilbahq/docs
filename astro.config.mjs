@@ -7,6 +7,7 @@ import starlightLlmsTxt from "starlight-llms-txt";
 import { docsProducts, docsSidebar } from "./src/docs/catalog.ts";
 
 // starlight-llms-txt needs the deployed origin to generate canonical links.
+const DEPLOYED_DOCS_ORIGIN = "https://docs.astilba.com";
 const siteValue = process.env.ASTILBA_DOCS_SITE;
 const siteUrl = siteValue ? new URL(siteValue) : undefined;
 
@@ -24,6 +25,12 @@ if (
 ) {
   throw new Error(
     "ASTILBA_DOCS_SITE must be a public origin without credentials, a path, a query, or a fragment."
+  );
+}
+
+if (siteUrl && siteUrl.origin !== DEPLOYED_DOCS_ORIGIN) {
+  throw new Error(
+    `ASTILBA_DOCS_SITE must use the canonical deployed origin ${DEPLOYED_DOCS_ORIGIN}.`
   );
 }
 

@@ -38,7 +38,7 @@ export const ghostControl = cva({
     _disabled: {
       background: "transparent",
       color: "ink.faint",
-      cursor: "wait",
+      cursor: "default",
     },
   },
   variants: {
