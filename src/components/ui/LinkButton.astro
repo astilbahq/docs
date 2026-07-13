@@ -1,0 +1,19 @@
+---
+import type { HTMLAttributes } from "astro/types";
+import { ghostControl } from "../../styles/recipes";
+
+interface Props extends Omit<HTMLAttributes<"a">, "class"> {
+  class?: string;
+  iconOnly?: boolean;
+}
+
+const {
+  class: className,
+  iconOnly = false,
+  ...attributes
+} = Astro.props;
+---
+
+<a {...attributes} class:list={[ghostControl({ iconOnly }), className]}>
+  <slot />
+</a>

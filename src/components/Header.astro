@@ -1,0 +1,129 @@
+---
+import config from "virtual:starlight/user-config";
+import SiteTitle from "virtual:starlight/components/SiteTitle";
+import { Icon } from "@astrojs/starlight/components";
+import { css } from "../../styled-system/css";
+import {
+  findDocsContext,
+  getDefaultPage,
+  getPageHref,
+} from "../docs/catalog";
+import ThemeToggle from "./ThemeToggle.astro";
+import HeaderSearch from "./HeaderSearch.astro";
+import LinkButton from "./ui/LinkButton.astro";
+
+const shouldRenderSearch =
+  config.pagefind ||
+  config.components.Search !== "@astrojs/starlight/components/Search.astro";
+const docsContext = findDocsContext(Astro.url.pathname);
+const productHref = docsContext
+  ? getPageHref(
+      docsContext.version,
+      getDefaultPage(docsContext.product, docsContext.version)
+    )
+  : undefined;
+
+const headerClass = css({
+  display: "flex",
+  blockSize: "100%",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "var(--sl-nav-gap)",
+});
+
+const titleWrapperClass = css({
+  display: "flex",
+  minInlineSize: 0,
+  alignItems: "center",
+  gap: 0,
+  margin: "-0.25rem",
+  padding: "0.25rem",
+  overflow: "clip",
+});
+const productLinkClass = css({
+  flex: "0 0 auto",
+  paddingInline: "0.125em",
+  color: "ink.muted",
+  cursor: "pointer",
+  fontSize: "0.875rem",
+  fontWeight: "brand",
+  lineHeight: "1rem",
+  textDecoration: "none",
+});
+const actionsClass = css({
+  display: "flex",
+  flex: "0 0 auto",
+  alignItems: "center",
+  gap: "0.125rem",
+  marginInlineStart: "auto",
+});
+const actionIconClass = css({
+  flex: "0 0 auto",
+});
+const actionLabelClass = css({
+  _narrow: {
+    position: "absolute",
+    inlineSize: "1px",
+    blockSize: "1px",
+    padding: 0,
+    margin: "-1px",
+    overflow: "hidden",
+    clip: "rect(0, 0, 0, 0)",
+    whiteSpace: "nowrap",
+    border: 0,
+  },
+});
+const githubHref =
+  config.social?.find(({ icon }) => icon === "github")?.href ??
+  "https://github.com/astilbahq";
+const sponsorHref = "https://github.com/sponsors/astilbahq";
+---
+
+<div class={headerClass}>
+  <div class:list={[titleWrapperClass, "sl-flex"]}>
+    <SiteTitle />
+    {
+      docsContext && productHref && (
+        <a
+          aria-current={
+            docsContext.page.key === docsContext.product.defaultPage
+              ? "page"
+              : undefined
+          }
+          class={productLinkClass}
+          href={productHref}
+        >
+          {docsContext.product.label}
+        </a>
+      )
+    }
+  </div>
+  <div aria-label="Site actions" class:list={[actionsClass, "print:hidden"]} role="group">
+    {shouldRenderSearch && <HeaderSearch />}
+    <LinkButton
+      aria-label="Astilba on GitHub"
+      href={githubHref}
+      rel="me"
+      title="Astilba on GitHub"
+    >
+      <Icon
+        class={actionIconClass}
+        name="github"
+        size="1rem"
+      />
+    </LinkButton>
+    <LinkButton
+      aria-label="Sponsor Astilba on GitHub"
+      href={sponsorHref}
+      title="Sponsor Astilba"
+    >
+      <Icon
+        class={actionIconClass}
+        name="heart"
+        size="1rem"
+      />
+      <span class={actionLabelClass}>Sponsor</span>
+    </LinkButton>
+    <ThemeToggle />
+  </div>
+</div>

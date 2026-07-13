@@ -1,0 +1,43 @@
+---
+import { css } from "../../styled-system/css";
+import { findDocsContext } from "../docs/catalog";
+import { getDocsSourceUrl } from "../docs/source";
+import { PageActions } from "./PageActions";
+
+const { entry } = Astro.locals.starlightRoute;
+const { title, description } = entry.data;
+const docsContext = findDocsContext(Astro.url.pathname);
+const sourceUrl = getDocsSourceUrl(entry.filePath, entry.id);
+const markdownPath = `/${entry.id}.md`;
+
+const titleClass = css({
+  margin: 0,
+  color: "ink.strong",
+  fontSize: "var(--sl-text-h1)",
+  fontWeight: "semibold",
+  letterSpacing: "-0.02em",
+  lineHeight: 1.5,
+  textWrap: "balance",
+});
+
+const descriptionClass = css({
+  maxInlineSize: "68ch",
+  marginBlockStart: "0.25rem",
+  color: "ink.muted",
+  fontSize: "1.125rem",
+  lineHeight: 1.55,
+  textWrap: "pretty",
+});
+---
+
+<h1 class={titleClass} id="_top">{title}</h1>
+{description && <p class={descriptionClass}>{description}</p>}
+{
+  docsContext && (
+    <PageActions
+      client:load
+      markdownPath={markdownPath}
+      sourceUrl={sourceUrl}
+    />
+  )
+}

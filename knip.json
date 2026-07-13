@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "scripts/**/*.mjs!",
+    "src/docs/route-middleware.ts!",
+    "src/pages/**/*.{astro,ts}!",
+    "src/components/{Head,Header,MobileMenuToggle,PageTitle,Sidebar,VersionBanner}.astro!",
+    "tests/**/*.test.ts!"
+  ],
+  "project": [
+    "*.config.{cjs,js,mjs,ts}!",
+    "scripts/**/*.mjs!",
+    "src/**/*.{astro,ts,tsx}!",
+    "tests/**/*.ts!"
+  ],
+  "ignoreDependencies": [
+    "@fontsource-variable/geist",
+    "@fontsource-variable/inter",
+    "@fontsource-variable/jetbrains-mono"
+  ]
+}

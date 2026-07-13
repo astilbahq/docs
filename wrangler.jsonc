@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "astilba-docs",
+  "compatibility_date": "2026-07-13",
+  "workers_dev": false,
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "force-trailing-slash",
+    "not_found_handling": "404-page"
+  },
+  "routes": [
+    {
+      "pattern": "docs.astilba.com",
+      "custom_domain": true
+    }
+  ]
+}

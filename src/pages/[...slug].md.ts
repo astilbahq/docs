@@ -1,0 +1,100 @@
+import type { APIRoute, GetStaticPaths } from "astro";
+import { getCollection } from "astro:content";
+import { findDocsContext } from "../docs/catalog";
+import { getDocsSourceUrl } from "../docs/source";
+
+interface MarkdownPageProps {
+  body: string | undefined;
+  canonicalPath: string;
+  description: string;
+  docsVersion: string;
+  docsVersionId: string;
+  lifecycle: string;
+  product: string;
+  productId: string;
+  source: string;
+  title: string;
+}
+
+export const prerender = true;
+
+const yamlString = (value: string): string => JSON.stringify(value);
+
+const createMarkdown = (
+  props: MarkdownPageProps,
+  canonical: string
+): string => {
+  const frontmatter = [
+    "---",
+    `title: ${yamlString(props.title)}`,
+    `description: ${yamlString(props.description)}`,
+    `canonical: ${yamlString(canonical)}`,
+    `product: ${yamlString(props.product)}`,
+    `productId: ${yamlString(props.productId)}`,
+    `docsVersion: ${yamlString(props.docsVersion)}`,
+    `docsVersionId: ${yamlString(props.docsVersionId)}`,
+    `lifecycle: ${yamlString(props.lifecycle)}`,
+    `source: ${yamlString(props.source)}`,
+    "---",
+  ].join("\n");
+
+  return [
+    frontmatter,
+    `# ${props.title}`,
+    props.description ? `> ${props.description}` : undefined,
+    props.body?.trim(),
+  ]
+    .filter((section): section is string => Boolean(section))
+    .join("\n\n") + "\n";
+};
+
+export const getStaticPaths = (async () => {
+  const entries = await getCollection("docs", ({ data }) =>
+    import.meta.env.MODE !== "production" || data.draft === false
+  );
+
+  return entries.flatMap((entry) => {
+    if (entry.id === "index") {
+      return [];
+    }
+
+    const context = findDocsContext(`/${entry.id}/`);
+
+    if (!context) {
+      return [];
+    }
+
+    return [
+      {
+        params: { slug: entry.id },
+        props: {
+          body: entry.body,
+          canonicalPath: `/${entry.id}/`,
+          description: entry.data.description ?? "",
+          docsVersion: context.version.label,
+          docsVersionId: context.version.id,
+          lifecycle: context.version.lifecycle,
+          product: context.product.label,
+          productId: context.product.id,
+          source: getDocsSourceUrl(entry.filePath, entry.id),
+          title: entry.data.title,
+        } satisfies MarkdownPageProps,
+      },
+    ];
+  });
+}) satisfies GetStaticPaths;
+
+export const GET: APIRoute = ({ props, request, site }) => {
+  const markdownPage = props as MarkdownPageProps;
+  const canonical = new URL(
+    markdownPage.canonicalPath,
+    site ?? request.url
+  ).href;
+
+  return new Response(createMarkdown(markdownPage, canonical), {
+    headers: {
+      "Content-Type": "text/markdown; charset=utf-8",
+      "X-Content-Type-Options": "nosniff",
+    },
+  });
+};
