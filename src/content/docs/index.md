@@ -16,11 +16,12 @@ Astilba Cache is not published and has no supported production installation path
 
 A portable TypeScript caching library with explicit soft and hard invalidation, classified stale-on-error resilience, and privacy-aware storage scopes.
 
-Start with the [overview](/cache/overview/), learn [how Cache works](/cache/how-it-works/), or inspect the [current API status](/cache/api-status/) before depending on a surface.
+Start with the [overview](/cache/overview/), check the [React and server-app boundary](/cache/react-and-server-apps/), or follow the [preview walkthrough](/cache/quickstart/).
 
 ## How to read these docs
 
-- **Start** pages explain the product and walk through the API shape.
+- **Start** pages explain who the product is for, walk through the API shape, and define its vocabulary.
 - **Guides** focus on one task, such as reading or invalidating data.
-- **Concepts** explain the consistency, resilience, and privacy model.
-- **Reference** pages are the release-state ledger. When a guide and the status page appear to differ, follow the status page.
+- **Concepts** explain the read, invalidation, consistency, and resilience models.
+- **Advanced** pages document runtime composition and driver implementation status.
+- **Reference** contains the complete root API surface and the release-state ledger. When another page and the status page appear to differ, follow the status page.

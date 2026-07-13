@@ -11,22 +11,22 @@ const cacheSections = [
         icon: "open-book",
       },
       {
-        key: "architecture",
-        label: "Runtime architecture",
-        slug: "architecture",
-        icon: "code-branch",
+        key: "react-and-server-apps",
+        label: "React and server apps",
+        slug: "react-and-server-apps",
+        icon: "rocket",
       },
       {
         key: "quickstart",
-        label: "API walkthrough",
+        label: "Preview walkthrough",
         slug: "quickstart",
         icon: "rocket",
       },
       {
-        key: "how-it-works",
-        label: "How Cache works",
-        slug: "how-it-works",
-        icon: "code-branch",
+        key: "core-concepts",
+        label: "Core concepts",
+        slug: "core-concepts",
+        icon: "open-book",
       },
     ],
   },
@@ -57,6 +57,12 @@ const cacheSections = [
     label: "Concepts",
     items: [
       {
+        key: "how-it-works",
+        label: "How Cache works",
+        slug: "how-it-works",
+        icon: "code-branch",
+      },
+      {
         key: "consistency-and-resilience",
         label: "Consistency and resilience",
         slug: "consistency-and-resilience",
@@ -65,19 +71,36 @@ const cacheSections = [
     ],
   },
   {
-    label: "Reference",
+    label: "Advanced",
     items: [
       {
-        key: "api-status",
-        label: "API status",
-        slug: "api-status",
-        icon: "approve-check-circle",
+        key: "architecture",
+        label: "Runtime architecture",
+        slug: "architecture",
+        icon: "code-branch",
       },
       {
         key: "drivers-and-status",
         label: "Drivers and status",
         slug: "drivers-and-status",
         icon: "server",
+      },
+    ],
+  },
+  {
+    label: "Reference",
+    items: [
+      {
+        key: "api-reference",
+        label: "API reference",
+        slug: "api-reference",
+        icon: "open-book",
+      },
+      {
+        key: "api-status",
+        label: "API status",
+        slug: "api-status",
+        icon: "approve-check-circle",
       },
     ],
   },

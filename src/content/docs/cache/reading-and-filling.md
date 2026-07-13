@@ -5,6 +5,8 @@ description: Choose between the simple value API and the metadata-rich entry API
 
 Astilba Cache provides two read APIs. Use <code>getOrSet()</code> when you only need a value. Use <code>getOrSetEntry()</code> when the caller needs cache metadata or the factory may intentionally skip storage.
 
+If terms such as factory, L1, L2, origin, or entry are new, see [Core concepts](/cache/core-concepts/).
+
 ## Choose the return shape
 
 ### Return a value
@@ -54,10 +56,10 @@ On a newly filled origin result, <code>durable: false</code> does not mean the f
 1. **Read configured tiers.** Cache tries L1 before L2. It checks the stored codec identity before decoding, then validates the reconstructed entry.
 2. **Join compatible work.** Concurrent compatible calls share one in-isolate foreground factory execution.
 3. **Run the factory.** The factory receives an <code>AbortSignal</code>, optional request context, and typed failure helpers. The current kernel creates a fresh signal but does not yet abort it on a cache deadline.
-4. **Fence the result.** A hard invalidation observed during the fill can teach the next attempt a newer invalidation position. The budget is three factory attempts.
+4. **Fence the result.** A hard invalidation observed during the fill can reject write-back so the result is not published against obsolete invalidation knowledge.
 5. **Write by scope.** Shared scopes may reach L2; principal-derived values are L1-only. A successful fill hydrates L1 when one is configured.
 
-If all fence-taught attempts are exhausted, <code>getOrSet()</code> throws <code>FencedError</code>. <code>getOrSetEntry()</code> reports a non-durable miss instead.
+When a plain-value fill is fenced and no value can be served, <code>getOrSet()</code> throws <code>FencedError</code>. <code>getOrSetEntry()</code> reports a non-durable miss instead. The documented snapshot does not rerun the factory inside the same read; the caller may read again.
 
 ## Compatible concurrent calls
 
@@ -83,6 +85,7 @@ A soft-stale eventual read currently awaits a best-effort refresh, then still re
 
 ## Related
 
-- [API walkthrough](/cache/quickstart/) shows both value reads against a development-only Store.
+- [Preview walkthrough](/cache/quickstart/) shows both value reads against a development-only Store.
+- [Core concepts](/cache/core-concepts/) explains the storage tiers and read vocabulary.
 - [Consistency and resilience](/cache/consistency-and-resilience/) explains when stale values may be reused.
 - [API status](/cache/api-status/) lists provisional metadata and unimplemented helpers.

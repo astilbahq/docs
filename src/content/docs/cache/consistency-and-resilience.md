@@ -5,20 +5,21 @@ description: Choose what a read must observe and which transient failures may re
 
 In Astilba Cache, consistency controls what a read must observe. Resilience controls which failures may reuse a previously good value. They are related, but they are not the same switch.
 
-These consistency levels become meaningful only when <code>Registry</code>, <code>Bus</code>, and L2 are configured together. Without that invalidation path, the current kernel treats decoded entries as fresh and <code>consistency</code> does not create a live check.
+The **Registry** is the authoritative invalidation record, the **Bus** delivers its updates to active instances, and **L2** is the shared Store used for values and recovery data. See [Core concepts](/cache/core-concepts/) for the complete vocabulary.
+
+These consistency levels become meaningful when <code>Registry</code> and <code>Bus</code> are configured together. L2 is separately required for factory fills and can hold durable replay data. Without the coordinated invalidation path, the current kernel treats decoded entries as fresh and <code>consistency</code> does not create a live check.
 
 ## Choose a consistency level
 
 | Level | Current behavior | Cost |
 | --- | --- | --- |
 | Eventual — default | Uses verified local invalidation knowledge. Unknown or suspect knowledge follows the configured unknown policy. | Usually no Registry round trip on a warm, known hit. Conservative misses or checks occur while knowledge reconverges. |
-| Strong — opt in | Performs a live, un-memoized Registry check before serving or filling. A soft-stale value is refilled in the foreground instead of returned through the eventual stale path. | Adds authoritative coordination to the read and surfaces Registry failures. |
+| Strong — opt in | Performs a live, un-memoized Registry check before serving a stored entry. A soft-stale value is refilled in the foreground instead of returned through the eventual stale path. The documented snapshot does not add a separate pre-fill check on a bare miss. | Adds authoritative coordination to stored-entry reads and surfaces Registry failures. |
 
 Choose strong mode with <code>consistency: "strong"</code> on the call. Although <code>defaults.consistency</code> exists in the public type, the current read path does not consume it and still defaults an omitted call option to eventual.
 
 - Unknown or suspect knowledge never validates an entry as fresh or grace-servable by itself.
-- A hard invalidation observed during a fill can teach the retry a newer invalidation position. The factory-attempt budget is three.
-- Two back-to-back strong reads without an intervening mutation are designed to agree.
+- A hard invalidation observed during a fill can fence the result so it is not written against obsolete invalidation knowledge. The documented snapshot does not rerun that factory within the same read.
 
 Strong mode may still use an eligible stale candidate when its foreground factory fails with a classified transient error and the call declared <code>grace</code>. It rechecks the candidate at serve time; a hard-dead or still-unknown value is not served.
 
@@ -41,7 +42,7 @@ A failed factory does not modify a stored good value. A transient failure may re
 ~~~ts title="loader.ts"
 import { httpError } from "@astilba/cache"
 
-export async function loadArticle(url: URL) {
+export async function loadProduct(url: URL) {
   const response = await fetch(url)
 
   if (!response.ok) {
@@ -74,5 +75,6 @@ An eventual soft-stale read also awaits its refresh in the current implementatio
 ## Related
 
 - [How Cache works](/cache/how-it-works/) explains the invalidation knowledge behind these read decisions.
+- [Core concepts](/cache/core-concepts/) defines Registry, Bus, consistency, and grace in plain language.
 - [Reading and filling](/cache/reading-and-filling/) follows the foreground fill and stale return shapes.
 - [API status](/cache/api-status/) records unfinished timing and unavailable-policy behavior.

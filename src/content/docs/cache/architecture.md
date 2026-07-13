@@ -5,14 +5,16 @@ description: See how the portable Astilba Cache kernel composes storage, coordin
 
 Astilba Cache keeps its behavior in a portable kernel and receives runtime capabilities through typed contracts. The kernel owns keys, scopes, tier order, decode safety, fill coordination, and invalidation decisions. Your runtime supplies storage, coordination, time, randomness, and any custom encoding.
 
+This is an advanced integration page. For application-level definitions and a smaller starting point, begin with [Core concepts](/cache/core-concepts/) or the [preview walkthrough](/cache/quickstart/).
+
 ## Capabilities at the boundary
 
 | Capability | What Cache uses it for | Current requirement |
 | --- | --- | --- |
-| <code>Clock</code> and <code>Rng</code> | Explicit time and randomness. | Required by <code>createCache()</code>. |
-| <code>Store</code> | L1, L2, and replication-mirror reads and writes. | L2 is currently required whenever a factory must run. L1 is optional. |
-| <code>Registry</code> | Authoritative soft, hard, and namespace invalidation. | Required by <code>expire()</code>, <code>delete()</code>, and <code>clear()</code>. |
-| <code>Bus</code> | Ordered invalidation events for active readers. | Participates in coordinated read validation only when Registry and L2 are also configured. |
+| <code>Clock</code> and <code>Rng</code> | Injected time and randomness keep the kernel portable and deterministic in tests. | Required by <code>createCache()</code>; a future runtime preset should normally supply them. |
+| <code>Store</code> | Key/value I/O for local L1, shared L2, and the replication mirror. | L2 is currently required whenever a factory must run. L1 is optional. |
+| <code>Registry</code> | The authoritative record of soft, hard, and namespace invalidation. | Required by <code>expire()</code>, <code>delete()</code>, and <code>clear()</code>. |
+| <code>Bus</code> | The live delivery path for ordered invalidation events. | Participates in coordinated read validation when Registry is also configured. L2 separately supports fills and mirror replay. |
 | <code>Codec</code> | Value encoding and a wire identity checked before decode. | Optional when the built-in JSON round trip is sufficient. |
 | <code>Lock</code> | Cross-isolate exclusion and write arbitration. | Optional and only used when a driver is supplied and the call opts in. |
 | <code>Cdn</code> | A future edge-purge boundary. | Declared but not wired in the current kernel. |
@@ -36,7 +38,7 @@ See [Reading and filling](/cache/reading-and-filling/) for return metadata, sing
 | <code>clock</code> + <code>rng</code> + <code>l2</code> | Reads and fills through the portable kernel without coordinated invalidation. |
 | Add <code>l1</code> | Adds an isolate-local read tier and retains principal-derived, L1-only values. |
 | Add <code>registry</code> | Enables the purge methods. Reads do not build the coordinated invalidation path without Bus. |
-| Add <code>registry</code> + <code>bus</code> together | Enables coordinated validation, live delivery, and mirror recovery. This combination also requires L2. |
+| Add <code>registry</code> + <code>bus</code> together | Enables coordinated validation and live delivery. With L2, a suspect reader can also replay durable delta batches. |
 | Add <code>lock</code> | Allows opted-in calls to coordinate work across isolates. No production Lock driver is exported. |
 | Add a custom <code>codec</code> | Changes the wire format and identity. Accepted older identities must still be decodable by that codec. |
 

@@ -1,60 +1,83 @@
 ---
 title: Overview
-description: Portable TypeScript caching with explicit invalidation, stale-on-error resilience, and privacy-aware scopes.
+description: Understand what Astilba Cache does, where it runs, and whether it fits your application.
 ---
 
-Astilba Cache gives server data explicit invalidation, failure, and sharing rules without tying the correctness model to one runtime or storage vendor.
+Astilba Cache stores the result of expensive server-side work so later calls can reuse it. It is designed for TypeScript applications that read from databases, APIs, or other services and need explicit control over invalidation, failures, and who may share a cached value.
 
-The central idea is that a cache is not only a faster place to read data. Once values are copied across isolates and storage tiers, it becomes a consistency system: the library must know when a value is still legal to serve, what to do when invalidation knowledge is incomplete, and whether a value may enter shared storage at all.
+:::caution[Development preview]
+<code>@astilba/cache</code> is not published and has no supported production setup. Elapsed TTL and grace periods are not enforced, and ready-made runtime and framework adapters are not available. The current documentation describes the source preview accurately; it is not an installation guide.
+:::
 
-- **Guarantee:** Uncertain invalidation knowledge never becomes false freshness.
-- **Trade-off:** Conservative reads may do extra origin work while systems reconverge.
-- **Failure behavior:** Classified transient failures can serve a revalidated stale value.
+## Decide whether Cache fits
 
-## The five decisions in every operation
+| You want to… | Fit |
+| --- | --- |
+| Reuse a database query or API response on the server | This is the intended use case. |
+| Invalidate related server data after a mutation | Tags and soft or hard invalidation are core features. |
+| Keep user-specific results out of shared storage | Privacy-aware scopes are built into the key and write path. |
+| Cache browser requests or React component state | Use a client data-fetching or state library instead. Astilba Cache is a server-side cache. |
+| Add a basic production cache today | Not yet. The package, time-based expiry, and supported runtime adapters must ship first. |
 
-| Decision | Public control | Why it matters |
+For React applications, “server-side” means code such as a route loader, server action, API route, or Server Component—not code running in the browser. See [React and server apps](/cache/react-and-server-apps/) for that boundary.
+
+## Start with one value
+
+Every basic cache operation has three application-level parts:
+
+1. A **key** identifies the result, such as <code>product:sku-123</code>.
+2. A **factory** loads the value when Cache cannot reuse a stored copy.
+3. A **store** holds the encoded result for a later call.
+
+~~~ts
+const product = await cache.getOrSet({
+  key: `product:${productId}`,
+  factory: async ({ signal }) => loadProduct(productId, signal),
+})
+~~~
+
+On a miss, Cache runs <code>loadProduct()</code>, stores its result, and returns it. On a usable hit, it returns the stored value without running the factory.
+
+The current source preview makes you provide the storage, clock, and random source used to construct <code>cache</code>. The [preview walkthrough](/cache/quickstart/) shows that wiring. A future supported runtime adapter should own most of it.
+
+## Add only what you need
+
+| Need | Add | Leave it out when… |
 | --- | --- | --- |
-| Where is the value? | <code>key</code> and <code>namespace</code> | Identifies one cached representation. |
-| What does it depend on? | <code>tags</code> | Lets one source change invalidate every dependent representation. |
-| Who may share it? | <code>scope</code> and request identity | Keeps principal-derived values out of shared storage by default. |
-| What must this read observe? | <code>consistency</code> | Chooses verified local knowledge or a live registry check. |
-| Which failures may reuse old data? | <code>grace</code> and <code>staleIfError</code> | Separates transient outages from facts such as 404 and 403 responses. |
+| Invalidate related values | Dependency tags and a Registry | Values never need explicit invalidation. |
+| Reuse values inside one running server | L1, a local Store | One shared Store is sufficient. |
+| Coordinate invalidation across servers | Registry and Bus; keep L2 for fills and durable delta replay | The application has only one cache instance or does not invalidate. |
+| Cache user or tenant data | Request identity and an explicit scope where sharing is intended | Every value is truly public and its key covers all inputs. |
+| Reuse stale data during an outage | Grace plus a failure classifier | Origin failures should always surface. |
+| Coordinate fills across servers | A Lock driver and <code>lock: true</code> | In-process singleflight is enough. |
+| Change the wire format | A custom Codec | JSON-representable values are sufficient. |
+| Purge a shared HTTP or CDN cache | Planned render collection and CDN integration; this path is not wired yet | You only need application data caching. |
 
-Application code reads and invalidates through one cache instance. Typed drivers provide storage, coordination, time, and randomness; the portable kernel owns the rules above.
+Most application code should begin with <code>getOrSet()</code>. Registry, Bus, locks, codecs, replication, and L3 collection belong to progressively more advanced setups.
 
-## What Cache owns
+## Understand the guarantees
 
-- **Explicit invalidation.** Soft expiration and hard deletion are separate operations with different read behavior.
-- **Resilience by policy.** Fact-like failures stay visible. Transient failures can reuse a stale value only after it is checked again.
-- **Scoped by identity.** Adapter-visible identity keeps user-specific values out of shared storage by default.
-- **Fail-closed recovery.** A bus gap, missing mirror object, or unknown tag suspends warm trust instead of guessing.
-- **Safe fill arbitration.** Compatible callers share in-isolate work, while invalidation fences values produced across a conflicting purge.
+- **Uncertain invalidation knowledge never becomes false freshness.** Cache may perform extra origin work while distributed state reconverges.
+- **Soft and hard invalidation are different.** Soft expiry permits refresh and eligible stale fallback; hard deletion makes older values unreadable.
+- **Identity affects storage.** Principal-derived values stay in local storage unless the application deliberately declares a shareable scope.
+- **Failures are classified.** A transient outage may reuse an eligible stale value; facts such as 403, 404, and 410 remain visible.
 
-## What Cache does not own
+Cache does not update your source of truth. Change the database or upstream service first, then invalidate its cached representations.
 
-- It does not update your database or source of truth. Change the source first, then invalidate its cached representations.
-- It does not make an undeclared closure safe to share. The kernel can guard request data it can see, not arbitrary captured values.
-- It does not currently provide a supported framework adapter, deployment template, CDN purge path, or production bus.
-- It does not yet enforce elapsed TTL, grace, or negative-cache durations. See [API status](/cache/api-status/) for the exact preview boundary.
-
-## Release status
+## Current release status
 
 | Surface | Status | Detail |
 | --- | --- | --- |
 | Correctness kernel | Implemented | Read, fill, scope, codec, resilience, and invalidation behavior is exercised by deterministic tests. |
-| Driver contracts | Implemented | The Cloudflare KV store and Durable Object registry pass the same applicable contracts as the reference drivers. |
-| Cloudflare path | Internal preview | The KV store, Coordinator, registry client, snapshots, and replication recovery run under workerd. The production bus, poll driver, and supported package exports are still missing. |
-| Public package | Not released | The repository is versioned as an unreleased package and has no supported installation path. |
+| Driver contracts | Implemented | Application and runtime integrations can implement the typed capability boundaries. |
+| Cloudflare path | Internal preview | KV storage, the Coordinator, Registry client, and mirror writes run under workerd, but the complete runtime path is not packaged. |
+| Public package | Not released | There is no supported installation, framework adapter, or production deployment path. |
 
-The internal Cloudflare modules are implementation evidence, not public entry points. Keep using the Unreleased docs until the complete runtime path is packaged and supported.
+## Learn in layers
 
-## Choose a path
-
-- [Understand the runtime architecture](/cache/architecture/) and its capability boundaries.
-- [Walk through the preview API](/cache/quickstart/) with a complete development-only store example.
-- [Learn how Cache works](/cache/how-it-works/) to connect a read with invalidation and recovery.
-- [Read and fill a value](/cache/reading-and-filling/) to understand the value and metadata forms.
-- [Invalidate cached data](/cache/tags-and-invalidation/) to choose between soft and hard invalidation.
-- [Check the API status](/cache/api-status/) before relying on a helper or metadata field.
-- [Check driver status](/cache/drivers-and-status/) to see which integrations are real today.
+1. [React and server apps](/cache/react-and-server-apps/) explains where Cache belongs in an application.
+2. [Preview walkthrough](/cache/quickstart/) traces the smallest configuration the current source can run.
+3. [Core concepts](/cache/core-concepts/) defines keys, stores, L1, L2, Registry, Bus, Clock, and the other building blocks.
+4. The guides cover [reading and filling](/cache/reading-and-filling/), [invalidation](/cache/tags-and-invalidation/), and [privacy](/cache/scopes-and-privacy/).
+5. Advanced pages explain the [runtime architecture](/cache/architecture/) and [driver status](/cache/drivers-and-status/).
+6. [API reference](/cache/api-reference/) documents the complete root export surface; [API status](/cache/api-status/) records what is incomplete.

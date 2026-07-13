@@ -7,6 +7,8 @@ sidebar:
 
 In Astilba Cache, tags describe what a value depends on. Invalidation advances tag watermarks, so readers can reject matching entries without scanning or deleting every stored value.
 
+The application changes its source of truth; Cache only changes whether stored representations may be served. See [Core concepts](/cache/core-concepts/) for keys, tags, Registry, and Bus.
+
 ## Choose soft or hard invalidation
 
 | Operation | Effect |
@@ -71,7 +73,7 @@ Do not use those completion fields as rollout or takedown guarantees yet.
 
 ## Configuration boundary
 
-The purge verbs require a <code>Registry</code>. For reads to observe coordinated invalidation, configure <code>Registry</code>, <code>Bus</code>, and L2 together. The production Bus, CDN path, and supported adapter exports are not implemented.
+The purge verbs require a <code>Registry</code>. For reads to observe coordinated invalidation, configure Registry and Bus together. L2 remains required for fills and lets suspect readers replay durable delta batches. The production Bus, CDN path, and supported adapter exports are not implemented.
 
 ## Related
 

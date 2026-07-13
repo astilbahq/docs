@@ -7,6 +7,8 @@ Astilba Cache is unreleased. The portable correctness kernel is active, while ti
 
 Use this page as the preview ledger. “Implemented” means the behavior exists in the public source and is exercised by its test lanes; it does not mean the package has a supported installation or production runtime.
 
+Use [API reference](/cache/api-reference/) for the complete exported surface. This page records implementation status and exceptions.
+
 ## Configuration requirements
 
 | Requirement | Current boundary |
@@ -15,13 +17,13 @@ Use this page as the preview ledger. “Implemented” means the behavior exists
 | <code>l2</code> | Required when a read must run its factory. Without L2, a fill throws <code>NotImplementedError</code>. |
 | <code>l1</code> | Optional. Required if principal-derived, L1-only values should survive beyond the current call. |
 | <code>registry</code> | Required by <code>expire()</code>, <code>delete()</code>, and <code>clear()</code>. |
-| <code>registry</code> + <code>bus</code> + <code>l2</code> | Required as a set for coordinated read validation and replication recovery. Registry plus Bus without L2 throws during construction. Supplying only Registry or only Bus does not build the invalidation reader. |
+| <code>registry</code> + <code>bus</code> | Required together to build coordinated read validation. Supplying only one does not build the invalidation reader. L2 separately enables durable delta replay and remains required when a factory runs. |
 
 ## Implemented in the kernel
 
 | Surface | Current behavior |
 | --- | --- |
-| <code>createCache()</code> | Builds the cache facade, optional invalidation reader, retention registration, and internal replication poller from application-supplied drivers. |
+| <code>createCache()</code> | Builds the cache facade, optional invalidation state, and retention registration from application-supplied drivers. |
 | <code>getOrSet()</code> | Reads L1 then L2 or fills a value with compatible in-isolate singleflight. A fenced terminal miss throws <code>FencedError</code>. |
 | <code>getOrSetEntry()</code> | Adds <code>skip()</code> and returns value, tier, stale, durability, skip, age, and optional error-serve metadata. |
 | <code>expire()</code>, <code>delete()</code>, <code>clear()</code> | Apply soft, hard, and namespace invalidation through a supplied Registry. |
@@ -31,7 +33,7 @@ Use this page as the preview ledger. “Implemented” means the behavior exists
 | Custom <code>Codec</code> and <code>Lock</code> | Participate in decode safety, fill identity, cross-isolate exclusion, and write arbitration. |
 | Telemetry | Emits plain events or HMAC-pseudonymizes hosted string fields when a salt is configured. |
 
-Scope resolution, negative-entry safety, serve-time stale revalidation, codec identity checks, classified L2 write failures, strong live checks, eventual fail-closed behavior, and fence-taught retries are also implemented.
+Scope resolution, negative-entry safety, serve-time stale revalidation, codec identity checks, classified L2 write failures, strong live checks on stored entries, eventual fail-closed behavior, and write-back fencing are also implemented.
 
 ## Partial or provisional behavior
 
@@ -49,8 +51,8 @@ Scope resolution, negative-entry safety, serve-time stale revalidation, codec id
 | Key invalidation | <code>{ key }</code> targets the contextless public canonical key only. Use dependency tags for tenant or principal-derived variants. |
 | Scope-qualified tag selectors | The selector type accepts <code>scope</code>, but the current Registry tag resolution ignores it. A tag purge affects every entry carrying that tag. |
 | Lock option | <code>lock: true</code> uses a configured Lock; without one it silently continues without cross-isolate locking. No production Lock adapter is exported. |
-| Replication poller | Constructed internally and fully tick-driven, but not exposed to a supported adapter. Reactive read-time resync still runs. |
-| Cloudflare adapters | KV, Coordinator, DO Registry, snapshots, and reader recovery are implemented internally and tested under workerd, but are not supported package entry points. |
+| Replication recovery | Suspect reads can reactively replay contiguous L2 delta batches. The documented snapshot has no periodic poller and does not bridge a missing delta with a snapshot. |
+| Cloudflare adapters | KV, Coordinator, DO Registry, and mirror writes are implemented internally and tested under workerd, but are not supported package entry points. |
 | Coordinator journal | Durable and replayable, but still append-only without production checkpointing or truncation. |
 
 ## Throwing placeholders
@@ -84,6 +86,7 @@ Repository tags record engineering milestones. Keep using the Unreleased documen
 
 ## Related
 
-- [API walkthrough](/cache/quickstart/) demonstrates the smallest current source configuration.
+- [Preview walkthrough](/cache/quickstart/) demonstrates the smallest current source configuration.
+- [API reference](/cache/api-reference/) documents every root export and configuration field.
 - [Runtime architecture](/cache/architecture/) maps configuration requirements to capability contracts.
 - [Drivers and runtime status](/cache/drivers-and-status/) separates public contracts from internal integrations.

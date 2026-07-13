@@ -5,6 +5,8 @@ description: Keep identity-bearing values local while allowing deliberate public
 
 In Astilba Cache, scope answers a storage question: may this value leave the current isolate and enter a shared tier?
 
+L1 is local to one process or worker; L2 is shared or durable. See [Core concepts](/cache/core-concepts/) for the complete storage vocabulary.
+
 ## Follow the resolution rules
 
 | Inputs | Resolved storage class | Current behavior |
