@@ -1,51 +1,78 @@
 ---
 title: Consistency and resilience
-description: Choose how quickly reads observe invalidation and how transient failures use stale data.
+description: Choose what a read must observe and which transient failures may reuse a stale value.
 ---
 
-Consistency controls what a read must observe. Resilience controls which failures may reuse a previously good value. They are related, but they are not the same switch.
+In Astilba Cache, consistency controls what a read must observe. Resilience controls which failures may reuse a previously good value. They are related, but they are not the same switch.
 
-These consistency levels become active when the cache is configured with its coordinated <code>Registry</code>, <code>Bus</code>, and L2 mirror path.
+These consistency levels become meaningful only when <code>Registry</code>, <code>Bus</code>, and L2 are configured together. Without that invalidation path, the current kernel treats decoded entries as fresh and <code>consistency</code> does not create a live check.
 
-## Consistency levels
+## Choose a consistency level
 
-| Level | Behavior |
+| Level | Current behavior | Cost |
+| --- | --- | --- |
+| Eventual — default | Uses verified local invalidation knowledge. Unknown or suspect knowledge follows the configured unknown policy. | Usually no Registry round trip on a warm, known hit. Conservative misses or checks occur while knowledge reconverges. |
+| Strong — opt in | Performs a live, un-memoized Registry check before serving or filling. A soft-stale value is refilled in the foreground instead of returned through the eventual stale path. | Adds authoritative coordination to the read and surfaces Registry failures. |
+
+Choose strong mode with <code>consistency: "strong"</code> on the call. Although <code>defaults.consistency</code> exists in the public type, the current read path does not consume it and still defaults an omitted call option to eventual.
+
+- Unknown or suspect knowledge never validates an entry as fresh or grace-servable by itself.
+- A hard invalidation observed during a fill can teach the retry a newer invalidation position. The factory-attempt budget is three.
+- Two back-to-back strong reads without an intervening mutation are designed to agree.
+
+Strong mode may still use an eligible stale candidate when its foreground factory fails with a classified transient error and the call declared <code>grace</code>. It rechecks the candidate at serve time; a hard-dead or still-unknown value is not served.
+
+## Decide what unknown means
+
+Set <code>defaults.unknownPolicy</code> for eventual reads:
+
+| Policy | Result |
 | --- | --- |
-| Eventual — default | Uses verified local invalidation knowledge. If knowledge is missing or suspect, the read checks the registry or becomes a miss. |
-| Strong — opt in | Checks authoritative registry state before serving or filling. A soft-stale value is refilled in the foreground rather than returned directly through stale-while-revalidate. |
+| <code>registry-check</code> — default | Ask the Registry for live tag watermarks. If the check cannot establish safety, the read fails closed. |
+| <code>miss</code> | Treat the entry as unusable and continue to the fill path. |
+| <code>error</code> | Declared as an error posture, but the current read path still treats the unknown entry as a miss and continues to fill. Do not rely on an exception yet. |
 
-- **Unknown knowledge** never validates an entry as fresh or grace-servable.
-- **Hard invalidation** observed during a fill can teach the retry a newer invalidation position. The retry budget is three attempts.
-- **Strong failure** surfaces registry unavailability instead of silently trusting local state.
+<code>takedownSensitive: true</code> selects that same provisional <code>error</code> branch unless an explicit policy overrides it; it does not yet produce a takedown-safe exception. The typed <code>defaults.onUnavailable</code> option is also not implemented. A failed strong Registry call currently propagates the driver's error rather than degrading to eventual or being wrapped as <code>RegistryUnavailableError</code>.
 
-Strong mode may still use an eligible stale candidate when its foreground factory fails with a classified transient error. It never uses that candidate without checking it again at serve time.
+## Serve stale data only for classified failures
 
-## Stale on error
-
-A failed factory does not modify a stored good value. A classified transient failure may serve a stale candidate only after the candidate is revalidated at serve time.
+A failed factory does not modify a stored good value. A transient failure may reuse a stale candidate only after the candidate is revalidated at serve time.
 
 ~~~ts title="loader.ts"
-import { httpError, isRetriableHttp } from "@astilba/cache"
+import { httpError } from "@astilba/cache"
 
-const response = await fetch(url)
+export async function loadArticle(url: URL) {
+  const response = await fetch(url)
 
-if (!response.ok) {
-  throw httpError(response)
+  if (!response.ok) {
+    throw httpError(response)
+  }
+
+  return response.json()
 }
-
-isRetriableHttp(new TypeError("network unavailable")) // true
 ~~~
 
-The default classifier covers network failures, cache-originated timeouts, common transient HTTP statuses, and Cloudflare origin/gateway statuses in the 520–527 range plus 530. You can replace it with <code>defaults.staleIfError</code>.
+The default <code>isRetriableHttp()</code> classifier accepts:
 
-## Facts stay visible
+- any <code>TypeError</code>, intended to cover fetch and network rejections;
+- cache-originated <code>CacheTimeoutError</code> values;
+- HTTP 408, 425, 429, 500, 502, 503, and 504;
+- Cloudflare 520–527 and 530 responses.
 
-Authentication failures, permission failures, and not-found responses are not generic outages. Negative entries are never served through grace or stale-on-error.
+Caller-originated timeouts and fact-like HTTP responses such as 403, 404, and 410 are not retriable by default. Replace the classifier with <code>defaults.staleIfError</code> when your application has a different failure vocabulary.
 
-Set <code>notFoundTtl</code> on a call to opt into remembering a 404. A negative result cannot displace an existing value that remains eligible for resilience handling.
+## Keep facts visible
 
-## Timing status
+Negative entries are never served through grace or stale-on-error. Declaring <code>notFoundTtl</code> opts an <code>HttpError</code> with status 404 into a negative write, and a negative result cannot displace a still-servable value.
 
-:::caution[Temporal behavior is still incomplete]
-TTL and grace options exist, but their full expiry behavior is not ready. Entry <code>age</code> remains zero, duration validation is unfinished, and refreshes are not yet adopted into the planned background queue lifecycle.
+:::caution[Durations are not enforced]
+The presence of <code>grace</code> currently opts a stale candidate into error fallback, but elapsed grace is not measured. Likewise, <code>notFoundTtl</code> opts into a negative entry without expiring it after the declared duration. Full TTL, grace, and age behavior is unfinished.
 :::
+
+An eventual soft-stale read also awaits its refresh in the current implementation, then returns the stale value. Background adoption, queue retry, and refresh completion tracking are not yet present.
+
+## Related
+
+- [How Cache works](/cache/how-it-works/) explains the invalidation knowledge behind these read decisions.
+- [Reading and filling](/cache/reading-and-filling/) follows the foreground fill and stale return shapes.
+- [API status](/cache/api-status/) records unfinished timing and unavailable-policy behavior.

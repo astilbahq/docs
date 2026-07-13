@@ -2,6 +2,7 @@
 .astro/
 dist/
 node_modules/
+.wrangler/
 
 ## Panda
 styled-system

@@ -40,7 +40,7 @@
   .sl-markdown-content a:not(.sl-anchor-link):not(:where(.not-content *)) {
     color: var(--astilba-colors-link);
     font-weight: var(--astilba-font-weights-medium);
-    text-decoration-color: var(--astilba-colors-link-decoration);
+    text-decoration-color: currentColor;
     text-decoration-thickness: 1px;
     text-underline-offset: 4px;
   }

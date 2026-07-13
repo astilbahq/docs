@@ -1,4 +1,5 @@
-import { css } from "../../styled-system/css";
+import { css, cx } from "../../styled-system/css";
+import { menuStyles } from "./ui/Menu.styles";
 
 export const docsSidebarStyles = {
   root: css({
@@ -94,63 +95,15 @@ export const docsSidebarStyles = {
       transitionDuration: "instant",
     },
   }),
-  selectorPositioner: css({
-    zIndex: "var(--sl-z-index-menu)",
+  selectorPositioner: cx(menuStyles.positioner, css({
     inlineSize: "calc(var(--anchor-width) - 1rem)",
-    maxInlineSize: "calc(100vi - 1rem)",
-  }),
-  selectorMenu: css({
-    boxSizing: "border-box",
+  })),
+  selectorMenu: cx(menuStyles.popup, css({
     inlineSize: "100%",
-    maxBlockSize: "min(var(--available-height), 24rem)",
-    overflowBlock: "auto",
-    borderWidth: 0,
-    borderRadius: 0,
-    padding: "menuInset",
-    background: "surface.elevated",
-    color: "ink.default",
-    boxShadow: "elevated",
-    outline: 0,
-    transformOrigin: "var(--transform-origin)",
-    transform: "scale(1)",
-    transitionProperty: "transform, opacity",
-    transitionDuration: "menuOpen",
-    transitionTimingFunction: "outQuint",
-    _startingStyle: {
-      opacity: 0,
-      transform: "scale(0.97)",
-    },
-    _endingStyle: {
-      opacity: 0,
-      transform: "scale(0.99)",
-      transitionDuration: "menuClose",
-    },
-    '&[data-input-modality="keyboard"]:focus-visible': {
-      outlineColor: "signal",
-      outlineOffset: "0.125rem",
-      outlineStyle: "solid",
-      outlineWidth: "0.125rem",
-    },
-    _reducedMotion: {
-      transitionDuration: "instant",
-    },
-  }),
-  selectorOption: css({
-    display: "flex",
+  })),
+  selectorOption: cx(menuStyles.item, css({
     minBlockSize: "2.75rem",
-    alignItems: "center",
-    gap: "0.625rem",
-    paddingBlock: "0.5rem",
-    paddingInline: "0.75rem",
-    color: "ink.default",
     fontSize: "0.875rem",
-    textDecoration: "none",
-    outline: 0,
-    cursor: "pointer",
-    "&:is(:hover, [data-highlighted])": {
-      background: "surface.highlight",
-      color: "ink.strong",
-    },
     '&[aria-current="true"]': {
       background: "surface.selected",
       color: "ink.strong",
@@ -159,31 +112,12 @@ export const docsSidebarStyles = {
     '&[aria-current="true"]:is(:hover, [data-highlighted])': {
       background: "surface.selected",
     },
-    '[data-input-modality="keyboard"] &': {
-      _highlighted: {
-        outlineColor: "signal",
-        outlineOffset: "-0.125rem",
-        outlineStyle: "solid",
-        outlineWidth: "0.125rem",
-      },
-    },
     desktop: {
       minBlockSize: "2.5rem",
     },
-  }),
-  selectorLabel: css({
-    minInlineSize: 0,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-  }),
-  selectorTrailing: css({
-    display: "flex",
-    flex: "0 0 auto",
-    alignItems: "center",
-    gap: "0.625rem",
-    marginInlineStart: "auto",
-  }),
+  })),
+  selectorLabel: menuStyles.label,
+  selectorTrailing: menuStyles.trailing,
   badge: css({
     display: "inline-flex",
     flex: "0 0 auto",

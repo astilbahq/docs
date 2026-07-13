@@ -249,10 +249,6 @@ export default defineConfig({
               "{colors.palette.dark.signal}",
               "{colors.palette.light.signal}"
             ),
-            decoration: themedColor(
-              "color-mix(in oklab, {colors.palette.dark.signal} 70%, transparent)",
-              "color-mix(in oklab, {colors.palette.light.signal} 70%, transparent)"
-            ),
           },
           callout: {
             note: {

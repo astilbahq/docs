@@ -1,0 +1,101 @@
+---
+import { Icon } from "@astrojs/starlight/components";
+import Search from "virtual:starlight/components/Search";
+import { css } from "../../styled-system/css";
+import Button from "./ui/Button.astro";
+
+const rootClass = css({ display: "contents" });
+const mobileTriggerClass = css({
+  display: { base: "inline-flex", desktop: "none" },
+});
+const nativeSearchClass = css({
+  "& > button[data-open-modal]": {
+    display: { base: "none", desktop: "flex" },
+  },
+});
+
+const searchLabel = Astro.locals.t("search.label");
+---
+
+<astilba-header-search class={rootClass}>
+  <Button
+    aria-haspopup="dialog"
+    aria-keyshortcuts="Control+K"
+    aria-label={searchLabel}
+    class={mobileTriggerClass}
+    data-mobile-search-trigger
+    disabled
+    iconOnly
+    title={searchLabel}
+  >
+    <Icon name="magnifier" size="1rem" />
+  </Button>
+  <Search class={nativeSearchClass} />
+</astilba-header-search>
+
+<script>
+  const elementName = "astilba-header-search";
+
+  class AstilbaHeaderSearch extends HTMLElement {
+    private mobileTrigger: HTMLButtonElement | null = null;
+    private nativeTrigger: HTMLButtonElement | null = null;
+
+    private readonly handleClick = (event: MouseEvent): void => {
+      event.stopPropagation();
+      this.nativeTrigger?.click();
+    };
+
+    connectedCallback(): void {
+      if (this.mobileTrigger) {
+        return;
+      }
+
+      const mobileTrigger = this.querySelector(
+        "button[data-mobile-search-trigger]"
+      );
+
+      if (!(mobileTrigger instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      this.mobileTrigger = mobileTrigger;
+      this.mobileTrigger.addEventListener("click", this.handleClick);
+      void this.connectNativeSearch();
+    }
+
+    disconnectedCallback(): void {
+      this.mobileTrigger?.removeEventListener("click", this.handleClick);
+      this.mobileTrigger = null;
+      this.nativeTrigger = null;
+    }
+
+    private async connectNativeSearch(): Promise<void> {
+      await customElements.whenDefined("site-search");
+
+      if (!this.isConnected || !this.mobileTrigger) {
+        return;
+      }
+
+      const nativeTrigger = this.querySelector(
+        "site-search > button[data-open-modal]"
+      );
+
+      if (!(nativeTrigger instanceof HTMLButtonElement)) {
+        return;
+      }
+
+      this.nativeTrigger = nativeTrigger;
+      this.mobileTrigger.disabled = nativeTrigger.disabled;
+
+      const keyShortcuts = nativeTrigger.getAttribute("aria-keyshortcuts");
+
+      if (keyShortcuts) {
+        this.mobileTrigger.setAttribute("aria-keyshortcuts", keyShortcuts);
+      }
+    }
+  }
+
+  if (!customElements.get(elementName)) {
+    customElements.define(elementName, AstilbaHeaderSearch);
+  }
+</script>

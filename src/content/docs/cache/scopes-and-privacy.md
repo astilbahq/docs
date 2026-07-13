@@ -3,13 +3,18 @@ title: Scopes and privacy
 description: Keep identity-bearing values local while allowing deliberate public and tenant sharing.
 ---
 
-Scope answers a storage question: may this value leave the current isolate and enter a shared tier?
+In Astilba Cache, scope answers a storage question: may this value leave the current isolate and enter a shared tier?
 
-## How scope resolves
+## Follow the resolution rules
 
-1. **Declared scope wins.** Use <code>public</code> or a tenant scope when sharing is an explicit part of the cache key.
-2. **Visible identity stays local.** An undeclared scope with an adapter-derived principal becomes a hashed user scope and remains in L1.
-3. **No identity becomes shared.** A contextless call with no principal resolves to the public storage class.
+| Inputs | Resolved storage class | Current behavior |
+| --- | --- | --- |
+| <code>scope: "public"</code> | <code>pub</code> | Eligible for shared L2, subject to the development request guard below. |
+| <code>scope: { tenant }</code> | Hashed <code>ten:&lt;h&gt;</code> | Eligible for shared L2; the raw tenant identifier is not stored in the scope segment. |
+| No declared scope and a visible principal | Hashed <code>usr:&lt;h&gt;</code> | L1-only and <code>durable: false</code>. |
+| No declared scope and no visible principal | <code>pub</code> | Eligible for shared L2. |
+
+The kernel currently derives a principal from primitive <code>request.userId</code> or <code>request.tenant</code> values, in that order. Other request fields do not affect automatic scope resolution.
 
 ~~~ts title="profile.ts"
 const entry = await cache.getOrSetEntry({
@@ -18,16 +23,33 @@ const entry = await cache.getOrSetEntry({
   factory: async () => loadProfile(userId),
 })
 
-entry.durable // false — principal-derived values stay local
+entry.durable // false — principal-derived values never reach shared L2
 ~~~
 
-## Public is an enforced claim
+## Retain private values with L1
 
-With <code>dev: true</code>, reading guarded request data inside an explicitly public factory demotes that fill from shared storage. The runtime can protect the identity it can see; it cannot inspect values captured invisibly in arbitrary closures.
+A principal-derived fill still needs L2 to run in the current kernel, but the result deliberately skips the L2 write. Configure an L1 <code>Store</code> if you want the private value retained for a later call on the same isolate. Without L1, the current call succeeds with <code>durable: false</code> and the next call fills again.
 
-## Tenant sharing is deliberate
+## Treat public as a claim
 
-A tenant-only request still contains visible identity. Use an explicit tenant scope when anonymous traffic within one tenant should share a durable value.
+With <code>dev: true</code>, Cache wraps <code>ctx.request</code> for an explicitly public factory. Reading any request property demotes that fill to L1-only storage. Merely attaching a request does not demote it; the factory must read through the guarded context.
+
+~~~ts title="public-feed.ts"
+const entry = await cache.getOrSetEntry({
+  key: "feed",
+  request: { userId },
+  scope: "public",
+  factory: async (ctx) => loadFeed(ctx.request?.userId),
+})
+
+entry.durable // false in dev: the public factory read request data
+~~~
+
+This guard is a development aid, not closure analysis. It cannot see identity captured outside <code>ctx.request</code>, and production mode does not install the demoting Proxy. You remain responsible for making every explicit public or tenant cache key cover the data it can expose.
+
+## Make tenant sharing deliberate
+
+A request containing only <code>tenant</code> still has visible identity, so an undeclared scope becomes principal-derived and L1-only. Declare a tenant scope when values are intentionally shared inside one tenant.
 
 ~~~ts title="tenant-settings.ts"
 await cache.getOrSet({
@@ -37,10 +59,16 @@ await cache.getOrSet({
 })
 ~~~
 
-:::caution[Contextless work must declare identity]
-Queue consumers, cron jobs, and other contextless code default to shared storage when no principal is visible. Set an explicit scope whenever that code caches user-derived data.
+:::caution[Contextless work defaults to shared]
+Queue consumers, cron jobs, and other contextless code resolve to the public storage class when no principal is visible. Declare a tenant or otherwise separate the key whenever that work caches identity-bearing data.
 :::
 
 ## Telemetry follows the same posture
 
-When telemetry is configured as hosted, the kernel pseudonymizes emitted string fields with a project salt; the event type remains structural. Raw keys and tags do not belong in a hosted event stream.
+A plain telemetry sink receives events as emitted and may contain raw identifiers. When <code>telemetry.hosted</code> is true and a project salt is supplied, the kernel HMAC-pseudonymizes every string field except the structural event type. A hosted configuration without a salt suppresses events rather than forwarding raw strings.
+
+## Related
+
+- [Runtime architecture](/cache/architecture/) shows how L1 and L2 fit into a configured cache.
+- [Reading and filling](/cache/reading-and-filling/) explains durability metadata and tier selection.
+- [Invalidating data](/cache/tags-and-invalidation/) covers the limits of key and scope-qualified selectors.

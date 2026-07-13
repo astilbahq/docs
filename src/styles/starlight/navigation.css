@@ -84,12 +84,15 @@
     box-shadow: none;
   }
 
-  starlight-menu-button button {
-    border-radius: 0;
-    box-shadow: none;
+  body[data-mobile-menu-expanded] {
+    overflow: hidden;
   }
 
   @media (min-width: 50rem) {
+    body[data-mobile-menu-expanded] {
+      overflow: auto;
+    }
+
     #starlight__sidebar {
       scrollbar-gutter: auto;
     }

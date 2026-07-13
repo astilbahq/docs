@@ -35,13 +35,29 @@ export const ghostControl = cva({
     _active: {
       background: "surface.pressed",
     },
+    _disabled: {
+      background: "transparent",
+      color: "ink.faint",
+      cursor: "wait",
+    },
   },
   variants: {
+    appearance: {
+      ghost: {},
+      outline: {
+        borderWidth: "1px",
+        borderStyle: "solid",
+        borderColor: "border.chrome",
+      },
+    },
     iconOnly: {
       true: {
         inlineSize: "2rem",
         paddingInline: 0,
       },
     },
+  },
+  defaultVariants: {
+    appearance: "ghost",
   },
 });

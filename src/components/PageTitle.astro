@@ -1,7 +1,14 @@
 ---
 import { css } from "../../styled-system/css";
+import { findDocsContext } from "../docs/catalog";
+import { getDocsSourceUrl } from "../docs/source";
+import { PageActions } from "./PageActions";
 
-const { title, description } = Astro.locals.starlightRoute.entry.data;
+const { entry } = Astro.locals.starlightRoute;
+const { title, description } = entry.data;
+const docsContext = findDocsContext(Astro.url.pathname);
+const sourceUrl = getDocsSourceUrl(entry.filePath, entry.id);
+const markdownPath = `/${entry.id}.md`;
 
 const titleClass = css({
   margin: 0,
@@ -25,3 +32,12 @@ const descriptionClass = css({
 
 <h1 class={titleClass} id="_top">{title}</h1>
 {description && <p class={descriptionClass}>{description}</p>}
+{
+  docsContext && (
+    <PageActions
+      client:load
+      markdownPath={markdownPath}
+      sourceUrl={sourceUrl}
+    />
+  )
+}

@@ -42,7 +42,6 @@
       --astilba-colors-surface-scrim,
       --astilba-colors-link,
       --astilba-colors-link-hover,
-      --astilba-colors-link-decoration,
       --astilba-colors-callout-note-accent,
       --astilba-colors-callout-note-foreground,
       --astilba-colors-callout-tip-accent,
@@ -119,6 +118,7 @@
     cursor: pointer;
     font-size: 0.875rem;
     font-weight: var(--astilba-font-weights-brand);
+    line-height: 1rem;
   }
 
   header .site-title img {
@@ -196,6 +196,14 @@
   #starlight__search .pagefind-ui__search-input::placeholder {
     color: var(--astilba-colors-ink-muted);
     opacity: 1;
+  }
+
+  @media (max-width: 49.999rem) {
+    body > .page > header {
+      padding-inline-end: calc(
+        var(--sl-nav-pad-x) + var(--sl-menu-button-size) + 0.125rem
+      );
+    }
   }
 
   @media (min-width: 50rem) {

@@ -1,49 +1,103 @@
 ---
-title: Quickstart
-description: Preview one Cache read from typed drivers to a filled value. Cache is not yet available for production installation.
+title: API walkthrough
+description: Trace one Astilba Cache operation with an explicit development-only Store. This is not an installation path.
 ---
 
-:::caution[Not an installation guide]
-Cache cannot yet be installed for production use. This walkthrough previews the public API while its tested Cloudflare components remain internal and unsupported as package imports.
+:::caution[Illustrative source walkthrough]
+<code>@astilba/cache</code> is not published and has no supported install path. This example can run only against the current repository source. Its in-memory <code>Store</code> demonstrates the API; it is not a production driver or deployment recipe.
 :::
 
-A cache operation starts with explicit runtime dependencies, then reads a key or asks its factory to produce the value.
+An Astilba Cache instance needs an explicit clock and random source. A factory fill currently also needs an L2 <code>Store</code>. This walkthrough supplies the smallest useful implementation of those contracts.
 
-## Before you start
-
-Every cache instance needs a <code>Clock</code> and <code>Rng</code>. A fill currently also needs an application-supplied L2 <code>Store</code>.
-
-Add a <code>Registry</code> and <code>Bus</code> together when you want coordinated invalidation. That configuration also uses L2 to recover invalidation state after a transport gap. The example below assumes you have supplied those drivers; the internal Cloudflare implementations are not public exports yet.
-
-## Read or fill one article
-
-1. **Create a namespaced cache.** Pass the runtime drivers that host the portable kernel.
-2. **Describe the value.** Give the operation a key, an invalidation tag, and a factory.
-3. **Use the returned value.** <code>getOrSet</code> resolves to the cached or newly loaded article.
+## Read or fill one product
 
 ~~~ts title="cache.ts"
-import { compound, createCache } from "@astilba/cache";
+import { compound, createCache } from "@astilba/cache"
+import type {
+  Clock,
+  Rng,
+  Store,
+  StoreValue,
+  StoreWriteOptions,
+} from "@astilba/cache"
+
+class DevelopmentStore implements Store {
+  readonly #values = new Map<string, StoreValue>()
+
+  async get(key: string): Promise<StoreValue | undefined> {
+    return this.#values.get(key)
+  }
+
+  async set(
+    key: string,
+    value: string,
+    options?: StoreWriteOptions,
+  ): Promise<void> {
+    this.#values.set(key, {
+      value,
+      ...(options?.metadata === undefined
+        ? {}
+        : { metadata: options.metadata }),
+    })
+  }
+
+  async delete(key: string): Promise<void> {
+    this.#values.delete(key)
+  }
+}
+
+interface Product {
+  id: string
+  name: string
+}
+
+const clock: Clock = { now: () => Date.now() }
+const rng: Rng = { next: () => Math.random() }
+const store = new DevelopmentStore()
 
 const cache = createCache({
-  namespace: "journal",
+  namespace: "storefront",
   clock,
   rng,
   l2: store,
-  registry,
-  bus,
 })
 
-const article = await cache.getOrSet({
-  key: `article:${articleId}`,
-  tags: [compound("article", articleId)],
-  factory: async ({ signal }) => loadArticle(articleId, signal),
-})
+const productId = "sku-123"
+let originLoads = 0
+
+const loadProduct = async (id: string): Promise<Product> => {
+  originLoads += 1
+  return { id, name: "Canvas backpack" }
+}
+
+const options = {
+  key: `product:${productId}`,
+  tags: [compound("product", productId)],
+  factory: async ({ signal }: { signal: AbortSignal }) => {
+    if (signal.aborted) throw signal.reason
+    return loadProduct(productId)
+  },
+}
+
+const first = await cache.getOrSet(options)
+const second = await cache.getOrSet(options)
+
+console.log(first, second, originLoads) // same product, one origin load
 ~~~
 
-## What the call means
+The first call misses, runs the factory, and writes the value to the supplied store. The second call resolves the same canonical key and reads that stored value. The compound tag records a stable dependency target for later invalidation.
 
-Cache checks its configured tiers for a readable entry. When it cannot serve one, the factory loads the article. The compound tag gives later invalidation a stable dependency target.
+## What this example leaves out
 
-## Go deeper
+- It has no L1, so all retained values live in the supplied store.
+- It has no Registry or Bus, so tag and key invalidation methods are not usable.
+- It deliberately omits TTL and grace because elapsed-time behavior is unfinished.
+- Its Store has no durability, replication, limits, or write classification.
 
-Continue to [Reading and filling](/cache/reading-and-filling/) for the metadata-rich entry form, intentional skips, and the full fill lifecycle.
+For coordinated invalidation, add <code>registry</code> and <code>bus</code> together with L2; do not add only one. The tested Cloudflare implementations are still internal and cannot be imported from a supported package entry point.
+
+## Related
+
+- [Runtime architecture](/cache/architecture/) shows where each supplied capability fits.
+- [How Cache works](/cache/how-it-works/) follows the complete read, invalidation, and recovery path.
+- [Reading and filling](/cache/reading-and-filling/) explains return metadata and fill behavior.

@@ -11,16 +11,45 @@ const cacheSections = [
         icon: "open-book",
       },
       {
+        key: "architecture",
+        label: "Runtime architecture",
+        slug: "architecture",
+        icon: "code-branch",
+      },
+      {
         key: "quickstart",
-        label: "Quickstart",
+        label: "API walkthrough",
         slug: "quickstart",
         icon: "rocket",
       },
+      {
+        key: "how-it-works",
+        label: "How Cache works",
+        slug: "how-it-works",
+        icon: "code-branch",
+      },
+    ],
+  },
+  {
+    label: "Guides",
+    items: [
       {
         key: "reading-and-filling",
         label: "Reading and filling",
         slug: "reading-and-filling",
         icon: "database",
+      },
+      {
+        key: "tags-and-invalidation",
+        label: "Invalidating data",
+        slug: "tags-and-invalidation",
+        icon: "link",
+      },
+      {
+        key: "scopes-and-privacy",
+        label: "Scopes and privacy",
+        slug: "scopes-and-privacy",
+        icon: "padlock",
       },
     ],
   },
@@ -28,22 +57,10 @@ const cacheSections = [
     label: "Concepts",
     items: [
       {
-        key: "tags-and-invalidation",
-        label: "Tags and invalidation",
-        slug: "tags-and-invalidation",
-        icon: "link",
-      },
-      {
         key: "consistency-and-resilience",
         label: "Consistency and resilience",
         slug: "consistency-and-resilience",
         icon: "approve-check-circle",
-      },
-      {
-        key: "scopes-and-privacy",
-        label: "Scopes and privacy",
-        slug: "scopes-and-privacy",
-        icon: "padlock",
       },
     ],
   },

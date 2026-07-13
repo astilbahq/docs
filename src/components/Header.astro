@@ -1,6 +1,5 @@
 ---
 import config from "virtual:starlight/user-config";
-import Search from "virtual:starlight/components/Search";
 import SiteTitle from "virtual:starlight/components/SiteTitle";
 import { Icon } from "@astrojs/starlight/components";
 import { css } from "../../styled-system/css";
@@ -10,6 +9,7 @@ import {
   getPageHref,
 } from "../docs/catalog";
 import ThemeToggle from "./ThemeToggle.astro";
+import HeaderSearch from "./HeaderSearch.astro";
 import LinkButton from "./ui/LinkButton.astro";
 
 const shouldRenderSearch =
@@ -47,7 +47,7 @@ const productLinkClass = css({
   cursor: "pointer",
   fontSize: "0.875rem",
   fontWeight: "brand",
-  lineHeight: 1,
+  lineHeight: "1rem",
   textDecoration: "none",
 });
 const actionsClass = css({
@@ -107,7 +107,7 @@ const placeholderStarCount = "128";
     }
   </div>
   <div aria-label="Site actions" class:list={[actionsClass, "print:hidden"]} role="group">
-    {shouldRenderSearch && <Search />}
+    {shouldRenderSearch && <HeaderSearch />}
     <LinkButton
       aria-label={`Astilba on GitHub, ${placeholderStarCount} stars`}
       href={githubHref}

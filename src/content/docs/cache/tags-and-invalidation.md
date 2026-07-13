@@ -1,50 +1,80 @@
 ---
-title: Tags and invalidation
-description: Mark data stale, make it unreadable, or invalidate one canonical key.
+title: Invalidating data
+description: Mark dependent values stale, make them unreadable, or invalidate one contextless public key.
+sidebar:
+  label: Tags and invalidation
 ---
 
-Tags describe what a value depends on. Invalidation changes how every matching entry may be read without scanning stored values.
+In Astilba Cache, tags describe what a value depends on. Invalidation advances tag watermarks, so readers can reject matching entries without scanning or deleting every stored value.
 
-## Two verbs, two outcomes
+## Choose soft or hard invalidation
 
 | Operation | Effect |
 | --- | --- |
-| <code>expire()</code> — soft | Marks matching values stale. An eventual read may return the stale value while the preview performs a best-effort refresh for a later read. |
-| <code>delete()</code> — hard | Makes matching values unreadable wherever that invalidation is visible. Grace cannot resurrect them. |
+| <code>expire()</code> — soft | Values born before the new soft watermark become stale. An eventual read may return the old value after attempting a refresh for a later read. |
+| <code>delete()</code> — hard | Values born before the new hard watermark become unreadable wherever that invalidation is visible. Grace cannot resurrect them. |
 
 ~~~ts title="invalidation.ts"
-const articleTag = compound("article", articleId)
+const productTag = compound("product", productId)
 
-// Mark matching entries stale.
-await cache.expire({ tag: articleTag })
+// Mark every entry carrying the tag stale.
+await cache.expire({ tag: productTag })
 
-// Make matching entries unreadable.
-await cache.delete({ tag: articleTag })
-
-// The key form uses the same invalidation machinery.
-await cache.expire({ key: `article:${articleId}` })
+// Make every entry carrying the tag unreadable.
+await cache.delete({ tag: productTag })
 ~~~
 
 :::caution[Change the source first]
-Invalidating a cached representation does not remove or update the underlying record. Apply the source-of-truth change before issuing a hard invalidation so a refill cannot reproduce the old value.
+Invalidating a cached representation does not update or remove the underlying record. Apply the source-of-truth change before issuing a hard invalidation so a refill cannot reproduce the old value.
 :::
 
 ## Build unambiguous tags
 
-<code>compound()</code> encodes each positional part so delimiters and empty values cannot collapse distinct dependency vectors into the same tag.
+<code>compound()</code> escapes percent signs and delimiters, then prefixes the vector's arity. Delimiter-like values, empty strings, and vectors of different lengths therefore remain distinct.
 
-:::note[Reserved tags stay internal]
-User tags beginning with <code>__</code> are rejected. Per-key and per-namespace tags are created by the kernel.
-:::
+~~~ts
+const productTag = compound("product", productId)
+const categoryListingTag = compound("category", categoryId, "listing")
+~~~
+
+Caller-supplied tags on <code>getOrSet()</code> and <code>getOrSetEntry()</code> are rejected when they begin with <code>__</code>. The kernel reserves that prefix for its per-key and per-namespace tags. The <code>Tag</code> brand prevents ordinary raw-string selectors; do not bypass it with a type assertion.
+
+## Invalidate by key carefully
+
+The key selector maps a user key to Cache's reserved per-key tag:
+
+~~~ts
+await cache.expire({ key: `product:${productId}` })
+await cache.delete({ key: `product:${productId}` })
+~~~
+
+In the current kernel, that selector resolves the **contextless public** canonical key: it has no request or scope input. It does not target principal-derived or tenant-scoped variants of the same user key. Use a dependency tag when data can exist in more than one scope.
+
+The selector types also expose <code>scope</code> on tag invalidation, but the current implementation does not apply it when resolving the Registry tag. Treat a tag purge as affecting every cached entry carrying that tag; do not rely on scope-qualified tag invalidation yet.
 
 ## Clear a namespace
 
-<code>clear()</code> advances the local namespace version and emits a hard namespace invalidation. New keys and lagging readers therefore converge through the same mechanism.
+<code>clear()</code> bumps the calling instance's namespace version and issues a hard invalidation for the reserved namespace tag. The version makes old keys unreachable on that instance; the hard watermark makes other readers reject pre-clear entries as the invalidation reaches them.
 
-## Completion status
+## Understand the result
 
-<code>expire()</code>, <code>delete()</code>, and <code>clear()</code> return an epoch and a best-effort <code>matchedHint</code>. In the current preview, <code>flushed()</code> and <code>edgePurged()</code> resolve without measuring mirror or edge completion. Do not use those promises as deployment guarantees yet.
+<code>expire()</code>, <code>delete()</code>, and <code>clear()</code> return a <code>PurgeResult</code> with an epoch, <code>matchedHint</code>, <code>flushed()</code>, and <code>edgePurged()</code>.
 
-## Runtime status
+In the current preview:
 
-The invalidation semantics are implemented and verified against deterministic drivers. A Cloudflare Coordinator and registry client now run in the workerd integration lane, together with a KV replication mirror and conservative reader. The production bus, edge purge path, and supported adapter exports are still missing.
+- <code>matchedHint</code> is always <code>"unknown"</code>;
+- <code>flushed()</code> resolves immediately without measuring mirror acceptance;
+- <code>edgePurged()</code> resolves immediately without invoking a CDN queue;
+- the <code>cdn</code> option on <code>delete()</code> is not wired.
+
+Do not use those completion fields as rollout or takedown guarantees yet.
+
+## Configuration boundary
+
+The purge verbs require a <code>Registry</code>. For reads to observe coordinated invalidation, configure <code>Registry</code>, <code>Bus</code>, and L2 together. The production Bus, CDN path, and supported adapter exports are not implemented.
+
+## Related
+
+- [How Cache works](/cache/how-it-works/) follows invalidation through live delivery and recovery.
+- [Consistency and resilience](/cache/consistency-and-resilience/) explains how reads treat stale or unknown knowledge.
+- [API status](/cache/api-status/) records the current purge-result and selector limitations.

@@ -12,9 +12,10 @@ This repository contains the public documentation experience for Astilba product
 
 ## Information architecture
 
-- Starlight owns the global shell, responsive navigation, search, and theme behavior.
-- `src/components/DocsSidebar.tsx` is the single Base UI React island. It owns product/version menus, recursive collapsibles, and desktop session persistence; keep the rest of the documentation shell server-rendered unless an interaction genuinely requires another island.
-- `src/components/Header.astro` owns branding, search, theme switching, and compact global actions. Keep the documentation sidebar focused on product navigation; it has no footer action rail.
+- Starlight owns the global shell and the underlying responsive-navigation, search, and theme behavior.
+- `src/components/DocsSidebar.tsx` owns the Base UI product/version menus, recursive collapsibles, and desktop session persistence.
+- `src/components/PageActions.tsx` owns the Base UI per-page Markdown actions. Keep the rest of the documentation shell server-rendered unless an interaction genuinely requires another island.
+- `src/components/Header.astro` composes the branding, search, theme, and compact global-action controls over those Starlight behaviors. Keep the documentation sidebar focused on product navigation; it has no footer action rail.
 - `src/docs/` owns the typed product catalog, independent version trees, page ordering, and destination icons.
 - `src/content/docs/` contains public Markdown content.
 - Each product owns its sidebar and overview route.
