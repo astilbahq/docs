@@ -249,6 +249,9 @@ const contentSignal = "ai-train=yes, search=yes, ai-input=yes";
 const staticHeaders = artifacts.get("_headers");
 const headerRules = parseHeaderRules(staticHeaders);
 assertHeaderValues(headerRules, "/*", "Content-Signal", [contentSignal]);
+assertHeaderValues(headerRules, "/_astro/*", "Cache-Control", [
+  "public, max-age=31536000, immutable",
+]);
 assertHeaderValues(headerRules, "/", "Link", [
   '</index.md>; rel="alternate"; type="text/markdown"',
   '</llms.txt>; rel="describedby"; type="text/plain"',
