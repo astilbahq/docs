@@ -86,7 +86,7 @@ Production builds also create `llms-small.txt`, `llms-full.txt`, a Cache-specifi
 
 The same public build generates a bounded corpus for the stateless MCP endpoint at `https://docs.astilba.com/mcp`. Every published Markdown page is a fixed resource, while `search_docs` and `read_doc` provide read-only compatibility for clients whose resource support is limited. Tool calls have a Cloudflare-native per-client, per-colo rate limit; resource discovery and reads remain direct protocol operations. The Worker accepts no arbitrary URL, account state, or private handbook content, and creates a fresh MCP server and transport for every request. A separate, feature-detected WebMCP tool returns the current page's Markdown in bounded chunks in browsers that implement the current `document.modelContext.registerTool` API.
 
-The Cache document set follows the typed sidebar order and states that the package is unreleased and not installable. HTTP responses and `robots.txt` allow search indexing and real-time AI input while reserving the documentation from model training. The production artifact check keeps those signals, negotiated representations, links, and skill digests aligned.
+The Cache document set follows the typed sidebar order and states that the package is unreleased and not installable. HTTP responses and `robots.txt` allow search indexing, real-time AI input, and model training. The production artifact check keeps those signals, negotiated representations, links, and skill digests aligned.
 
 ## Keeping product status current
 

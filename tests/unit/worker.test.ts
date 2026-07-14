@@ -20,7 +20,7 @@ const createAssets = () => {
 
       return new Response(`# ${path === "/index.md" ? "Home" : "Overview"}`, {
         headers: {
-          "Content-Signal": "ai-train=no, search=yes, ai-input=yes",
+          "Content-Signal": "ai-train=yes, search=yes, ai-input=yes",
           "Content-Type": "text/markdown; charset=utf-8",
           ETag: '"markdown"',
         },

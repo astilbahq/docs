@@ -146,7 +146,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     "/cache/overview.md"
   );
   expect(negotiatedMarkdownResponse.headers()["content-signal"]).toBe(
-    "ai-train=no, search=yes, ai-input=yes"
+    "ai-train=yes, search=yes, ai-input=yes"
   );
   expect(negotiatedMarkdownResponse.headers().link).toContain(
     'rel="describedby"'

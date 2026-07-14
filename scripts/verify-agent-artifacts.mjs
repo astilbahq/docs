@@ -173,7 +173,7 @@ for (const artifact of requiredArtifacts) {
   artifacts.set(artifact, await readArtifact(artifact));
 }
 
-const contentSignal = "ai-train=no, search=yes, ai-input=yes";
+const contentSignal = "ai-train=yes, search=yes, ai-input=yes";
 const staticHeaders = artifacts.get("_headers");
 const headerRules = parseHeaderRules(staticHeaders);
 assertHeaderValues(headerRules, "/*", "Content-Signal", [contentSignal]);

@@ -741,7 +741,7 @@ const withProtocolHeaders = (
 ): Response => {
   const headers = new Headers(response.headers);
   headers.set("Cache-Control", "no-store");
-  headers.set("Content-Signal", "ai-train=no, search=yes, ai-input=yes");
+  headers.set("Content-Signal", "ai-train=yes, search=yes, ai-input=yes");
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set(
     "Access-Control-Expose-Headers",
