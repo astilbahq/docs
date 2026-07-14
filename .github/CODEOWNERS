@@ -1,0 +1,11 @@
+# Route production and verification changes to the responsible maintainer.
+# Enforced independent approval requires a second eligible repository reviewer.
+/.github/ @ReesMorris
+/astro.config.mjs @ReesMorris
+/package.json @ReesMorris
+/playwright.config.ts @ReesMorris
+/pnpm-lock.yaml @ReesMorris
+/renovate.json @ReesMorris
+/scripts/ @ReesMorris
+/worker/ @ReesMorris
+/wrangler.jsonc @ReesMorris

@@ -16,7 +16,7 @@
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 5am on monday"],
-    "automerge": true
+    "automerge": false
   },
   "packageRules": [
     {
@@ -60,6 +60,19 @@
       "matchManagers": ["github-actions"],
       "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
       "automerge": true
+    },
+    {
+      "description": "Require review for Wrangler and actions that can change the production deployment path.",
+      "matchPackageNames": [
+        "wrangler",
+        "actions/cache",
+        "actions/checkout",
+        "actions/download-artifact",
+        "actions/setup-node",
+        "actions/upload-artifact",
+        "pnpm/action-setup"
+      ],
+      "automerge": false
     }
   ]
 }
