@@ -68,6 +68,19 @@ class McpRequestError extends Error {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
 
+const logMcpError = (
+  event: string,
+  error: unknown,
+  details: Record<string, string> = {},
+): void => {
+  console.error({
+    error: error instanceof Error ? error.message : String(error),
+    errorName: error instanceof Error ? error.name : "UnknownError",
+    event,
+    ...details,
+  });
+};
+
 const corpusCache = new WeakMap<object, Promise<DocsCorpus>>();
 
 const readCorpus = async (
@@ -700,36 +713,81 @@ const validateBatch = (
   }
 };
 
-const countToolCalls = (parsedBody: unknown): number => {
+const EXPENSIVE_METHODS = new Set(["resources/read", "tools/call"]);
+
+const countExpensiveOperations = (parsedBody: unknown): number => {
   const messages = Array.isArray(parsedBody) ? parsedBody : [parsedBody];
 
   return messages.filter(
-    (message) => isRecord(message) && message.method === "tools/call",
+    (message) =>
+      isRecord(message) &&
+      typeof message.method === "string" &&
+      EXPENSIVE_METHODS.has(message.method),
   ).length;
 };
 
-const enforceToolRateLimit = async (
+const getRateLimitKey = (request: Request): string => {
+  const clientAddress = request.headers.get("CF-Connecting-IP")?.trim();
+
+  // This unauthenticated endpoint has no account or API-token identity.
+  // Cloudflare's source address is the strongest stable signal available, so
+  // clients behind shared egress intentionally share capacity. The fallback is
+  // primarily for local tests or requests that did not traverse the edge.
+  return clientAddress && clientAddress.length <= 64
+    ? `client:${clientAddress}`
+    : "client:anonymous";
+};
+
+const consumeRateLimitUnits = async (
   rateLimiter: RateLimit,
   request: Request,
-  toolCalls: number,
+  units: number,
+  message: string,
 ): Promise<void> => {
-  const clientAddress = request.headers.get("CF-Connecting-IP")?.trim();
-  const key =
-    clientAddress && clientAddress.length <= 64
-      ? `client:${clientAddress}`
-      : "client:anonymous";
+  const key = getRateLimitKey(request);
 
-  for (let index = 0; index < toolCalls; index += 1) {
+  for (let index = 0; index < units; index += 1) {
     const outcome = await rateLimiter.limit({ key });
 
     if (!outcome.success) {
-      throw new McpRequestError(
-        429,
-        -32000,
-        "Tool rate limit exceeded. Retry later.",
-      );
+      throw new McpRequestError(429, -32000, message);
     }
   }
+};
+
+type RateLimitPhase = "operation" | "request";
+
+const rateLimitErrorResponse = (
+  error: unknown,
+  phase: RateLimitPhase,
+  allowedOrigin?: string,
+  id: number | string | null = null,
+): Response => {
+  if (error instanceof McpRequestError) {
+    console.warn({
+      event: "mcp_rate_limited",
+      phase,
+      status: error.status,
+    });
+    const response = errorResponse(
+      error.status,
+      error.code,
+      error.message,
+      allowedOrigin,
+      id,
+    );
+    response.headers.set("Retry-After", "60");
+    return response;
+  }
+
+  logMcpError("mcp_rate_limit_failure", error, { phase });
+  return errorResponse(
+    503,
+    -32603,
+    "The MCP endpoint is temporarily unavailable.",
+    allowedOrigin,
+    id,
+  );
 };
 
 const withProtocolHeaders = (
@@ -851,7 +909,7 @@ export const handleDocsMcpRequest = async (
       return errorResponse(error.status, error.code, error.message);
     }
 
-    console.error("Unable to validate an MCP request origin.", error);
+    logMcpError("mcp_origin_validation_failure", error);
     return errorResponse(500, -32603, "Internal MCP server error.");
   }
 
@@ -880,6 +938,17 @@ export const handleDocsMcpRequest = async (
     return response;
   }
 
+  try {
+    await consumeRateLimitUnits(
+      rateLimiter,
+      request,
+      1,
+      "MCP request rate limit exceeded. Retry later.",
+    );
+  } catch (error) {
+    return rateLimitErrorResponse(error, "request", allowedOrigin);
+  }
+
   let parsedBody: unknown;
 
   try {
@@ -894,7 +963,7 @@ export const handleDocsMcpRequest = async (
       );
     }
 
-    console.error("Unable to read an MCP request body.", error);
+    logMcpError("mcp_request_body_failure", error);
     return errorResponse(
       500,
       -32603,
@@ -918,7 +987,7 @@ export const handleDocsMcpRequest = async (
       );
     }
 
-    console.error("Unable to validate an MCP request payload.", error);
+    logMcpError("mcp_payload_validation_failure", error);
     return errorResponse(
       500,
       -32603,
@@ -928,29 +997,16 @@ export const handleDocsMcpRequest = async (
   }
 
   try {
-    await enforceToolRateLimit(
+    await consumeRateLimitUnits(
       rateLimiter,
       request,
-      countToolCalls(parsedBody),
+      countExpensiveOperations(parsedBody),
+      "MCP operation rate limit exceeded. Retry later.",
     );
   } catch (error) {
-    if (error instanceof McpRequestError) {
-      const response = errorResponse(
-        error.status,
-        error.code,
-        error.message,
-        allowedOrigin,
-        responseId,
-      );
-      response.headers.set("Retry-After", "60");
-      return response;
-    }
-
-    console.error("Unable to apply the MCP tool rate limit.", error);
-    return errorResponse(
-      503,
-      -32603,
-      "Tool calls are temporarily unavailable.",
+    return rateLimitErrorResponse(
+      error,
+      "operation",
       allowedOrigin,
       responseId,
     );
@@ -961,7 +1017,7 @@ export const handleDocsMcpRequest = async (
   try {
     corpus = await loadCorpus(assets, request.url);
   } catch (error) {
-    console.error("Unable to load the generated MCP corpus.", error);
+    logMcpError("mcp_corpus_load_failure", error);
     return errorResponse(
       503,
       -32603,
@@ -982,7 +1038,7 @@ export const handleDocsMcpRequest = async (
     const response = await transport.handleRequest(request, { parsedBody });
     return withProtocolHeaders(response, allowedOrigin);
   } catch (error) {
-    console.error("Unable to handle an MCP request.", error);
+    logMcpError("mcp_request_failure", error);
     return errorResponse(
       500,
       -32603,
@@ -994,7 +1050,7 @@ export const handleDocsMcpRequest = async (
     try {
       await server.close();
     } catch (closeError) {
-      console.error("Unable to close the MCP server.", closeError);
+      logMcpError("mcp_server_close_failure", closeError);
     }
   }
 };

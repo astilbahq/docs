@@ -340,7 +340,7 @@ describe("generated MCP corpus", () => {
 describe("documentation MCP transport", () => {
   it("initializes with read-only tool and resource capabilities", async () => {
     const { assets } = createAssets();
-    const { rateLimiter } = createRateLimiter();
+    const { limit, rateLimiter } = createRateLimiter();
     const response = await handleDocsMcpRequest(
       createRpcRequest(
         "initialize",
@@ -370,7 +370,28 @@ describe("documentation MCP transport", () => {
         },
       },
     });
+    expect(limit).toHaveBeenCalledExactlyOnceWith({
+      key: "client:anonymous",
+    });
   });
+
+  it.each(["ping", "resources/list", "tools/list"])(
+    "charges one request unit for %s",
+    async (method) => {
+      const { assets } = createAssets();
+      const { limit, rateLimiter } = createRateLimiter();
+      const response = await handleDocsMcpRequest(
+        createRpcRequest(method, undefined, { clientIp: "203.0.113.7" }),
+        assets,
+        rateLimiter,
+      );
+
+      expect(response.status).toBe(200);
+      expect(limit).toHaveBeenCalledExactlyOnceWith({
+        key: "client:203.0.113.7",
+      });
+    },
+  );
 
   it("lists resources and invokes both bounded read-only tools", async () => {
     const { assets, fetch } = createAssets();
@@ -435,7 +456,33 @@ describe("documentation MCP transport", () => {
       uri: `${docsOrigin}/cache/overview.md`,
     });
     expect(fetch).toHaveBeenCalledTimes(1);
+    expect(limit).toHaveBeenCalledTimes(5);
+    expect(limit.mock.calls).toEqual(
+      Array.from({ length: 5 }, () => [{ key: "client:anonymous" }]),
+    );
+  });
+
+  it("charges an additional unit for direct resource reads", async () => {
+    const { assets } = createAssets();
+    const { limit, rateLimiter } = createRateLimiter();
+    const overviewUri = `${docsOrigin}/cache/overview.md`;
+    const response = await handleDocsMcpRequest(
+      createRpcRequest("resources/read", { uri: overviewUri }),
+      assets,
+      rateLimiter,
+    );
+    const body = (await response.json()) as {
+      result: { contents: Array<Record<string, unknown>> };
+    };
+
+    expect(response.status).toBe(200);
+    expect(body.result.contents[0]).toMatchObject({
+      mimeType: "text/markdown",
+      uri: overviewUri,
+    });
     expect(limit).toHaveBeenCalledTimes(2);
+    expect(limit).toHaveBeenNthCalledWith(1, { key: "client:anonymous" });
+    expect(limit).toHaveBeenNthCalledWith(2, { key: "client:anonymous" });
   });
 
   it("keeps pre-2025-06-18 tool definitions and results compatible", async () => {
@@ -504,7 +551,51 @@ describe("documentation MCP transport", () => {
     expect(
       (body as Array<{ id: number }>).map(({ id }) => id).toSorted(),
     ).toEqual([1, 2]);
-    expect(limit).not.toHaveBeenCalled();
+    expect(limit).toHaveBeenCalledExactlyOnceWith({
+      key: "client:anonymous",
+    });
+  });
+
+  it("charges each expensive operation in a legacy batch", async () => {
+    const { assets } = createAssets();
+    const { limit, rateLimiter } = createRateLimiter();
+    const response = await handleDocsMcpRequest(
+      new Request(`${docsOrigin}/mcp`, {
+        body: JSON.stringify([
+          { id: 1, jsonrpc: "2.0", method: "ping" },
+          {
+            id: 2,
+            jsonrpc: "2.0",
+            method: "resources/read",
+            params: { uri: `${docsOrigin}/cache/overview.md` },
+          },
+          {
+            id: 3,
+            jsonrpc: "2.0",
+            method: "tools/call",
+            params: {
+              arguments: { query: "cache" },
+              name: "search_docs",
+            },
+          },
+        ]),
+        headers: {
+          Accept: "application/json, text/event-stream",
+          "Content-Type": "application/json",
+          "MCP-Protocol-Version": "2025-03-26",
+        },
+        method: "POST",
+      }),
+      assets,
+      rateLimiter,
+    );
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toHaveLength(3);
+    expect(limit).toHaveBeenCalledTimes(3);
+    expect(limit.mock.calls).toEqual(
+      Array.from({ length: 3 }, () => [{ key: "client:anonymous" }]),
+    );
   });
 
   it("rejects modern JSON-RPC batches before loading resources", async () => {
@@ -529,12 +620,20 @@ describe("documentation MCP transport", () => {
 
     expect(response.status).toBe(400);
     expect(fetch).not.toHaveBeenCalled();
-    expect(limit).not.toHaveBeenCalled();
+    expect(limit).toHaveBeenCalledExactlyOnceWith({
+      key: "client:anonymous",
+    });
   });
 
-  it("rate-limits tool calls before loading the corpus", async () => {
+  it("rate-limits expensive operations before loading the corpus", async () => {
     const { assets, fetch } = createAssets();
-    const { limit, rateLimiter } = createRateLimiter(false);
+    const { limit, rateLimiter } = createRateLimiter();
+    limit
+      .mockResolvedValueOnce({ success: true })
+      .mockResolvedValueOnce({ success: false });
+    const consoleWarn = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
     const response = await handleDocsMcpRequest(
       createRpcRequest(
         "tools/call",
@@ -549,13 +648,146 @@ describe("documentation MCP transport", () => {
     );
     const body = await response.json();
 
-    expect(response.status).toBe(429);
-    expect(response.headers.get("Retry-After")).toBe("60");
-    expect(body).toMatchObject({ id: 1 });
-    expect(fetch).not.toHaveBeenCalled();
-    expect(limit).toHaveBeenCalledExactlyOnceWith({
-      key: "client:203.0.113.8",
+    try {
+      expect(response.status).toBe(429);
+      expect(response.headers.get("Retry-After")).toBe("60");
+      expect(body).toMatchObject({
+        error: {
+          message: "MCP operation rate limit exceeded. Retry later.",
+        },
+        id: 1,
+      });
+      expect(fetch).not.toHaveBeenCalled();
+      expect(limit).toHaveBeenCalledTimes(2);
+      expect(limit).toHaveBeenNthCalledWith(1, {
+        key: "client:203.0.113.8",
+      });
+      expect(limit).toHaveBeenNthCalledWith(2, {
+        key: "client:203.0.113.8",
+      });
+      expect(consoleWarn).toHaveBeenCalledExactlyOnceWith({
+        event: "mcp_rate_limited",
+        phase: "operation",
+        status: 429,
+      });
+    } finally {
+      consoleWarn.mockRestore();
+    }
+  });
+
+  it("rate-limits requests before reading their body", async () => {
+    const { assets, fetch } = createAssets();
+    const { limit, rateLimiter } = createRateLimiter(false);
+    const consoleWarn = vi
+      .spyOn(console, "warn")
+      .mockImplementation(() => undefined);
+    const body = new ReadableStream<Uint8Array>({
+      pull() {
+        throw new Error("body must not be read");
+      },
     });
+    const request = new Request(`${docsOrigin}/mcp`, {
+      body,
+      duplex: "half",
+      headers: { "CF-Connecting-IP": "203.0.113.9" },
+      method: "POST",
+    } as RequestInit & { duplex: "half" });
+
+    try {
+      const response = await handleDocsMcpRequest(
+        request,
+        assets,
+        rateLimiter,
+      );
+
+      expect(response.status).toBe(429);
+      expect(response.headers.get("Retry-After")).toBe("60");
+      expect(await response.json()).toMatchObject({
+        error: { message: "MCP request rate limit exceeded. Retry later." },
+        id: null,
+      });
+      expect(fetch).not.toHaveBeenCalled();
+      expect(limit).toHaveBeenCalledExactlyOnceWith({
+        key: "client:203.0.113.9",
+      });
+      expect(consoleWarn).toHaveBeenCalledExactlyOnceWith({
+        event: "mcp_rate_limited",
+        phase: "request",
+        status: 429,
+      });
+    } finally {
+      consoleWarn.mockRestore();
+    }
+  });
+
+  it("fails closed when request-level metering is unavailable", async () => {
+    const { assets, fetch } = createAssets();
+    const { limit, rateLimiter } = createRateLimiter();
+    limit.mockRejectedValueOnce(new Error("limiter unavailable"));
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    try {
+      const response = await handleDocsMcpRequest(
+        createRpcRequest("ping"),
+        assets,
+        rateLimiter,
+      );
+
+      expect(response.status).toBe(503);
+      expect(await response.json()).toMatchObject({
+        error: { message: "The MCP endpoint is temporarily unavailable." },
+        id: null,
+      });
+      expect(fetch).not.toHaveBeenCalled();
+      expect(limit).toHaveBeenCalledOnce();
+      expect(consoleError).toHaveBeenCalledExactlyOnceWith({
+        error: "limiter unavailable",
+        errorName: "Error",
+        event: "mcp_rate_limit_failure",
+        phase: "request",
+      });
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("fails closed when expensive-operation metering is unavailable", async () => {
+    const { assets, fetch } = createAssets();
+    const { limit, rateLimiter } = createRateLimiter();
+    limit
+      .mockResolvedValueOnce({ success: true })
+      .mockRejectedValueOnce(new Error("operation limiter unavailable"));
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+
+    try {
+      const response = await handleDocsMcpRequest(
+        createRpcRequest("resources/read", {
+          uri: `${docsOrigin}/cache/overview.md`,
+        }),
+        assets,
+        rateLimiter,
+      );
+
+      expect(response.status).toBe(503);
+      expect(await response.json()).toMatchObject({
+        error: { message: "The MCP endpoint is temporarily unavailable." },
+        id: 1,
+      });
+      expect(fetch).not.toHaveBeenCalled();
+      expect(limit).toHaveBeenCalledTimes(2);
+      expect(consoleError).toHaveBeenCalledExactlyOnceWith({
+        error: "operation limiter unavailable",
+        errorName: "Error",
+        event: "mcp_rate_limit_failure",
+        phase: "operation",
+      });
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 
   it("normalizes unexpected request-stream failures", async () => {
@@ -592,7 +824,9 @@ describe("documentation MCP transport", () => {
         id: null,
       });
       expect(fetch).not.toHaveBeenCalled();
-      expect(limit).not.toHaveBeenCalled();
+      expect(limit).toHaveBeenCalledExactlyOnceWith({
+        key: "client:anonymous",
+      });
     } finally {
       consoleError.mockRestore();
     }
