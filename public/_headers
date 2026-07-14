@@ -13,6 +13,36 @@
 /.well-known/agent-skills/index.json
   Content-Type: application/json; charset=utf-8
 
+/.well-known/api-catalog
+  Access-Control-Allow-Headers: Content-Type
+  Access-Control-Allow-Methods: GET, HEAD
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+  Content-Type: application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"
+  Link: </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"
+  X-Content-Type-Options: nosniff
+
+/.well-known/mcp/*
+  Access-Control-Allow-Headers: Content-Type
+  Access-Control-Allow-Methods: GET, HEAD
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+  X-Content-Type-Options: nosniff
+
+/.well-known/mcp/catalog.json
+  Content-Type: application/json; charset=utf-8
+
+/.well-known/mcp/server-card.json
+  Content-Type: application/json; charset=utf-8
+
+/mcp/server-card
+  Access-Control-Allow-Headers: Content-Type
+  Access-Control-Allow-Methods: GET, HEAD
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+  Content-Type: application/mcp-server-card+json
+  X-Content-Type-Options: nosniff
+
 /_mcp/docs.json
   Cache-Control: public, max-age=3600
   Content-Type: application/json; charset=utf-8

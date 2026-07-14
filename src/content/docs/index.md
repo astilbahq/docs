@@ -25,3 +25,7 @@ Start with the [overview](/cache/overview/), check the [React and server-app bou
 - **Concepts** explain the read, invalidation, consistency, and resilience models.
 - **Advanced** pages document runtime composition and driver implementation status.
 - **Reference** contains the complete root API surface and the release-state ledger. When another page and the status page appear to differ, follow the status page.
+
+## For agents
+
+Use the public [documentation MCP](/agents/mcp/) to search and read the same published Markdown corpus through a read-only protocol endpoint.

@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
+import { MCP_SERVER_INFO } from "../../src/docs/agent-discovery";
 import { docsProducts } from "../../src/docs/catalog";
 import { parseDocsCorpus } from "../../src/docs/mcp-corpus";
+import { siteDocsPages } from "../../src/docs/site-pages";
 import {
   handleDocsMcpRequest,
   readDoc,
@@ -19,14 +21,20 @@ const createRateLimiter = (success = true) => {
 const createCorpusValue = () => ({
   schemaVersion: 1,
   pages: [
-    {
-      canonicalUrl: `${docsOrigin}/`,
-      content: "# Astilba documentation\n\nBrowse the public product docs.",
-      description: "Public documentation for Astilba products.",
-      markdownPath: "/index.md",
-      title: "Astilba documentation",
-      uri: `${docsOrigin}/index.md`,
-    },
+    ...siteDocsPages.map(({ canonicalPath, id, markdownPath }) => ({
+      canonicalUrl: new URL(canonicalPath, docsOrigin).href,
+      content:
+        id === "index"
+          ? "# Astilba documentation\n\nBrowse the public product docs."
+          : "# Documentation MCP\n\nConnect to the public documentation server.",
+      description:
+        id === "index"
+          ? "Public documentation for Astilba products."
+          : "Connect an MCP client to Astilba documentation.",
+      markdownPath,
+      title: id === "index" ? "Astilba documentation" : "Documentation MCP",
+      uri: `${docsOrigin}${markdownPath}`,
+    })),
     ...docsProducts.flatMap((product) =>
       product.versions.flatMap((version) =>
         version.sections.flatMap((section) =>
@@ -115,7 +123,7 @@ const createRpcRequest = (
   });
 
 describe("generated MCP corpus", () => {
-  it("accepts exactly the homepage and catalogued public pages", () => {
+  it("accepts exactly the allowlisted site and product pages", () => {
     const value = createCorpusValue();
     const corpus = parseDocsCorpus(value);
 
@@ -235,6 +243,25 @@ describe("generated MCP corpus", () => {
     );
   });
 
+  it("rejects site-wide resources outside the explicit allowlist", () => {
+    const value = createCorpusValue();
+    const sitePage = value.pages.find(
+      ({ markdownPath }) => markdownPath === "/agents/mcp.md",
+    );
+
+    if (!sitePage) {
+      throw new Error("Missing site-wide MCP fixture.");
+    }
+
+    sitePage.canonicalUrl = `${docsOrigin}/agents/private/`;
+    sitePage.markdownPath = "/agents/private.md";
+    sitePage.uri = `${docsOrigin}/agents/private.md`;
+
+    expect(() => parseDocsCorpus(value)).toThrow(
+      "is not present in the public documentation catalog",
+    );
+  });
+
   it("rejects resources outside the public docs origin", () => {
     const value = createCorpusValue();
     value.pages[0].uri = "https://example.com/index.md";
@@ -337,7 +364,10 @@ describe("documentation MCP transport", () => {
     expect(body).toMatchObject({
       result: {
         capabilities: { resources: {}, tools: {} },
-        serverInfo: { name: "astilba-docs", version: "0.1.0" },
+        serverInfo: {
+          name: MCP_SERVER_INFO.name,
+          version: MCP_SERVER_INFO.version,
+        },
       },
     });
   });

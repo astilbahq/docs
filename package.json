@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "astro build && node scripts/generate-agent-skills-index.mjs && node scripts/generate-mcp-corpus.mjs && node scripts/generate-agent-headers.mjs && node scripts/verify-agent-artifacts.mjs",
+    "build": "astro build && node scripts/generate-agent-skills-index.mjs && node scripts/generate-mcp-corpus.mjs && node scripts/generate-agent-discovery.mjs && node scripts/generate-agent-headers.mjs && node scripts/verify-agent-artifacts.mjs",
     "build:production": "cross-env ASTILBA_DOCS_SITE=https://docs.astilba.com pnpm build",
     "check": "wrangler types --check && astro check",
     "deploy": "pnpm build:production && wrangler deploy",
@@ -50,6 +50,8 @@
     "@playwright/test": "1.61.1",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
     "cross-env": "10.1.0",
     "knip": "6.26.0",
     "postcss": "8.5.16",

@@ -20,19 +20,27 @@ interface WebMcpTool {
 }
 
 interface WebMcpModelContext {
-  registerTool: (tool: WebMcpTool) => Promise<void>;
+  provideContext?: (context: {
+    tools: WebMcpTool[];
+  }) => PromiseLike<void> | void;
+  registerTool?: (tool: WebMcpTool) => PromiseLike<void> | void;
 }
 
 type WebMcpDocument = Document & {
   modelContext?: WebMcpModelContext;
 };
 
+type WebMcpNavigator = Navigator & {
+  modelContext?: WebMcpModelContext;
+};
+
+type WebMcpRegistration = (tool: WebMcpTool) => PromiseLike<void> | void;
+
 const MARKDOWN_CHUNK_LENGTH = 1200;
 const markdownCharactersByPath = new Map<string, Promise<string[]>>();
 const markdownLink = document.querySelector<HTMLLinkElement>(
   'link[rel="alternate"][type="text/markdown"]'
 );
-const modelContext = (document as WebMcpDocument).modelContext;
 
 const getCurrentMarkdownPath = (): string => {
   const currentMarkdownLink = document.querySelector<HTMLLinkElement>(
@@ -78,9 +86,41 @@ const getMarkdownCharacters = async (
   }
 };
 
-if (markdownLink && typeof modelContext?.registerTool === "function") {
-  void modelContext
-    .registerTool({
+const ignoreRegistrationResult = (
+  register: () => PromiseLike<void> | void
+): void => {
+  try {
+    void Promise.resolve(register()).catch(() => undefined);
+  } catch {
+    // WebMCP is progressive enhancement; registration must not affect the page.
+  }
+};
+
+const getRegistration = (): WebMcpRegistration | undefined => {
+  const currentModelContext = (document as WebMcpDocument).modelContext;
+
+  if (typeof currentModelContext?.registerTool === "function") {
+    return (tool) => currentModelContext.registerTool?.(tool);
+  }
+
+  const legacyModelContext = (navigator as WebMcpNavigator).modelContext;
+
+  if (typeof legacyModelContext?.registerTool === "function") {
+    return (tool) => legacyModelContext.registerTool?.(tool);
+  }
+
+  if (typeof legacyModelContext?.provideContext === "function") {
+    return (tool) => legacyModelContext.provideContext?.({ tools: [tool] });
+  }
+
+  return undefined;
+};
+
+const registerTool = markdownLink ? getRegistration() : undefined;
+
+if (registerTool) {
+  ignoreRegistrationResult(() =>
+    registerTool({
       annotations: {
         readOnlyHint: true,
         untrustedContentHint: false,
@@ -130,5 +170,5 @@ if (markdownLink && typeof modelContext?.registerTool === "function") {
       },
       name: "read_current_page_markdown",
     })
-    .catch(() => undefined);
+  );
 }

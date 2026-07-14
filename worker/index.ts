@@ -1,11 +1,13 @@
+import { API_CATALOG_LINK_VALUE } from "../src/docs/agent-discovery";
 import { docsProducts } from "../src/docs/catalog";
+import { siteDocsPages } from "../src/docs/site-pages";
 import { DOCS_MCP_PATH, handleDocsMcpRequest } from "./docs-mcp";
 
 const MARKDOWN_MEDIA_TYPE = "text/markdown";
 const TOKEN_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 const QUALITY_PATTERN = /^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/;
 const MARKDOWN_PATHS = new Set([
-  "/index.md",
+  ...siteDocsPages.map(({ markdownPath }) => markdownPath),
   ...docsProducts.flatMap((product) =>
     product.versions.flatMap((version) =>
       version.sections.flatMap((section) =>
@@ -381,7 +383,7 @@ export const handleRequest = async (
       headers.set("Content-Location", markdownPath);
       headers.set(
         "Link",
-        `<${markdownPath}>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain"`
+        `<${markdownPath}>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain", ${API_CATALOG_LINK_VALUE}`
       );
 
       return addVaryAccept(
