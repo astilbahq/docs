@@ -1,6 +1,5 @@
-import { access, readFile, readdir, writeFile } from "node:fs/promises";
-import { join, relative, resolve, sep } from "node:path";
-import { API_CATALOG_LINK_VALUE } from "../src/docs/agent-discovery.ts";
+import { access, readFile, readdir } from "node:fs/promises";
+import { join, relative, resolve } from "node:path";
 
 const dist = resolve(process.cwd(), "dist");
 const headersPath = resolve(dist, "_headers");
@@ -42,7 +41,7 @@ const fileExists = async (path) => {
 
 const staticHeaders = (await readFile(headersPath, "utf8")).trimEnd();
 const files = await collectFiles(dist);
-const markdownPages = [];
+let markdownPageCount = 0;
 
 for (const file of files) {
   if (!file.endsWith("index.html")) {
@@ -97,41 +96,23 @@ for (const file of files) {
     );
   }
 
-  const htmlPath = relative(dist, file).split(sep).join("/");
-  const pagePath =
-    htmlPath === "index.html"
-      ? ""
-      : htmlPath.slice(0, -"/index.html".length);
-
-  markdownPages.push({ markdownPath, pagePath });
+  markdownPageCount += 1;
 }
 
-markdownPages.sort((left, right) => left.pagePath.localeCompare(right.pagePath));
-
-if (markdownPages.length === 0) {
+if (markdownPageCount === 0) {
   throw new Error(
     "[agent-headers] No HTML pages with Markdown alternates were found."
   );
 }
 
 const staticRuleCount = staticHeaders.split(/\n\s*\n/).length;
-const totalRuleCount = staticRuleCount + markdownPages.length;
 
-if (totalRuleCount > maxHeaderRules) {
+if (staticRuleCount > maxHeaderRules) {
   throw new Error(
-    `[agent-headers] ${totalRuleCount} header rules exceed Cloudflare's ${maxHeaderRules}-rule limit. Consolidate the generated page rules before adding more documentation pages.`
+    `[agent-headers] ${staticRuleCount} static header rules exceed Cloudflare's ${maxHeaderRules}-rule limit.`
   );
 }
 
-const pageHeaders = markdownPages
-  .map(
-    ({ markdownPath, pagePath }) =>
-      `/${pagePath ? `${pagePath}/` : ""}\n  Link: </${markdownPath}>; rel="alternate"; type="text/markdown"\n  Link: </llms.txt>; rel="describedby"; type="text/plain"\n  Link: ${API_CATALOG_LINK_VALUE}`
-  )
-  .join("\n\n");
-
-await writeFile(headersPath, `${staticHeaders}\n\n${pageHeaders}\n`, "utf8");
-
 console.log(
-  `[agent-headers] Advertised ${markdownPages.length} Markdown alternates.`
+  `[agent-headers] Validated ${markdownPageCount} Worker-managed Markdown alternates (${staticRuleCount}/${maxHeaderRules} static header rules).`
 );

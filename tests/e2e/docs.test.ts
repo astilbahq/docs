@@ -23,6 +23,15 @@ declare global {
 
 const docsOrigin = "https://docs.astilba.com";
 
+const expectSimpleGetCors = (headers: Record<string, string>): void => {
+  expect(headers["access-control-allow-origin"]).toBe("*");
+  expect(headers["access-control-allow-headers"]).toBeUndefined();
+  expect(headers["access-control-allow-methods"]).toBeUndefined();
+};
+
+const getExpectedPageDiscoveryLink = (markdownPath: string): string =>
+  `<${markdownPath}>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`;
+
 const expectNoAxeViolations = async (page: Page): Promise<void> => {
   const results = await new AxeBuilder({ page })
     // Base UI's focus sentinels are intentionally keyboard-focusable and hidden
@@ -115,11 +124,12 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
   expect(apiCatalogResponse.headers()["content-type"]).toBe(
     'application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"'
   );
-  expect(apiCatalogResponse.headers()["access-control-allow-origin"]).toBe(
-    "*"
-  );
+  expectSimpleGetCors(apiCatalogResponse.headers());
   expect(apiCatalogResponse.headers()["x-content-type-options"]).toBe(
     "nosniff"
+  );
+  expect(apiCatalogResponse.headers()["strict-transport-security"]).toBe(
+    "max-age=31536000"
   );
   expect(await apiCatalogResponse.json()).toEqual({
     linkset: [
@@ -156,6 +166,7 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
   expect(mcpCatalogResponse.headers()["content-type"]).toContain(
     "application/json"
   );
+  expectSimpleGetCors(mcpCatalogResponse.headers());
   expect(await mcpCatalogResponse.json()).toEqual({
     entries: [
       {
@@ -175,6 +186,7 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
   expect(serverCardResponse.headers()["content-type"]).toBe(
     "application/mcp-server-card+json"
   );
+  expectSimpleGetCors(serverCardResponse.headers());
   const serverCard = await serverCardResponse.json();
   expect(serverCard).toMatchObject({
     name: "com.astilba/docs",
@@ -199,6 +211,7 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
     "/.well-known/mcp/server-card.json"
   );
   expect(compatibilityCardResponse.status()).toBe(200);
+  expectSimpleGetCors(compatibilityCardResponse.headers());
   expect(await compatibilityCardResponse.json()).toMatchObject({
     capabilities: { resources: {}, tools: {} },
     serverInfo: { name: "com.astilba/docs", version: "0.1.0" },
@@ -207,6 +220,34 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
       type: "streamable-http",
     },
   });
+
+  const unsupportedMcpMethod = await request.get("/mcp");
+  expect(unsupportedMcpMethod.status()).toBe(405);
+  expect(
+    unsupportedMcpMethod.headers()["strict-transport-security"]
+  ).toBe("max-age=31536000");
+
+  const initializeMcp = await request.post("/mcp", {
+    data: {
+      id: 1,
+      jsonrpc: "2.0",
+      method: "initialize",
+      params: {
+        capabilities: {},
+        clientInfo: { name: "edge-header-test", version: "1.0.0" },
+        protocolVersion: "2025-11-25",
+      },
+    },
+    headers: {
+      Accept: "application/json, text/event-stream",
+      "Content-Type": "application/json",
+      "MCP-Protocol-Version": "2025-11-25",
+    },
+  });
+  expect(initializeMcp.status()).toBe(200);
+  expect(initializeMcp.headers()["strict-transport-security"]).toBe(
+    "max-age=31536000"
+  );
 
   const usageResponse = await request.get("/agents/mcp/", {
     maxRedirects: 0,
@@ -246,6 +287,52 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   expect(await homeMarkdownResponse.text()).toContain(
     "# Astilba documentation"
   );
+
+  const rootMarkdownResponse = await request.get("/index.md");
+  expect(rootMarkdownResponse.status()).toBe(200);
+  expect(rootMarkdownResponse.headers()["content-type"]).toBe(
+    "text/markdown; charset=utf-8"
+  );
+  expect(rootMarkdownResponse.headers()["x-content-type-options"]).toBe(
+    "nosniff"
+  );
+  expect(rootMarkdownResponse.headers().etag).toBeTruthy();
+
+  for (const { markdownPath, pagePath } of [
+    { markdownPath: "/index.md", pagePath: "/" },
+    {
+      markdownPath: "/cache/overview.md",
+      pagePath: "/cache/overview/",
+    },
+  ]) {
+    const expectedLink = getExpectedPageDiscoveryLink(markdownPath);
+    const pageResponse = await request.get(pagePath, {
+      headers: { Accept: "text/html" },
+    });
+    expect(pageResponse.status()).toBe(200);
+    expect(pageResponse.headers().link).toBe(expectedLink);
+    expect(pageResponse.headers().vary).toContain("Accept");
+    const pageEtag = pageResponse.headers().etag;
+    expect(pageEtag).toBeTruthy();
+    if (!pageEtag) {
+      throw new Error(`${pagePath} must include an ETag.`);
+    }
+
+    const pageHeadResponse = await request.head(pagePath, {
+      headers: { Accept: "text/html" },
+    });
+    expect(pageHeadResponse.status()).toBe(200);
+    expect(pageHeadResponse.headers().link).toBe(expectedLink);
+
+    const pageRevalidationResponse = await request.get(pagePath, {
+      headers: {
+        Accept: "text/html",
+        "If-None-Match": pageEtag,
+      },
+    });
+    expect(pageRevalidationResponse.status()).toBe(304);
+    expect(pageRevalidationResponse.headers().link).toBe(expectedLink);
+  }
 
   const negotiatedMarkdownResponse = await request.get(
     "/cache/overview/",
@@ -299,14 +386,34 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
 
   const markdownResponse = await request.get("/cache/overview.md");
   expect(markdownResponse.ok()).toBe(true);
-  expect(markdownResponse.headers()["content-type"]).toContain(
-    "text/markdown"
+  expect(markdownResponse.headers()["content-type"]).toBe(
+    "text/markdown; charset=utf-8"
   );
+  expect(markdownResponse.headers()["x-content-type-options"]).toBe(
+    "nosniff"
+  );
+  const markdownEtag = markdownResponse.headers().etag;
+  expect(markdownEtag).toBeTruthy();
+  if (!markdownEtag) {
+    throw new Error("The direct Markdown response must include an ETag.");
+  }
   const markdown = await markdownResponse.text();
   expect(markdown).toContain("# Overview");
   expect(markdown).toContain(
     "For React applications, “server-side” means"
   );
+
+  const markdownRevalidationResponse = await request.get(
+    "/cache/overview.md",
+    { headers: { "If-None-Match": markdownEtag } }
+  );
+  expect(markdownRevalidationResponse.status()).toBe(304);
+  expect(markdownRevalidationResponse.headers()["content-type"]).toBe(
+    "text/markdown; charset=utf-8"
+  );
+  expect(
+    markdownRevalidationResponse.headers()["x-content-type-options"]
+  ).toBe("nosniff");
 
   const missingMarkdownResponse = await request.get("/missing/", {
     headers: { Accept: "text/markdown" },
@@ -315,11 +422,36 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   expect(missingMarkdownResponse.headers()["content-type"]).toContain(
     "text/html"
   );
+  expect(missingMarkdownResponse.headers().link).toBeUndefined();
+
+  const missingNestedPageResponse = await request.get("/cache/missing/", {
+    headers: { Accept: "text/html" },
+  });
+  expect(missingNestedPageResponse.status()).toBe(404);
+  expect(missingNestedPageResponse.headers()["content-type"]).toContain(
+    "text/html"
+  );
+  expect(missingNestedPageResponse.headers().link).toBeUndefined();
+
+  const missingPageHeadResponse = await request.head("/cache/missing/", {
+    headers: { Accept: "text/html" },
+  });
+  expect(missingPageHeadResponse.status()).toBe(404);
+  expect(missingPageHeadResponse.headers().link).toBeUndefined();
 
   const missingDirectResponse = await request.get("/missing.md");
   const missingEtag = missingDirectResponse.headers().etag;
   expect(missingDirectResponse.status()).toBe(404);
+  expect(missingDirectResponse.headers()["content-type"]).toContain(
+    "text/html"
+  );
   expect(missingEtag).toBeTruthy();
+
+  const missingNestedResponse = await request.get("/cache/missing.md");
+  expect(missingNestedResponse.status()).toBe(404);
+  expect(missingNestedResponse.headers()["content-type"]).toContain(
+    "text/html"
+  );
 
   const missingRevalidationResponse = await request.get("/missing/", {
     headers: {

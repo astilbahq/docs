@@ -1,12 +1,9 @@
 /*
   Content-Signal: ai-train=yes, search=yes, ai-input=yes
+  Strict-Transport-Security: max-age=31536000
 
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
-
-/*.md
-  Content-Type: text/markdown; charset=utf-8
-  X-Content-Type-Options: nosniff
 
 /.well-known/agent-skills/*
   Access-Control-Allow-Origin: *
@@ -17,8 +14,6 @@
   Content-Type: application/json; charset=utf-8
 
 /.well-known/api-catalog
-  Access-Control-Allow-Headers: Content-Type
-  Access-Control-Allow-Methods: GET, HEAD
   Access-Control-Allow-Origin: *
   Cache-Control: public, max-age=3600
   Content-Type: application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"
@@ -26,8 +21,6 @@
   X-Content-Type-Options: nosniff
 
 /.well-known/mcp/*
-  Access-Control-Allow-Headers: Content-Type
-  Access-Control-Allow-Methods: GET, HEAD
   Access-Control-Allow-Origin: *
   Cache-Control: public, max-age=3600
   X-Content-Type-Options: nosniff
@@ -39,8 +32,6 @@
   Content-Type: application/json; charset=utf-8
 
 /mcp/server-card
-  Access-Control-Allow-Headers: Content-Type
-  Access-Control-Allow-Methods: GET, HEAD
   Access-Control-Allow-Origin: *
   Cache-Control: public, max-age=3600
   Content-Type: application/mcp-server-card+json
