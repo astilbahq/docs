@@ -265,6 +265,8 @@ const getRepresentationQuality = (
   return bestQuality;
 };
 
+// Wildcards can affect quality, but only an explicit text/markdown range opts
+// into Markdown so generic Accept headers keep the canonical HTML response.
 export const acceptsMarkdown = (accept: string | null): boolean => {
   if (!accept) {
     return false;
