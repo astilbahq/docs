@@ -58,6 +58,7 @@ test("serves the public documentation corpus over MCP", async ({
 
   try {
     await client.connect(transport);
+    await client.ping();
     const tools = await client.listTools();
     const resources = await client.listResources();
     const search = await client.callTool({
