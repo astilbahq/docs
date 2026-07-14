@@ -1,6 +1,8 @@
 import { docsProducts } from "../src/docs/catalog";
 
 const MARKDOWN_MEDIA_TYPE = "text/markdown";
+const TOKEN_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
+const QUALITY_PATTERN = /^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/;
 const MARKDOWN_PATHS = new Set([
   "/index.md",
   ...docsProducts.flatMap((product) =>
@@ -32,22 +34,235 @@ const addVaryAccept = (response: Response): Response => {
   });
 };
 
-const getQuality = (parameters: string[]): number => {
-  const qualityParameter = parameters.find(
-    (parameter) => parameter.split("=", 1)[0]?.trim().toLowerCase() === "q"
-  );
+interface MediaRange {
+  parameters: ReadonlyMap<string, string>;
+  quality: number;
+  subtype: string;
+  type: string;
+}
 
-  if (!qualityParameter) {
-    return 1;
+interface Representation {
+  parameters: ReadonlyMap<string, string>;
+  subtype: string;
+  type: string;
+}
+
+const HTML_REPRESENTATION = {
+  parameters: new Map([["charset", "utf-8"]]),
+  subtype: "html",
+  type: "text",
+} satisfies Representation;
+
+const MARKDOWN_REPRESENTATION = {
+  parameters: new Map([["charset", "utf-8"]]),
+  subtype: "markdown",
+  type: "text",
+} satisfies Representation;
+
+const splitOutsideQuotes = (
+  value: string,
+  delimiter: "," | ";"
+): string[] | undefined => {
+  const parts: string[] = [];
+  let escaped = false;
+  let quoted = false;
+  let start = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    const character = value[index];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (quoted && character === "\\") {
+      escaped = true;
+      continue;
+    }
+
+    if (character === '"') {
+      quoted = !quoted;
+      continue;
+    }
+
+    if (!quoted && character === delimiter) {
+      parts.push(value.slice(start, index));
+      start = index + 1;
+    }
   }
 
-  const quality = Number.parseFloat(
-    qualityParameter.slice(qualityParameter.indexOf("=") + 1).trim()
-  );
+  if (quoted || escaped) {
+    return undefined;
+  }
 
-  return Number.isFinite(quality) && quality >= 0 && quality <= 1
-    ? quality
-    : 0;
+  parts.push(value.slice(start));
+  return parts;
+};
+
+const parseParameterValue = (value: string): string | undefined => {
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue.startsWith('"')) {
+    return TOKEN_PATTERN.test(trimmedValue)
+      ? trimmedValue.toLowerCase()
+      : undefined;
+  }
+
+  if (trimmedValue.length < 2 || !trimmedValue.endsWith('"')) {
+    return undefined;
+  }
+
+  let parsedValue = "";
+  let escaped = false;
+
+  for (const character of trimmedValue.slice(1, -1)) {
+    if (escaped) {
+      parsedValue += character;
+      escaped = false;
+    } else if (character === "\\") {
+      escaped = true;
+    } else if (character === '"') {
+      return undefined;
+    } else {
+      parsedValue += character;
+    }
+  }
+
+  return escaped ? undefined : parsedValue.toLowerCase();
+};
+
+const parseMediaRange = (value: string): MediaRange | undefined => {
+  const parts = splitOutsideQuotes(value, ";");
+  if (!parts) {
+    return undefined;
+  }
+
+  const mediaTypeParts = parts[0]?.trim().toLowerCase().split("/");
+  if (!mediaTypeParts || mediaTypeParts.length !== 2) {
+    return undefined;
+  }
+
+  const [type, subtype] = mediaTypeParts;
+  if (
+    !(type && subtype) ||
+    !TOKEN_PATTERN.test(type) ||
+    !TOKEN_PATTERN.test(subtype) ||
+    (type === "*" && subtype !== "*")
+  ) {
+    return undefined;
+  }
+
+  const parameters = new Map<string, string>();
+  let quality = 1;
+  let sawQuality = false;
+
+  for (const rawParameter of parts.slice(1)) {
+    const separator = rawParameter.indexOf("=");
+    const name = rawParameter
+      .slice(0, separator < 0 ? undefined : separator)
+      .trim()
+      .toLowerCase();
+
+    if (!TOKEN_PATTERN.test(name)) {
+      return undefined;
+    }
+
+    if (name === "q") {
+      const rawQuality = rawParameter.slice(separator + 1).trim();
+      if (
+        sawQuality ||
+        separator < 0 ||
+        !QUALITY_PATTERN.test(rawQuality)
+      ) {
+        return undefined;
+      }
+
+      quality = Number(rawQuality);
+      sawQuality = true;
+      continue;
+    }
+
+    const parameterValue = parseParameterValue(
+      rawParameter.slice(separator + 1)
+    );
+    if (
+      separator < 0 ||
+      parameterValue === undefined ||
+      parameters.has(name)
+    ) {
+      return undefined;
+    }
+
+    parameters.set(name, parameterValue);
+  }
+
+  return { parameters, quality, subtype, type };
+};
+
+const parseMediaRanges = (accept: string): MediaRange[] => {
+  const rangeValues = splitOutsideQuotes(accept, ",");
+  if (!rangeValues) {
+    return [];
+  }
+
+  return rangeValues.flatMap((rangeValue) => {
+    const range = parseMediaRange(rangeValue);
+
+    return range ? [range] : [];
+  });
+};
+
+const matchesRepresentation = (
+  range: MediaRange,
+  representation: Representation
+): boolean => {
+  const matchesType =
+    (range.type === "*" || range.type === representation.type) &&
+    (range.subtype === "*" || range.subtype === representation.subtype);
+
+  return (
+    matchesType &&
+    [...range.parameters].every(
+      ([name, value]) => representation.parameters.get(name) === value
+    )
+  );
+};
+
+const getRepresentationQuality = (
+  ranges: MediaRange[],
+  representation: Representation
+): number => {
+  let bestParameterSpecificity = -1;
+  let bestQuality = 0;
+  let bestTypeSpecificity = -1;
+
+  for (const range of ranges) {
+    if (!matchesRepresentation(range, representation)) {
+      continue;
+    }
+
+    const typeSpecificity =
+      range.type === "*" ? 0 : range.subtype === "*" ? 1 : 2;
+    const parameterSpecificity = range.parameters.size;
+    const isMoreSpecific =
+      typeSpecificity > bestTypeSpecificity ||
+      (typeSpecificity === bestTypeSpecificity &&
+        parameterSpecificity > bestParameterSpecificity);
+
+    if (isMoreSpecific) {
+      bestParameterSpecificity = parameterSpecificity;
+      bestQuality = range.quality;
+      bestTypeSpecificity = typeSpecificity;
+    } else if (
+      typeSpecificity === bestTypeSpecificity &&
+      parameterSpecificity === bestParameterSpecificity
+    ) {
+      bestQuality = Math.max(bestQuality, range.quality);
+    }
+  }
+
+  return bestQuality;
 };
 
 export const acceptsMarkdown = (accept: string | null): boolean => {
@@ -55,14 +270,23 @@ export const acceptsMarkdown = (accept: string | null): boolean => {
     return false;
   }
 
-  return accept.split(",").some((range) => {
-    const [mediaType, ...parameters] = range.split(";");
+  const ranges = parseMediaRanges(accept);
+  const hasExplicitMarkdownRange = ranges.some(
+    (range) =>
+      range.type === MARKDOWN_REPRESENTATION.type &&
+      range.subtype === MARKDOWN_REPRESENTATION.subtype &&
+      matchesRepresentation(range, MARKDOWN_REPRESENTATION)
+  );
+  const markdownQuality = getRepresentationQuality(
+    ranges,
+    MARKDOWN_REPRESENTATION
+  );
 
-    return (
-      mediaType?.trim().toLowerCase() === MARKDOWN_MEDIA_TYPE &&
-      getQuality(parameters) > 0
-    );
-  });
+  return (
+    hasExplicitMarkdownRange &&
+    markdownQuality > 0 &&
+    markdownQuality >= getRepresentationQuality(ranges, HTML_REPRESENTATION)
+  );
 };
 
 export const getMarkdownPath = (pathname: string): string | undefined => {

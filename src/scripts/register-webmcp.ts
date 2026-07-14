@@ -28,14 +28,57 @@ type WebMcpDocument = Document & {
 };
 
 const MARKDOWN_CHUNK_LENGTH = 1200;
+const markdownCharactersByPath = new Map<string, Promise<string[]>>();
 const markdownLink = document.querySelector<HTMLLinkElement>(
   'link[rel="alternate"][type="text/markdown"]'
 );
 const modelContext = (document as WebMcpDocument).modelContext;
 
-if (markdownLink && typeof modelContext?.registerTool === "function") {
-  const markdownPath = new URL(markdownLink.href).pathname;
+const getCurrentMarkdownPath = (): string => {
+  const currentMarkdownLink = document.querySelector<HTMLLinkElement>(
+    'link[rel="alternate"][type="text/markdown"]'
+  );
 
+  if (!currentMarkdownLink) {
+    throw new Error("The current page does not advertise a Markdown version.");
+  }
+
+  return new URL(currentMarkdownLink.href).pathname;
+};
+
+const getMarkdownCharacters = async (
+  markdownPath: string
+): Promise<string[]> => {
+  let charactersPromise = markdownCharactersByPath.get(markdownPath);
+
+  if (!charactersPromise) {
+    charactersPromise = (async () => {
+      const response = await fetch(markdownPath, {
+        headers: { Accept: "text/markdown" },
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `The page Markdown request failed with status ${response.status}.`
+        );
+      }
+
+      return [...(await response.text())];
+    })();
+    markdownCharactersByPath.set(markdownPath, charactersPromise);
+  }
+
+  try {
+    return await charactersPromise;
+  } catch (error) {
+    if (markdownCharactersByPath.get(markdownPath) === charactersPromise) {
+      markdownCharactersByPath.delete(markdownPath);
+    }
+    throw error;
+  }
+};
+
+if (markdownLink && typeof modelContext?.registerTool === "function") {
   void modelContext
     .registerTool({
       annotations: {
@@ -49,17 +92,8 @@ if (markdownLink && typeof modelContext?.registerTool === "function") {
           throw new Error("Offset must be a non-negative integer.");
         }
 
-        const response = await fetch(markdownPath, {
-          headers: { Accept: "text/markdown" },
-        });
-
-        if (!response.ok) {
-          throw new Error(
-            `The page Markdown request failed with status ${response.status}.`
-          );
-        }
-
-        const characters = [...(await response.text())];
+        const markdownPath = getCurrentMarkdownPath();
+        const characters = await getMarkdownCharacters(markdownPath);
 
         if (offset > characters.length) {
           throw new Error(

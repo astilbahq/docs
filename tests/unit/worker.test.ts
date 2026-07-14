@@ -56,7 +56,76 @@ describe("Markdown negotiation", () => {
     expect(acceptsMarkdown(null)).toBe(false);
     expect(acceptsMarkdown("*/*")).toBe(false);
     expect(acceptsMarkdown("text/html, text/markdown;q=0")).toBe(false);
-    expect(acceptsMarkdown("text/html, TEXT/MARKDOWN; q=0.8")).toBe(true);
+    expect(
+      acceptsMarkdown("text/html;q=0.5, TEXT/MARKDOWN; q=0.8")
+    ).toBe(true);
+    expect(acceptsMarkdown("text/markdown;q=0.8invalid")).toBe(false);
+    expect(acceptsMarkdown("text/markdown;q=0x1")).toBe(false);
+    expect(acceptsMarkdown("text/markdown;q=.8")).toBe(false);
+    expect(acceptsMarkdown("text/markdown;q=1.0000")).toBe(false);
+  });
+
+  it("honours quality and specificity when HTML is also acceptable", () => {
+    expect(
+      acceptsMarkdown("text/html;q=1, text/markdown;q=0.1")
+    ).toBe(false);
+    expect(
+      acceptsMarkdown("text/html;q=0.1, text/markdown;q=0.8")
+    ).toBe(true);
+    expect(
+      acceptsMarkdown("application/json;q=1, text/markdown;q=0.8")
+    ).toBe(true);
+    expect(acceptsMarkdown("text/html, text/markdown")).toBe(true);
+    expect(acceptsMarkdown("*/*;q=1, text/markdown;q=0.8")).toBe(
+      false
+    );
+    expect(
+      acceptsMarkdown("text/*;q=0.9, text/markdown;q=0.8")
+    ).toBe(false);
+    expect(
+      acceptsMarkdown(
+        "text/*;q=0.9, text/html;q=0.1, text/markdown;q=0.8"
+      )
+    ).toBe(true);
+    expect(acceptsMarkdown("text/*;q=1, text/markdown;q=0")).toBe(
+      false
+    );
+  });
+
+  it("matches media parameters before applying their quality", () => {
+    expect(
+      acceptsMarkdown(
+        "text/markdown;q=1, text/markdown;charset=utf-8;q=0, text/html;q=0.5"
+      )
+    ).toBe(false);
+    expect(
+      acceptsMarkdown(
+        "text/markdown;charset=iso-8859-1;q=1, text/html;q=0.5"
+      )
+    ).toBe(false);
+    expect(
+      acceptsMarkdown(
+        'text/html;q=0.5, text/markdown;charset="UTF-8";q=0.8'
+      )
+    ).toBe(true);
+    expect(
+      acceptsMarkdown(
+        'text/markdown;profile="x,y";q=0, text/html;q=1'
+      )
+    ).toBe(false);
+    expect(
+      acceptsMarkdown(
+        "text/html;q=0.5, text/markdown;q=0.8;charset=utf-8"
+      )
+    ).toBe(true);
+    expect(
+      acceptsMarkdown(
+        "text/html;q=0.5, text/markdown;q=0.8;charset=iso-8859-1"
+      )
+    ).toBe(false);
+    expect(acceptsMarkdown("text/markdown;q=0.8;broken")).toBe(
+      false
+    );
   });
 
   it("maps canonical pages to their authored Markdown siblings", () => {
