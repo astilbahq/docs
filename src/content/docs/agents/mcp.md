@@ -19,14 +19,14 @@ The endpoint does not require credentials. It cannot change documentation, acces
 
 | Tool | Use it to |
 | --- | --- |
-| <code>search_docs</code> | Find published pages by words or API names, with optional product and documentation-version filters. |
-| <code>read_doc</code> | Read a bounded chunk from a page returned by search or resource discovery. |
+| `search_docs` | Find published pages by words or API names, with optional product and documentation-version filters. |
+| `read_doc` | Read a bounded chunk from a page returned by search or resource discovery. |
 
 Both tools are read-only, non-destructive, and idempotent. Search returns at most 10 results per call. A read returns at most 32,000 UTF-16 characters and reports the next offset when more content remains.
 
 ## Resources
 
-Every published Markdown page is also exposed as a fixed MCP resource. Resource URIs stay on <code>docs.astilba.com</code>; the server does not fetch arbitrary URLs.
+Every published Markdown page is also exposed as a fixed MCP resource. Resource URIs stay on `docs.astilba.com`; the server does not fetch arbitrary URLs.
 
 When you need to make a release or availability claim about Cache, read [API status](/cache/api-status/) before relying on examples elsewhere in the documentation.
 

@@ -64,7 +64,7 @@ for (const markdownPath of siteMarkdownPaths) {
   }
 }
 
-const EXPECTED_CORPUS_PAGES =
+export const EXPECTED_CORPUS_PAGES =
   catalogMetadataByPath.size + siteMarkdownPaths.size;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

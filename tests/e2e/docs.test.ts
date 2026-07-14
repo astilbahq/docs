@@ -3,8 +3,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { expect, type Page, test } from "@playwright/test";
 import { createHash } from "node:crypto";
-import { docsProducts } from "../../src/docs/catalog";
-import { siteDocsPages } from "../../src/docs/site-pages";
+import { EXPECTED_CORPUS_PAGES } from "../../src/docs/mcp-corpus";
 
 interface WebMcpToolProbe {
   annotations: {
@@ -23,22 +22,6 @@ declare global {
 }
 
 const docsOrigin = "https://docs.astilba.com";
-const docsResourceCount =
-  siteDocsPages.length +
-  docsProducts.reduce(
-    (productTotal, product) =>
-      productTotal +
-      product.versions.reduce(
-        (versionTotal, version) =>
-          versionTotal +
-          version.sections.reduce(
-            (sectionTotal, section) => sectionTotal + section.items.length,
-            0
-          ),
-        0
-      ),
-    0
-  );
 
 const expectNoAxeViolations = async (page: Page): Promise<void> => {
   const results = await new AxeBuilder({ page })
@@ -96,7 +79,7 @@ test("serves the public documentation corpus over MCP", async ({
           annotations.openWorldHint === false
       )
     ).toBe(true);
-    expect(resources.resources).toHaveLength(docsResourceCount);
+    expect(resources.resources).toHaveLength(EXPECTED_CORPUS_PAGES);
     expect(resources.resources.some(({ uri }) => uri === overviewUri)).toBe(
       true
     );
