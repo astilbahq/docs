@@ -1,5 +1,5 @@
 import type { StarlightUserConfig } from "@astrojs/starlight/types";
-import { cacheProduct } from "./products/cache";
+import { cacheProduct } from "./products/cache.ts";
 import {
   docsIcons,
   type DocsContext,
@@ -7,7 +7,7 @@ import {
   type DocsPage,
   type DocsProduct,
   type DocsVersion,
-} from "./types";
+} from "./types.ts";
 
 const assertUnique = (
   values: Set<string>,

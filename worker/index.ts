@@ -1,4 +1,5 @@
 import { docsProducts } from "../src/docs/catalog";
+import { DOCS_MCP_PATH, handleDocsMcpRequest } from "./docs-mcp";
 
 const MARKDOWN_MEDIA_TYPE = "text/markdown";
 const TOKEN_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
@@ -327,13 +328,39 @@ const getAsset = (
 
 export const handleRequest = async (
   request: Request,
-  assets: Fetcher
+  assets: Fetcher,
+  mcpRateLimiter?: RateLimit
 ): Promise<Response> => {
+  const url = new URL(request.url);
+
+  if (url.pathname === DOCS_MCP_PATH) {
+    if (!mcpRateLimiter) {
+      return Response.json(
+        {
+          error: {
+            code: -32603,
+            message: "The MCP endpoint is temporarily unavailable.",
+          },
+          id: null,
+          jsonrpc: "2.0",
+        },
+        {
+          headers: {
+            "Cache-Control": "no-store",
+            "Content-Type": "application/json; charset=utf-8",
+          },
+          status: 503,
+        }
+      );
+    }
+
+    return handleDocsMcpRequest(request, assets, mcpRateLimiter);
+  }
+
   if (request.method !== "GET" && request.method !== "HEAD") {
     return assets.fetch(request);
   }
 
-  const url = new URL(request.url);
   const markdownPath = getMarkdownPath(url.pathname);
 
   if (markdownPath && acceptsMarkdown(request.headers.get("Accept"))) {
@@ -374,6 +401,6 @@ export const handleRequest = async (
 
 export default {
   fetch(request, env) {
-    return handleRequest(request, env.ASSETS);
+    return handleRequest(request, env.ASSETS, env.MCP_RATE_LIMITER);
   },
 } satisfies ExportedHandler<Env>;

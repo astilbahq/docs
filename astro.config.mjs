@@ -101,6 +101,14 @@ export default defineConfig({
               starlightLlmsTxt({
                 details:
                   "Astilba Cache is an unreleased preview without a supported installation path. Treat its examples as API previews, not setup instructions.",
+                optionalLinks: [
+                  {
+                    label: "Astilba documentation MCP",
+                    url: `${DEPLOYED_DOCS_ORIGIN}/mcp`,
+                    description:
+                      "Read-only Streamable HTTP endpoint for searching and reading the published documentation corpus.",
+                  },
+                ],
                 customSets: [
                   {
                     label: "Astilba Cache",

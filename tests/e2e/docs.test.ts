@@ -1,6 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { expect, type Page, test } from "@playwright/test";
 import { createHash } from "node:crypto";
+import { docsProducts } from "../../src/docs/catalog";
 
 interface WebMcpToolProbe {
   annotations: {
@@ -16,6 +19,24 @@ declare global {
     __webMcpTools?: WebMcpToolProbe[];
   }
 }
+
+const docsOrigin = "https://docs.astilba.com";
+const docsResourceCount =
+  1 +
+  docsProducts.reduce(
+    (productTotal, product) =>
+      productTotal +
+      product.versions.reduce(
+        (versionTotal, version) =>
+          versionTotal +
+          version.sections.reduce(
+            (sectionTotal, section) => sectionTotal + section.items.length,
+            0
+          ),
+        0
+      ),
+    0
+  );
 
 const expectNoAxeViolations = async (page: Page): Promise<void> => {
   const results = await new AxeBuilder({ page })
@@ -34,6 +55,68 @@ const expectNoAxeViolations = async (page: Page): Promise<void> => {
     }))
   ).toEqual([]);
 };
+
+test("serves the public documentation corpus over MCP", async ({
+  baseURL,
+}) => {
+  if (!baseURL) {
+    throw new Error("The MCP test requires Playwright's local Worker URL.");
+  }
+
+  const client = new Client({
+    name: "astilba-docs-test",
+    version: "1.0.0",
+  });
+  const transport = new StreamableHTTPClientTransport(
+    new URL("/mcp", baseURL)
+  );
+
+  try {
+    await client.connect(transport);
+    const tools = await client.listTools();
+    const resources = await client.listResources();
+    const search = await client.callTool({
+      arguments: { query: "tag invalidation" },
+      name: "search_docs",
+    });
+    const overviewUri = `${docsOrigin}/cache/overview.md`;
+    const overview = await client.readResource({ uri: overviewUri });
+
+    expect(tools.tools.map(({ name }) => name)).toEqual([
+      "search_docs",
+      "read_doc",
+    ]);
+    expect(
+      tools.tools.every(
+        ({ annotations }) =>
+          annotations?.readOnlyHint === true &&
+          annotations.destructiveHint === false &&
+          annotations.openWorldHint === false
+      )
+    ).toBe(true);
+    expect(resources.resources).toHaveLength(docsResourceCount);
+    expect(resources.resources.some(({ uri }) => uri === overviewUri)).toBe(
+      true
+    );
+    const searchOutput = search.structuredContent as {
+      results: Array<Record<string, unknown>>;
+    };
+    expect(searchOutput.results[0]).toMatchObject({
+      title: "Invalidating data",
+      uri: `${docsOrigin}/cache/tags-and-invalidation.md`,
+    });
+    expect(overview.contents[0]).toMatchObject({
+      mimeType: "text/markdown",
+      uri: overviewUri,
+    });
+    expect(overview.contents[0]).toHaveProperty(
+      "text",
+      expect.stringContaining("# Overview")
+    );
+  } finally {
+    await client.close();
+  }
+});
 
 test("serves agent-readable Markdown and keeps copy states independent", async ({
   page,
@@ -63,7 +146,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     "/cache/overview.md"
   );
   expect(negotiatedMarkdownResponse.headers()["content-signal"]).toBe(
-    "ai-train=no, search=yes, ai-input=yes"
+    "ai-train=yes, search=yes, ai-input=yes"
   );
   expect(negotiatedMarkdownResponse.headers().link).toContain(
     'rel="describedby"'

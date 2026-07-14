@@ -20,7 +20,7 @@ const createAssets = () => {
 
       return new Response(`# ${path === "/index.md" ? "Home" : "Overview"}`, {
         headers: {
-          "Content-Signal": "ai-train=no, search=yes, ai-input=yes",
+          "Content-Signal": "ai-train=yes, search=yes, ai-input=yes",
           "Content-Type": "text/markdown; charset=utf-8",
           ETag: '"markdown"',
         },
@@ -213,6 +213,17 @@ describe("Markdown negotiation", () => {
     expect(response.headers.get("Content-Type")).toBe(
       "text/html; charset=utf-8"
     );
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not treat the slash-suffixed MCP path as the protocol endpoint", async () => {
+    const { assets, fetch } = createAssets();
+    const response = await handleRequest(
+      new Request("https://docs.astilba.com/mcp/", { method: "POST" }),
+      assets
+    );
+
+    expect(response.status).toBe(200);
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 });

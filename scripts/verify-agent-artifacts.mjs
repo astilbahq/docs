@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { parseDocsCorpus } from "../src/docs/mcp-corpus.ts";
 
 const siteValue = process.env.ASTILBA_DOCS_SITE;
 
@@ -39,6 +40,9 @@ const assertExact = (artifact, label, actual, expected) => {
     );
   }
 };
+
+const compareStrings = (left, right) =>
+  left < right ? -1 : left > right ? 1 : 0;
 
 const parseHeaderRules = (content) =>
   content
@@ -109,11 +113,47 @@ const assertLink = (html, rel, href) => {
   }
 };
 
+const getFrontmatterString = (
+  markdown,
+  field,
+  artifact,
+  { required = false } = {}
+) => {
+  const frontmatter = markdown.match(
+    /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/
+  )?.[1];
+
+  if (!frontmatter) {
+    throw new Error(
+      `[agent-artifacts] dist/${artifact} must begin with generated frontmatter.`
+    );
+  }
+
+  const matches = [
+    ...frontmatter.matchAll(
+      new RegExp(`^${field}:\\s*("(?:[^"\\\\]|\\\\.)*")\\s*$`, "gm")
+    ),
+  ];
+
+  if (matches.length === 0 && !required) {
+    return undefined;
+  }
+
+  if (matches.length !== 1) {
+    throw new Error(
+      `[agent-artifacts] dist/${artifact} must define ${field} ${required ? "exactly once" : "at most once"} as a JSON string.`
+    );
+  }
+
+  return JSON.parse(matches[0][1]);
+};
+
 const requiredArtifacts = [
   ".well-known/agent-skills/astilba-cache-docs/SKILL.md",
   ".well-known/agent-skills/index.json",
   "_headers",
   "_llms-txt/astilba-cache.txt",
+  "_mcp/docs.json",
   "cache/overview.md",
   "cache/overview/index.html",
   "index.md",
@@ -133,7 +173,7 @@ for (const artifact of requiredArtifacts) {
   artifacts.set(artifact, await readArtifact(artifact));
 }
 
-const contentSignal = "ai-train=no, search=yes, ai-input=yes";
+const contentSignal = "ai-train=yes, search=yes, ai-input=yes";
 const staticHeaders = artifacts.get("_headers");
 const headerRules = parseHeaderRules(staticHeaders);
 assertHeaderValues(headerRules, "/*", "Content-Signal", [contentSignal]);
@@ -164,6 +204,18 @@ assertHeaderValues(
   "/.well-known/agent-skills/index.json",
   "Content-Type",
   ["application/json; charset=utf-8"]
+);
+assertHeaderValues(headerRules, "/_mcp/docs.json", "Cache-Control", [
+  "public, max-age=3600",
+]);
+assertHeaderValues(headerRules, "/_mcp/docs.json", "Content-Type", [
+  "application/json; charset=utf-8",
+]);
+assertHeaderValues(
+  headerRules,
+  "/_mcp/docs.json",
+  "X-Content-Type-Options",
+  ["nosniff"]
 );
 
 const contentSignals = headerRules.flatMap(
@@ -201,6 +253,7 @@ assertExact(
 );
 assertIncludes(skillArtifact, skill, "# Astilba Cache documentation");
 assertIncludes(skillArtifact, skill, "https://docs.astilba.com/cache/api-status.md");
+assertIncludes(skillArtifact, skill, "https://docs.astilba.com/mcp");
 
 const pageUrl = new URL("/cache/overview/", site).href;
 const markdownUrl = new URL("/cache/overview.md", site).href;
@@ -208,12 +261,14 @@ const homeUrl = new URL("/", site).href;
 const homeMarkdownUrl = new URL("/index.md", site).href;
 const llmsUrl = new URL("/llms.txt", site).href;
 const cacheSetUrl = new URL("/_llms-txt/astilba-cache.txt", site).href;
+const mcpUrl = new URL("/mcp", site).href;
 const sitemapUrl = new URL("/sitemap-index.xml", site).href;
 
 const sitemapPages = [
   ...artifacts.get("sitemap-0.xml").matchAll(/<loc>([^<]+)<\/loc>/g),
 ].map((match) => new URL(match[1]));
 const pagePatterns = [];
+const mcpResources = [];
 
 for (const sitemapPage of sitemapPages) {
   if (sitemapPage.origin !== site.origin) {
@@ -262,13 +317,69 @@ for (const sitemapPage of sitemapPages) {
   const markdownArtifact = decodeURIComponent(
     alternateUrl.pathname.replace(/^\//, "")
   );
-  await readArtifact(markdownArtifact);
+  const markdownContent = await readArtifact(markdownArtifact);
+  const canonicalUrl = getFrontmatterString(
+    markdownContent,
+    "canonical",
+    markdownArtifact,
+    { required: true }
+  );
+
+  if (canonicalUrl !== sitemapPage.href) {
+    throw new Error(
+      `[agent-artifacts] dist/${markdownArtifact} canonical URL does not match the sitemap: ${JSON.stringify(canonicalUrl)}.`
+    );
+  }
+
   assertLink(pageHtml, "describedby", llmsUrl);
   assertHeaderValues(headerRules, pagePattern, "Link", [
     `<${alternateUrl.pathname}>; rel="alternate"; type="text/markdown"`,
     '</llms.txt>; rel="describedby"; type="text/plain"',
   ]);
   pagePatterns.push(pagePattern);
+  mcpResources.push({
+    canonicalUrl,
+    content: markdownContent,
+    description: getFrontmatterString(
+      markdownContent,
+      "description",
+      markdownArtifact,
+      { required: true }
+    ),
+    docsVersion: getFrontmatterString(
+      markdownContent,
+      "docsVersion",
+      markdownArtifact
+    ),
+    docsVersionId: getFrontmatterString(
+      markdownContent,
+      "docsVersionId",
+      markdownArtifact
+    ),
+    lifecycle: getFrontmatterString(
+      markdownContent,
+      "lifecycle",
+      markdownArtifact
+    ),
+    markdownPath: alternateUrl.pathname,
+    product: getFrontmatterString(
+      markdownContent,
+      "product",
+      markdownArtifact
+    ),
+    productId: getFrontmatterString(
+      markdownContent,
+      "productId",
+      markdownArtifact
+    ),
+    title: getFrontmatterString(
+      markdownContent,
+      "title",
+      markdownArtifact,
+      { required: true }
+    ),
+    uri: alternateUrl.href,
+  });
 }
 
 if (pagePatterns.length === 0) {
@@ -292,9 +403,33 @@ assertExact(
   pagePatterns.sort()
 );
 
+const mcpCorpus = parseDocsCorpus(
+  JSON.parse(artifacts.get("_mcp/docs.json"))
+);
+
+const sortMcpResources = (left, right) => {
+  if (left.markdownPath === "/index.md") {
+    return -1;
+  }
+
+  if (right.markdownPath === "/index.md") {
+    return 1;
+  }
+
+  return compareStrings(left.markdownPath, right.markdownPath);
+};
+const expectedMcpResources = mcpResources.toSorted(sortMcpResources);
+assertExact(
+  "_mcp/docs.json",
+  "public resource corpus",
+  mcpCorpus.pages,
+  expectedMcpResources
+);
+
 const llmsIndex = artifacts.get("llms.txt");
 assertIncludes("llms.txt", llmsIndex, cacheSetUrl);
 assertIncludes("llms.txt", llmsIndex, "Cache is an unreleased preview");
+assertIncludes("llms.txt", llmsIndex, mcpUrl);
 
 const cacheSet = artifacts.get("_llms-txt/astilba-cache.txt");
 const firstCacheHeading = cacheSet.match(/^# .+$/m)?.[0];

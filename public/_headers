@@ -1,5 +1,5 @@
 /*
-  Content-Signal: ai-train=no, search=yes, ai-input=yes
+  Content-Signal: ai-train=yes, search=yes, ai-input=yes
 
 /*.md
   Content-Type: text/markdown; charset=utf-8
@@ -12,3 +12,8 @@
 
 /.well-known/agent-skills/index.json
   Content-Type: application/json; charset=utf-8
+
+/_mcp/docs.json
+  Cache-Control: public, max-age=3600
+  Content-Type: application/json; charset=utf-8
+  X-Content-Type-Options: nosniff

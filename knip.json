@@ -11,7 +11,8 @@
     "*.config.{cjs,js,mjs,ts}!",
     "scripts/**/*.mjs!",
     "src/**/*.{astro,ts,tsx}!",
-    "tests/**/*.ts!"
+    "tests/**/*.ts!",
+    "worker/**/*.ts!"
   ],
   "ignoreDependencies": [
     "@fontsource-variable/geist",
