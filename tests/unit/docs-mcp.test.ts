@@ -1,0 +1,530 @@
+import { describe, expect, it, vi } from "vitest";
+import { docsProducts } from "../../src/docs/catalog";
+import {
+  handleDocsMcpRequest,
+  parseDocsCorpus,
+  readDoc,
+  searchDocs,
+} from "../../worker/docs-mcp";
+
+const docsOrigin = "https://docs.astilba.com";
+
+const createRateLimiter = (success = true) => {
+  const limit = vi.fn(async () => ({ success }));
+  const rateLimiter = { limit } satisfies RateLimit;
+
+  return { limit, rateLimiter };
+};
+
+const createCorpusValue = () => ({
+  schemaVersion: 1,
+  pages: [
+    {
+      canonicalUrl: `${docsOrigin}/`,
+      content: "# Astilba documentation\n\nBrowse the public product docs.",
+      description: "Public documentation for Astilba products.",
+      markdownPath: "/index.md",
+      title: "Astilba documentation",
+      uri: `${docsOrigin}/index.md`,
+    },
+    ...docsProducts.flatMap((product) =>
+      product.versions.flatMap((version) =>
+        version.sections.flatMap((section) =>
+          section.items.map((page) => {
+            const markdownPath = `/${version.basePath}/${page.slug}.md`;
+            const isOverview = page.slug === "overview";
+            const isInvalidation = page.slug === "tags-and-invalidation";
+            const content = isOverview
+              ? "A😀B Cache overview and storage boundaries."
+              : isInvalidation
+                ? "# Invalidating data\n\nTag invalidation supports related values."
+                : `# ${page.label}\n\nPublic Cache documentation for ${page.label}.`;
+
+            return {
+              canonicalUrl: `${docsOrigin}/${version.basePath}/${page.slug}/`,
+              content,
+              description: isInvalidation
+                ? "Invalidate related cached values with tags."
+                : `Learn about ${page.label}.`,
+              docsVersion: version.label,
+              docsVersionId: version.id,
+              lifecycle: version.lifecycle,
+              markdownPath,
+              product: product.label,
+              productId: product.id,
+              title: page.label,
+              uri: `${docsOrigin}${markdownPath}`,
+            };
+          }),
+        ),
+      ),
+    ),
+  ],
+});
+
+const createAssets = () => {
+  const corpus = JSON.stringify(createCorpusValue());
+  const fetch = vi.fn<Fetcher["fetch"]>(async (input) => {
+    const url = new URL(
+      input instanceof Request ? input.url : input.toString(),
+    );
+
+    if (url.pathname === "/_mcp/docs.json") {
+      return new Response(corpus, {
+        headers: { "Content-Type": "application/json; charset=utf-8" },
+      });
+    }
+
+    return new Response("Not found", { status: 404 });
+  });
+  const assets = {
+    connect() {
+      throw new Error("The test asset binding does not open sockets.");
+    },
+    fetch,
+  } satisfies Fetcher;
+
+  return { assets, fetch };
+};
+
+const createRpcRequest = (
+  method: string,
+  params?: Record<string, unknown>,
+  options: {
+    clientIp?: string;
+    id?: number;
+    origin?: string;
+    protocolVersion?: string;
+  } = {},
+) =>
+  new Request(`${docsOrigin}/mcp`, {
+    body: JSON.stringify({
+      id: options.id ?? 1,
+      jsonrpc: "2.0",
+      method,
+      ...(params ? { params } : {}),
+    }),
+    headers: {
+      Accept: "application/json, text/event-stream",
+      "Content-Type": "application/json",
+      "MCP-Protocol-Version": options.protocolVersion ?? "2025-11-25",
+      ...(options.clientIp ? { "CF-Connecting-IP": options.clientIp } : {}),
+      ...(options.origin ? { Origin: options.origin } : {}),
+    },
+    method: "POST",
+  });
+
+describe("generated MCP corpus", () => {
+  it("accepts exactly the homepage and catalogued public pages", () => {
+    const value = createCorpusValue();
+    const corpus = parseDocsCorpus(value);
+
+    expect(corpus.pages).toHaveLength(value.pages.length);
+    expect(corpus.pages[0]?.uri).toBe(`${docsOrigin}/index.md`);
+  });
+
+  it("rejects metadata that differs from the typed catalog", () => {
+    const value = createCorpusValue();
+    const overview = value.pages.find(
+      (page) => page.markdownPath === "/cache/overview.md",
+    );
+
+    if (!overview || !("productId" in overview)) {
+      throw new Error("Missing overview fixture.");
+    }
+
+    overview.productId = "different";
+    expect(() => parseDocsCorpus(value)).toThrow(
+      "differs from the public documentation catalog",
+    );
+  });
+
+  it("rejects resources outside the public docs origin", () => {
+    const value = createCorpusValue();
+    value.pages[0].uri = "https://example.com/index.md";
+
+    expect(() => parseDocsCorpus(value)).toThrow("is not canonical");
+  });
+
+  it("ranks and filters deterministic lexical search results", () => {
+    const corpus = parseDocsCorpus(createCorpusValue());
+    const results = searchDocs(corpus, {
+      productId: "cache",
+      query: "tag invalidation",
+      versionId: "unreleased",
+    });
+
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({
+      productId: "cache",
+      title: "Invalidating data",
+      uri: `${docsOrigin}/cache/tags-and-invalidation.md`,
+      versionId: "unreleased",
+    });
+    expect(
+      searchDocs(corpus, { productId: "missing", query: "cache" }),
+    ).toEqual([]);
+    expect(
+      searchDocs(corpus, { query: "related cached values" })[0],
+    ).toMatchObject({ title: "Invalidating data" });
+  });
+
+  it("reads only allowlisted resources and avoids splitting surrogate pairs", () => {
+    const corpus = parseDocsCorpus(createCorpusValue());
+    const result = readDoc(corpus, {
+      limit: 2,
+      offset: 0,
+      uri: "/cache/overview.md",
+    });
+
+    expect(result).toMatchObject({
+      content: "A",
+      nextOffset: 1,
+      returnedChars: 1,
+    });
+    expect(
+      readDoc(corpus, { uri: "https://example.com/private.md" }),
+    ).toBeUndefined();
+    expect(
+      readDoc(corpus, { uri: `${docsOrigin}/cache/overview/?draft=1` }),
+    ).toBeUndefined();
+    expect(
+      readDoc(corpus, {
+        offset: 10_000,
+        uri: `${docsOrigin}/cache/overview.md`,
+      }),
+    ).toBeUndefined();
+    expect(
+      readDoc(corpus, {
+        offset: 2,
+        uri: `${docsOrigin}/cache/overview.md`,
+      }),
+    ).toBeUndefined();
+    expect(
+      readDoc(corpus, {
+        limit: 1,
+        offset: 1,
+        uri: `${docsOrigin}/cache/overview.md`,
+      }),
+    ).toMatchObject({
+      content: "😀",
+      nextOffset: 3,
+      returnedChars: 2,
+    });
+  });
+});
+
+describe("documentation MCP transport", () => {
+  it("initializes with read-only tool and resource capabilities", async () => {
+    const { assets } = createAssets();
+    const { rateLimiter } = createRateLimiter();
+    const response = await handleDocsMcpRequest(
+      createRpcRequest(
+        "initialize",
+        {
+          capabilities: {},
+          clientInfo: { name: "test-client", version: "1.0.0" },
+          protocolVersion: "2025-11-25",
+        },
+        { origin: docsOrigin },
+      ),
+      assets,
+      rateLimiter,
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("Cache-Control")).toBe("no-store");
+    expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
+      docsOrigin,
+    );
+    expect(body).toMatchObject({
+      result: {
+        capabilities: { resources: {}, tools: {} },
+        serverInfo: { name: "astilba-docs", version: "0.1.0" },
+      },
+    });
+  });
+
+  it("lists resources and invokes both bounded read-only tools", async () => {
+    const { assets, fetch } = createAssets();
+    const { limit, rateLimiter } = createRateLimiter();
+    const resourcesResponse = await handleDocsMcpRequest(
+      createRpcRequest("resources/list"),
+      assets,
+      rateLimiter,
+    );
+    const resourcesBody = (await resourcesResponse.json()) as {
+      result: { resources: Array<Record<string, unknown>> };
+    };
+
+    expect(resourcesBody.result.resources).toHaveLength(
+      createCorpusValue().pages.length,
+    );
+    expect(resourcesBody.result.resources[0]).toMatchObject({
+      mimeType: "text/markdown",
+      uri: `${docsOrigin}/index.md`,
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    const [searchResponse, readResponse] = await Promise.all([
+      handleDocsMcpRequest(
+        createRpcRequest("tools/call", {
+          arguments: { query: "tag invalidation" },
+          name: "search_docs",
+        }),
+        assets,
+        rateLimiter,
+      ),
+      handleDocsMcpRequest(
+        createRpcRequest("tools/call", {
+          arguments: {
+            limit: 8,
+            uri: `${docsOrigin}/cache/overview.md`,
+          },
+          name: "read_doc",
+        }),
+        assets,
+        rateLimiter,
+      ),
+    ]);
+    const searchBody = (await searchResponse.json()) as {
+      result: {
+        structuredContent: {
+          results: Array<Record<string, unknown>>;
+        };
+      };
+    };
+    const readBody = (await readResponse.json()) as {
+      result: { structuredContent: Record<string, unknown> };
+    };
+
+    expect(searchBody.result.structuredContent.results[0]).toMatchObject({
+      title: "Invalidating data",
+      uri: `${docsOrigin}/cache/tags-and-invalidation.md`,
+    });
+    expect(readBody.result.structuredContent).toMatchObject({
+      offset: 0,
+      returnedChars: 8,
+      uri: `${docsOrigin}/cache/overview.md`,
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(limit).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps pre-2025-06-18 tool definitions and results compatible", async () => {
+    const { assets } = createAssets();
+    const { rateLimiter } = createRateLimiter();
+    const options = { protocolVersion: "2025-03-26" };
+    const toolsResponse = await handleDocsMcpRequest(
+      createRpcRequest("tools/list", undefined, options),
+      assets,
+      rateLimiter,
+    );
+    const toolsBody = (await toolsResponse.json()) as {
+      result: { tools: Array<Record<string, unknown>> };
+    };
+    const callResponse = await handleDocsMcpRequest(
+      createRpcRequest(
+        "tools/call",
+        {
+          arguments: { query: "tag invalidation" },
+          name: "search_docs",
+        },
+        options,
+      ),
+      assets,
+      rateLimiter,
+    );
+    const callBody = (await callResponse.json()) as {
+      result: {
+        content: Array<{ type: string }>;
+        structuredContent?: unknown;
+      };
+    };
+
+    expect(toolsBody.result.tools.some((tool) => "outputSchema" in tool)).toBe(
+      false,
+    );
+    expect(callBody.result.structuredContent).toBeUndefined();
+    expect(callBody.result.content).toEqual([
+      expect.objectContaining({ type: "text" }),
+    ]);
+  });
+
+  it("supports bounded legacy JSON-RPC batches", async () => {
+    const { assets } = createAssets();
+    const { limit, rateLimiter } = createRateLimiter();
+    const response = await handleDocsMcpRequest(
+      new Request(`${docsOrigin}/mcp`, {
+        body: JSON.stringify([
+          { id: 1, jsonrpc: "2.0", method: "ping" },
+          { id: 2, jsonrpc: "2.0", method: "resources/list" },
+        ]),
+        headers: {
+          Accept: "application/json, text/event-stream",
+          "Content-Type": "application/json",
+          "MCP-Protocol-Version": "2025-03-26",
+        },
+        method: "POST",
+      }),
+      assets,
+      rateLimiter,
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toHaveLength(2);
+    expect(
+      (body as Array<{ id: number }>).map(({ id }) => id).toSorted(),
+    ).toEqual([1, 2]);
+    expect(limit).not.toHaveBeenCalled();
+  });
+
+  it("rejects modern JSON-RPC batches before loading resources", async () => {
+    const { assets, fetch } = createAssets();
+    const { limit, rateLimiter } = createRateLimiter();
+    const response = await handleDocsMcpRequest(
+      new Request(`${docsOrigin}/mcp`, {
+        body: JSON.stringify([
+          { id: 1, jsonrpc: "2.0", method: "ping" },
+          { id: 2, jsonrpc: "2.0", method: "ping" },
+        ]),
+        headers: {
+          Accept: "application/json, text/event-stream",
+          "Content-Type": "application/json",
+          "MCP-Protocol-Version": "2025-11-25",
+        },
+        method: "POST",
+      }),
+      assets,
+      rateLimiter,
+    );
+
+    expect(response.status).toBe(400);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(limit).not.toHaveBeenCalled();
+  });
+
+  it("rate-limits tool calls before loading the corpus", async () => {
+    const { assets, fetch } = createAssets();
+    const { limit, rateLimiter } = createRateLimiter(false);
+    const response = await handleDocsMcpRequest(
+      createRpcRequest(
+        "tools/call",
+        {
+          arguments: { query: "cache" },
+          name: "search_docs",
+        },
+        { clientIp: "203.0.113.8" },
+      ),
+      assets,
+      rateLimiter,
+    );
+    const body = await response.json();
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("Retry-After")).toBe("60");
+    expect(body).toMatchObject({ id: 1 });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(limit).toHaveBeenCalledExactlyOnceWith({
+      key: "client:203.0.113.8",
+    });
+  });
+
+  it("normalizes unexpected request-stream failures", async () => {
+    const { assets, fetch } = createAssets();
+    const { limit, rateLimiter } = createRateLimiter();
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    const body = new ReadableStream<Uint8Array>({
+      pull() {
+        throw new Error("stream failed");
+      },
+    });
+    const request = new Request(`${docsOrigin}/mcp`, {
+      body,
+      duplex: "half",
+      headers: {
+        Accept: "application/json, text/event-stream",
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+    } as RequestInit & { duplex: "half" });
+
+    try {
+      const response = await handleDocsMcpRequest(
+        request,
+        assets,
+        rateLimiter,
+      );
+
+      expect(response.status).toBe(500);
+      expect(await response.json()).toMatchObject({
+        error: { code: -32603 },
+        id: null,
+      });
+      expect(fetch).not.toHaveBeenCalled();
+      expect(limit).not.toHaveBeenCalled();
+    } finally {
+      consoleError.mockRestore();
+    }
+  });
+
+  it("rejects foreign browser origins before loading the corpus", async () => {
+    const { assets, fetch } = createAssets();
+    const { rateLimiter } = createRateLimiter();
+    const response = await handleDocsMcpRequest(
+      createRpcRequest("tools/list", undefined, {
+        origin: "https://example.com",
+      }),
+      assets,
+      rateLimiter,
+    );
+
+    expect(response.status).toBe(403);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("rejects untrusted request hosts even without an Origin header", async () => {
+    const { assets, fetch } = createAssets();
+    const { limit, rateLimiter } = createRateLimiter();
+    const request = createRpcRequest("tools/list");
+    const response = await handleDocsMcpRequest(
+      new Request("http://evil.example/mcp", request),
+      assets,
+      rateLimiter,
+    );
+
+    expect(response.status).toBe(403);
+    expect(fetch).not.toHaveBeenCalled();
+    expect(limit).not.toHaveBeenCalled();
+  });
+
+  it("answers same-origin preflight and rejects non-POST protocol requests", async () => {
+    const { assets } = createAssets();
+    const { rateLimiter } = createRateLimiter();
+    const preflight = await handleDocsMcpRequest(
+      new Request(`${docsOrigin}/mcp`, {
+        headers: { Origin: docsOrigin },
+        method: "OPTIONS",
+      }),
+      assets,
+      rateLimiter,
+    );
+    const getResponse = await handleDocsMcpRequest(
+      new Request(`${docsOrigin}/mcp`),
+      assets,
+      rateLimiter,
+    );
+
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get("Access-Control-Allow-Origin")).toBe(
+      docsOrigin,
+    );
+    expect(preflight.headers.get("Vary")).toBe("Origin");
+    expect(getResponse.status).toBe(405);
+    expect(getResponse.headers.get("Allow")).toBe("POST, OPTIONS");
+  });
+});

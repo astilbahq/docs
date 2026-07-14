@@ -215,4 +215,15 @@ describe("Markdown negotiation", () => {
     );
     expect(fetch).toHaveBeenCalledTimes(1);
   });
+
+  it("does not treat the slash-suffixed MCP path as the protocol endpoint", async () => {
+    const { assets, fetch } = createAssets();
+    const response = await handleRequest(
+      new Request("https://docs.astilba.com/mcp/", { method: "POST" }),
+      assets
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
 });
