@@ -11,6 +11,9 @@ const markdownUrl = isDocumentationPage
 const llmsUrl = isDocumentationPage && Astro.site
   ? new URL("/llms.txt", Astro.site)
   : undefined;
+const apiCatalogUrl = isDocumentationPage && Astro.site
+  ? new URL("/.well-known/api-catalog", Astro.site)
+  : undefined;
 ---
 
 <StarlightHead />
@@ -27,6 +30,15 @@ const llmsUrl = isDocumentationPage && Astro.site
 {
   llmsUrl && (
     <link href={llmsUrl} rel="describedby" type="text/plain" />
+  )
+}
+{
+  apiCatalogUrl && (
+    <link
+      href={apiCatalogUrl}
+      rel="api-catalog"
+      type="application/linkset+json"
+    />
   )
 }
 

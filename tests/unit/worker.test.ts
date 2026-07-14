@@ -10,7 +10,11 @@ const createAssets = () => {
     const request = new Request(input, init);
     const path = new URL(request.url).pathname;
 
-    if (path === "/index.md" || path === "/cache/overview.md") {
+    if (
+      path === "/index.md" ||
+      path === "/agents/mcp.md" ||
+      path === "/cache/overview.md"
+    ) {
       if (request.headers.get("If-None-Match") === '"markdown"') {
         return new Response(null, {
           headers: { ETag: '"markdown"' },
@@ -133,6 +137,7 @@ describe("Markdown negotiation", () => {
     expect(getMarkdownPath("/cache/overview/")).toBe(
       "/cache/overview.md"
     );
+    expect(getMarkdownPath("/agents/mcp/")).toBe("/agents/mcp.md");
     expect(getMarkdownPath("/cache/overview")).toBeUndefined();
     expect(getMarkdownPath("/missing/")).toBeUndefined();
   });
@@ -153,7 +158,7 @@ describe("Markdown negotiation", () => {
       "/cache/overview.md"
     );
     expect(response.headers.get("Link")).toBe(
-      '</cache/overview.md>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain"'
+      '</cache/overview.md>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"'
     );
     expect(response.headers.get("Vary")).toBe("Accept");
     expect(response.headers.get("ETag")).toBe('"markdown"');

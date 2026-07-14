@@ -5,6 +5,7 @@ import { defineConfig } from "astro/config";
 import starlightLinksValidator from "starlight-links-validator";
 import starlightLlmsTxt from "starlight-llms-txt";
 import { docsProducts, docsSidebar } from "./src/docs/catalog.ts";
+import { siteDocsPages } from "./src/docs/site-pages.ts";
 
 // starlight-llms-txt needs the deployed origin to generate canonical links.
 const DEPLOYED_DOCS_ORIGIN = "https://docs.astilba.com";
@@ -57,6 +58,7 @@ const docsPageOrder = docsProducts.flatMap((product) =>
     )
   )
 );
+const sitePageOrder = siteDocsPages.map(({ id }) => id);
 
 export default defineConfig({
   site,
@@ -117,7 +119,7 @@ export default defineConfig({
                     paths: ["cache/**"],
                   },
                 ],
-                promote: ["index", ...docsPageOrder],
+                promote: [...sitePageOrder, ...docsPageOrder],
               }),
             ]
           : []),

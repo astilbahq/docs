@@ -1,5 +1,6 @@
 import { access, readFile, readdir, writeFile } from "node:fs/promises";
 import { join, relative, resolve, sep } from "node:path";
+import { API_CATALOG_LINK_VALUE } from "../src/docs/agent-discovery.ts";
 
 const dist = resolve(process.cwd(), "dist");
 const headersPath = resolve(dist, "_headers");
@@ -125,7 +126,7 @@ if (totalRuleCount > maxHeaderRules) {
 const pageHeaders = markdownPages
   .map(
     ({ markdownPath, pagePath }) =>
-      `/${pagePath ? `${pagePath}/` : ""}\n  Link: </${markdownPath}>; rel="alternate"; type="text/markdown"\n  Link: </llms.txt>; rel="describedby"; type="text/plain"`
+      `/${pagePath ? `${pagePath}/` : ""}\n  Link: </${markdownPath}>; rel="alternate"; type="text/markdown"\n  Link: </llms.txt>; rel="describedby"; type="text/plain"\n  Link: ${API_CATALOG_LINK_VALUE}`
   )
   .join("\n\n");
 

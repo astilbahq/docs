@@ -3,6 +3,11 @@ import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/
 import { DEFAULT_NEGOTIATED_PROTOCOL_VERSION } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod/v4";
 import {
+  MCP_ENDPOINT_PATH,
+  MCP_SERVER_INFO,
+  MCP_SERVER_INSTRUCTIONS,
+} from "../src/docs/agent-discovery.ts";
+import {
   DOCS_ORIGIN,
   type DocsCorpus,
   type DocsCorpusPage,
@@ -11,11 +16,10 @@ import {
   parseDocsCorpus,
 } from "../src/docs/mcp-corpus.ts";
 
-export const DOCS_MCP_PATH = "/mcp";
+export const DOCS_MCP_PATH = MCP_ENDPOINT_PATH;
 
 const DOCS_HOSTNAME = new URL(DOCS_ORIGIN).hostname;
 const CORPUS_PATH = "/_mcp/docs.json";
-const MCP_SERVER_VERSION = "0.1.0";
 const STRUCTURED_TOOL_RESULTS_VERSION = "2025-06-18";
 const MAX_LEGACY_BATCH_MESSAGES = 16;
 const MAX_REQUEST_BYTES = 256_000;
@@ -389,16 +393,9 @@ const createDocsMcpServer = (
     /^\d{4}-\d{2}-\d{2}$/.test(protocolVersion) &&
     protocolVersion >= STRUCTURED_TOOL_RESULTS_VERSION;
   const server = new McpServer(
+    MCP_SERVER_INFO,
     {
-      description: "Search and read public Astilba product documentation.",
-      name: "astilba-docs",
-      title: "Astilba documentation",
-      version: MCP_SERVER_VERSION,
-      websiteUrl: DOCS_ORIGIN,
-    },
-    {
-      instructions:
-        "Use search_docs to find relevant public pages, then read the linked resource or use read_doc for a bounded chunk. Check API status before making release or availability claims. This server is public and read-only.",
+      instructions: MCP_SERVER_INSTRUCTIONS,
     },
   );
 

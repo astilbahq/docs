@@ -41,6 +41,8 @@ Each product has one typed catalog file under `src/docs/products/`. A product de
 
 Keep the default version pointed at the release readers should land on. The selectors preserve a stable page key across products and versions when that page exists, then fall back to the destination product's overview.
 
+Site-wide guides that do not belong to a product or version are allowlisted in `src/docs/site-pages.ts`. That list keeps their HTML pages, Markdown siblings, content negotiation, and MCP resources aligned without placing them in a product selector.
+
 ## Checks
 
 ```bash
@@ -84,7 +86,11 @@ The homepage and each catalogued documentation page have sibling `.md` represent
 
 Production builds also create `llms-small.txt`, `llms-full.txt`, a Cache-specific document set under `_llms-txt/`, `robots.txt`, the sitemap, and a digest-verified Agent Skills discovery index under `.well-known/agent-skills/`. The Cache skill teaches agents to consult the public corpus and preserve its unreleased boundary; it does not embed private product material.
 
-The same public build generates a bounded corpus for the stateless MCP endpoint at `https://docs.astilba.com/mcp`. Every published Markdown page is a fixed resource, while `search_docs` and `read_doc` provide read-only compatibility for clients whose resource support is limited. Tool calls have a Cloudflare-native per-client, per-colo rate limit; resource discovery and reads remain direct protocol operations. The Worker accepts no arbitrary URL, account state, or private handbook content, and creates a fresh MCP server and transport for every request. A separate, feature-detected WebMCP tool returns the current page's Markdown in bounded chunks in browsers that implement the current `document.modelContext.registerTool` API.
+The same public build generates a bounded corpus for the stateless MCP endpoint at `https://docs.astilba.com/mcp`. Every published Markdown page is a fixed resource, while `search_docs` and `read_doc` provide read-only compatibility for clients whose resource support is limited. Tool calls have a Cloudflare-native per-client, per-colo rate limit; resource discovery and reads remain direct protocol operations. The Worker accepts no arbitrary URL, account state, or private handbook content, and creates a fresh MCP server and transport for every request.
+
+Machine-readable discovery includes an RFC 9727 API catalog, the current experimental MCP catalog and Server Card, and a separate compatibility card for clients that still probe the earlier well-known path. A concise public MCP guide explains the endpoint and its limits. Build verification checks every document, target URL, media type, cache policy, CORS policy, and RFC 8288 link relation before deployment.
+
+A separate, feature-detected WebMCP tool returns the current page's Markdown in bounded chunks. It prefers the current `document.modelContext.registerTool` API, with legacy `navigator.modelContext.registerTool` and `provideContext` fallbacks for compatible browsers and scanners.
 
 The Cache document set follows the typed sidebar order and states that the package is unreleased and not installable. HTTP responses and `robots.txt` allow search indexing, real-time AI input, and model training. The production artifact check keeps those signals, negotiated representations, links, and skill digests aligned.
 

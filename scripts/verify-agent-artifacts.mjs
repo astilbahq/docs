@@ -1,6 +1,19 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import Ajv2020 from "ajv/dist/2020.js";
+import addFormats from "ajv-formats";
+import {
+  API_CATALOG_PATH,
+  API_CATALOG_LINK_VALUE,
+  createApiCatalog,
+  createMcpCatalog,
+  createMcpCompatibilityCard,
+  createMcpServerCard,
+  MCP_CATALOG_PATH,
+  MCP_COMPATIBILITY_CARD_PATH,
+  MCP_SERVER_CARD_PATH,
+} from "../src/docs/agent-discovery.ts";
 import { parseDocsCorpus } from "../src/docs/mcp-corpus.ts";
 
 const siteValue = process.env.ASTILBA_DOCS_SITE;
@@ -149,11 +162,16 @@ const getFrontmatterString = (
 };
 
 const requiredArtifacts = [
+  ".well-known/api-catalog",
   ".well-known/agent-skills/astilba-cache-docs/SKILL.md",
   ".well-known/agent-skills/index.json",
+  ".well-known/mcp/catalog.json",
+  ".well-known/mcp/server-card.json",
   "_headers",
   "_llms-txt/astilba-cache.txt",
   "_mcp/docs.json",
+  "agents/mcp.md",
+  "agents/mcp/index.html",
   "cache/overview.md",
   "cache/overview/index.html",
   "index.md",
@@ -161,6 +179,7 @@ const requiredArtifacts = [
   "llms-full.txt",
   "llms-small.txt",
   "llms.txt",
+  "mcp/server-card",
   "pagefind/pagefind.js",
   "robots.txt",
   "sitemap-0.xml",
@@ -173,6 +192,59 @@ for (const artifact of requiredArtifacts) {
   artifacts.set(artifact, await readArtifact(artifact));
 }
 
+for (const [path, expected] of [
+  [API_CATALOG_PATH, createApiCatalog()],
+  [MCP_CATALOG_PATH, createMcpCatalog()],
+  [MCP_COMPATIBILITY_CARD_PATH, createMcpCompatibilityCard()],
+  [MCP_SERVER_CARD_PATH, createMcpServerCard()],
+]) {
+  const artifact = path.replace(/^\//, "");
+  assertExact(
+    artifact,
+    "generated discovery document",
+    JSON.parse(artifacts.get(artifact)),
+    expected
+  );
+}
+
+const serverCardSchemaSource = await readFile(
+  resolve(
+    process.cwd(),
+    "vendor/modelcontextprotocol/server-card/3b2d974/schema.json"
+  ),
+  "utf8"
+);
+const serverCardSchemaDigest = createHash("sha256")
+  .update(serverCardSchemaSource)
+  .digest("hex");
+
+if (
+  serverCardSchemaDigest !==
+  "2c772b51edb367f154771d84ddbae87ddba00a624422c8e46f218a9ac03bf042"
+) {
+  throw new Error(
+    "[agent-artifacts] The vendored experimental Server Card schema differs from the reviewed 3b2d974 snapshot."
+  );
+}
+
+const serverCardSchemaBundle = JSON.parse(serverCardSchemaSource);
+const ajv = new Ajv2020({ allErrors: true, strict: true });
+addFormats(ajv);
+const validateServerCard = ajv.compile({
+  $defs: serverCardSchemaBundle.$defs,
+  $ref: "#/$defs/ServerCard",
+  $schema: serverCardSchemaBundle.$schema,
+});
+const serverCard = JSON.parse(
+  artifacts.get(MCP_SERVER_CARD_PATH.replace(/^\//, ""))
+);
+
+if (!validateServerCard(serverCard)) {
+  throw new Error(
+    `[agent-artifacts] dist${MCP_SERVER_CARD_PATH} does not match the pinned experimental Server Card schema: ${ajv.errorsText(validateServerCard.errors)}.`
+  );
+}
+
 const contentSignal = "ai-train=yes, search=yes, ai-input=yes";
 const staticHeaders = artifacts.get("_headers");
 const headerRules = parseHeaderRules(staticHeaders);
@@ -180,6 +252,7 @@ assertHeaderValues(headerRules, "/*", "Content-Signal", [contentSignal]);
 assertHeaderValues(headerRules, "/", "Link", [
   '</index.md>; rel="alternate"; type="text/markdown"',
   '</llms.txt>; rel="describedby"; type="text/plain"',
+  API_CATALOG_LINK_VALUE,
 ]);
 assertHeaderValues(headerRules, "/*.md", "Content-Type", [
   "text/markdown; charset=utf-8",
@@ -205,6 +278,88 @@ assertHeaderValues(
   "Content-Type",
   ["application/json; charset=utf-8"]
 );
+assertHeaderValues(
+  headerRules,
+  "/.well-known/api-catalog",
+  "Access-Control-Allow-Origin",
+  ["*"]
+);
+assertHeaderValues(
+  headerRules,
+  "/.well-known/api-catalog",
+  "Content-Type",
+  [
+    'application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"',
+  ]
+);
+assertHeaderValues(
+  headerRules,
+  "/.well-known/api-catalog",
+  "Link",
+  [
+    API_CATALOG_LINK_VALUE,
+  ]
+);
+assertHeaderValues(
+  headerRules,
+  "/.well-known/mcp/*",
+  "Access-Control-Allow-Origin",
+  ["*"]
+);
+assertHeaderValues(
+  headerRules,
+  "/.well-known/mcp/*",
+  "Cache-Control",
+  ["public, max-age=3600"]
+);
+assertHeaderValues(
+  headerRules,
+  "/.well-known/mcp/catalog.json",
+  "Content-Type",
+  ["application/json; charset=utf-8"]
+);
+assertHeaderValues(
+  headerRules,
+  "/.well-known/mcp/server-card.json",
+  "Content-Type",
+  ["application/json; charset=utf-8"]
+);
+assertHeaderValues(
+  headerRules,
+  "/mcp/server-card",
+  "Access-Control-Allow-Origin",
+  ["*"]
+);
+assertHeaderValues(headerRules, "/mcp/server-card", "Content-Type", [
+  "application/mcp-server-card+json",
+]);
+for (const discoveryPattern of [
+  "/.well-known/api-catalog",
+  "/.well-known/mcp/*",
+  "/mcp/server-card",
+]) {
+  assertHeaderValues(
+    headerRules,
+    discoveryPattern,
+    "Access-Control-Allow-Headers",
+    ["Content-Type"]
+  );
+  assertHeaderValues(
+    headerRules,
+    discoveryPattern,
+    "Access-Control-Allow-Methods",
+    ["GET, HEAD"]
+  );
+  assertHeaderValues(headerRules, discoveryPattern, "Cache-Control", [
+    "public, max-age=3600",
+  ]);
+  assertHeaderValues(
+    headerRules,
+    discoveryPattern,
+    "X-Content-Type-Options",
+    ["nosniff"]
+  );
+}
 assertHeaderValues(headerRules, "/_mcp/docs.json", "Cache-Control", [
   "public, max-age=3600",
 ]);
@@ -262,6 +417,9 @@ const homeMarkdownUrl = new URL("/index.md", site).href;
 const llmsUrl = new URL("/llms.txt", site).href;
 const cacheSetUrl = new URL("/_llms-txt/astilba-cache.txt", site).href;
 const mcpUrl = new URL("/mcp", site).href;
+const apiCatalogUrl = new URL(API_CATALOG_PATH, site).href;
+const mcpCatalogUrl = new URL(MCP_CATALOG_PATH, site).href;
+const mcpServerCardUrl = new URL(MCP_SERVER_CARD_PATH, site).href;
 const sitemapUrl = new URL("/sitemap-index.xml", site).href;
 
 const sitemapPages = [
@@ -332,9 +490,11 @@ for (const sitemapPage of sitemapPages) {
   }
 
   assertLink(pageHtml, "describedby", llmsUrl);
+  assertLink(pageHtml, "api-catalog", apiCatalogUrl);
   assertHeaderValues(headerRules, pagePattern, "Link", [
     `<${alternateUrl.pathname}>; rel="alternate"; type="text/markdown"`,
     '</llms.txt>; rel="describedby"; type="text/plain"',
+    API_CATALOG_LINK_VALUE,
   ]);
   pagePatterns.push(pagePattern);
   mcpResources.push({
@@ -430,6 +590,8 @@ const llmsIndex = artifacts.get("llms.txt");
 assertIncludes("llms.txt", llmsIndex, cacheSetUrl);
 assertIncludes("llms.txt", llmsIndex, "Cache is an unreleased preview");
 assertIncludes("llms.txt", llmsIndex, mcpUrl);
+assertIncludes("llms-full.txt", artifacts.get("llms-full.txt"), "# Documentation MCP");
+assertIncludes("llms-full.txt", artifacts.get("llms-full.txt"), mcpUrl);
 
 const cacheSet = artifacts.get("_llms-txt/astilba-cache.txt");
 const firstCacheHeading = cacheSet.match(/^# .+$/m)?.[0];
@@ -447,6 +609,20 @@ assertLink(html, "describedby", llmsUrl);
 const homeHtml = artifacts.get("index.html");
 assertLink(homeHtml, "alternate", homeMarkdownUrl);
 assertLink(homeHtml, "describedby", llmsUrl);
+assertLink(homeHtml, "api-catalog", apiCatalogUrl);
+
+const mcpUsageHtml = artifacts.get("agents/mcp/index.html");
+assertLink(
+  mcpUsageHtml,
+  "alternate",
+  new URL("/agents/mcp.md", site).href
+);
+assertLink(mcpUsageHtml, "api-catalog", apiCatalogUrl);
+const mcpUsageMarkdown = artifacts.get("agents/mcp.md");
+assertIncludes("agents/mcp.md", mcpUsageMarkdown, "# Documentation MCP");
+assertIncludes("agents/mcp.md", mcpUsageMarkdown, mcpUrl);
+assertIncludes("agents/mcp.md", mcpUsageMarkdown, mcpCatalogUrl);
+assertIncludes("agents/mcp.md", mcpUsageMarkdown, mcpServerCardUrl);
 
 const homeMarkdown = artifacts.get("index.md");
 assertIncludes("index.md", homeMarkdown, `canonical: ${JSON.stringify(homeUrl)}`);

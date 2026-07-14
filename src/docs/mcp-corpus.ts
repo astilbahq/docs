@@ -1,4 +1,5 @@
 import { docsProducts } from "./catalog.ts";
+import { siteDocsPages } from "./site-pages.ts";
 
 export const DOCS_ORIGIN = "https://docs.astilba.com";
 export const MAX_CORPUS_CHARS = 1_000_000;
@@ -35,6 +36,9 @@ const compareStrings = (left: string, right: string): number =>
   left < right ? -1 : left > right ? 1 : 0;
 
 const catalogMetadataByPath = new Map<string, CatalogMetadata>();
+const siteMarkdownPaths = new Set(
+  siteDocsPages.map(({ markdownPath }) => markdownPath)
+);
 
 for (const product of docsProducts) {
   for (const version of product.versions) {
@@ -52,7 +56,16 @@ for (const product of docsProducts) {
   }
 }
 
-const EXPECTED_CORPUS_PAGES = catalogMetadataByPath.size + 1;
+for (const markdownPath of siteMarkdownPaths) {
+  if (catalogMetadataByPath.has(markdownPath)) {
+    throw new Error(
+      `[docs-mcp] Site and product documentation both claim ${markdownPath}.`
+    );
+  }
+}
+
+export const EXPECTED_CORPUS_PAGES =
+  catalogMetadataByPath.size + siteMarkdownPaths.size;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -117,7 +130,7 @@ const assertCatalogMetadata = (page: DocsCorpusPage): void => {
       (value) => value !== undefined,
     );
 
-    if (page.markdownPath !== "/index.md" || hasMetadata) {
+    if (!siteMarkdownPaths.has(page.markdownPath) || hasMetadata) {
       throw new Error(
         `[docs-mcp] ${page.markdownPath} is not present in the public documentation catalog.`,
       );

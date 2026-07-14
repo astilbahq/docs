@@ -1,6 +1,7 @@
 import type { APIRoute, GetStaticPaths } from "astro";
 import { getCollection } from "astro:content";
 import { findDocsContext } from "../docs/catalog";
+import { findSiteDocsPage } from "../docs/site-pages";
 import { getDocsSourceUrl } from "../docs/source";
 
 interface MarkdownPageProps {
@@ -59,13 +60,15 @@ export const getStaticPaths = (async () => {
   );
 
   return entries.flatMap((entry) => {
-    if (entry.id === "index") {
+    const sitePage = findSiteDocsPage(entry.id);
+
+    if (sitePage) {
       return [
         {
           params: { slug: entry.id },
           props: {
             body: entry.body,
-            canonicalPath: "/",
+            canonicalPath: sitePage.canonicalPath,
             description: entry.data.description ?? "",
             source: getDocsSourceUrl(entry.filePath, entry.id),
             title: entry.data.title,

@@ -3,7 +3,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { expect, type Page, test } from "@playwright/test";
 import { createHash } from "node:crypto";
-import { docsProducts } from "../../src/docs/catalog";
+import { EXPECTED_CORPUS_PAGES } from "../../src/docs/mcp-corpus";
 
 interface WebMcpToolProbe {
   annotations: {
@@ -16,27 +16,12 @@ interface WebMcpToolProbe {
 
 declare global {
   interface Window {
+    __webMcpRegistrationMethods?: string[];
     __webMcpTools?: WebMcpToolProbe[];
   }
 }
 
 const docsOrigin = "https://docs.astilba.com";
-const docsResourceCount =
-  1 +
-  docsProducts.reduce(
-    (productTotal, product) =>
-      productTotal +
-      product.versions.reduce(
-        (versionTotal, version) =>
-          versionTotal +
-          version.sections.reduce(
-            (sectionTotal, section) => sectionTotal + section.items.length,
-            0
-          ),
-        0
-      ),
-    0
-  );
 
 const expectNoAxeViolations = async (page: Page): Promise<void> => {
   const results = await new AxeBuilder({ page })
@@ -94,7 +79,7 @@ test("serves the public documentation corpus over MCP", async ({
           annotations.openWorldHint === false
       )
     ).toBe(true);
-    expect(resources.resources).toHaveLength(docsResourceCount);
+    expect(resources.resources).toHaveLength(EXPECTED_CORPUS_PAGES);
     expect(resources.resources.some(({ uri }) => uri === overviewUri)).toBe(
       true
     );
@@ -116,6 +101,133 @@ test("serves the public documentation corpus over MCP", async ({
   } finally {
     await client.close();
   }
+});
+
+test("publishes MCP and RFC 9727 discovery metadata", async ({
+  page,
+  request,
+}) => {
+  const apiCatalogResponse = await request.get("/.well-known/api-catalog", {
+    maxRedirects: 0,
+  });
+  expect(apiCatalogResponse.status()).toBe(200);
+  expect(apiCatalogResponse.headers()["content-type"]).toBe(
+    'application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"'
+  );
+  expect(apiCatalogResponse.headers()["access-control-allow-origin"]).toBe(
+    "*"
+  );
+  expect(apiCatalogResponse.headers()["x-content-type-options"]).toBe(
+    "nosniff"
+  );
+  expect(await apiCatalogResponse.json()).toEqual({
+    linkset: [
+      {
+        anchor: `${docsOrigin}/mcp`,
+        "service-desc": [
+          {
+            href: `${docsOrigin}/mcp/server-card`,
+            type: "application/mcp-server-card+json",
+          },
+        ],
+        "service-doc": [
+          {
+            href: `${docsOrigin}/agents/mcp/`,
+            type: "text/html",
+          },
+        ],
+      },
+    ],
+  });
+
+  const apiCatalogHead = await request.head("/.well-known/api-catalog", {
+    maxRedirects: 0,
+  });
+  expect(apiCatalogHead.status()).toBe(200);
+  expect(apiCatalogHead.headers().link).toBe(
+    '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"'
+  );
+
+  const mcpCatalogResponse = await request.get(
+    "/.well-known/mcp/catalog.json"
+  );
+  expect(mcpCatalogResponse.status()).toBe(200);
+  expect(mcpCatalogResponse.headers()["content-type"]).toContain(
+    "application/json"
+  );
+  expect(await mcpCatalogResponse.json()).toEqual({
+    entries: [
+      {
+        identifier: "urn:air:astilba.com:docs",
+        type: "application/mcp-server-card+json",
+        url: `${docsOrigin}/mcp/server-card`,
+      },
+    ],
+    specVersion: "draft",
+  });
+
+  const serverCardResponse = await request.get("/mcp/server-card", {
+    headers: { Accept: "application/mcp-server-card+json" },
+    maxRedirects: 0,
+  });
+  expect(serverCardResponse.status()).toBe(200);
+  expect(serverCardResponse.headers()["content-type"]).toBe(
+    "application/mcp-server-card+json"
+  );
+  const serverCard = await serverCardResponse.json();
+  expect(serverCard).toMatchObject({
+    name: "com.astilba/docs",
+    remotes: [
+      {
+        type: "streamable-http",
+        url: `${docsOrigin}/mcp`,
+      },
+    ],
+    version: "0.1.0",
+  });
+  expect(serverCard).not.toHaveProperty("capabilities");
+  const serverCardHead = await request.head("/mcp/server-card", {
+    maxRedirects: 0,
+  });
+  expect(serverCardHead.status()).toBe(200);
+  expect(serverCardHead.headers()["content-type"]).toBe(
+    "application/mcp-server-card+json"
+  );
+
+  const compatibilityCardResponse = await request.get(
+    "/.well-known/mcp/server-card.json"
+  );
+  expect(compatibilityCardResponse.status()).toBe(200);
+  expect(await compatibilityCardResponse.json()).toMatchObject({
+    capabilities: { resources: {}, tools: {} },
+    serverInfo: { name: "com.astilba/docs", version: "0.1.0" },
+    transport: {
+      endpoint: `${docsOrigin}/mcp`,
+      type: "streamable-http",
+    },
+  });
+
+  const usageResponse = await request.get("/agents/mcp/", {
+    maxRedirects: 0,
+  });
+  expect(usageResponse.status()).toBe(200);
+  expect(await usageResponse.text()).toContain("Documentation MCP");
+  const usageMarkdownResponse = await request.get("/agents/mcp/", {
+    headers: { Accept: "text/markdown" },
+  });
+  expect(usageMarkdownResponse.headers()["content-location"]).toBe(
+    "/agents/mcp.md"
+  );
+  expect(await usageMarkdownResponse.text()).toContain("# Documentation MCP");
+
+  await page.goto("/agents/mcp/");
+  await expect(
+    page.getByRole("heading", { name: "Documentation MCP" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Copy Markdown" })
+  ).toBeVisible();
+  await expectNoAxeViolations(page);
 });
 
 test("serves agent-readable Markdown and keeps copy states independent", async ({
@@ -289,6 +401,12 @@ test("searches the production Pagefind index", async ({ page }) => {
   await expect(
     dialog.getByRole("link", { name: /Runtime architecture/i }).first()
   ).toBeVisible();
+  await dialog.getByRole("textbox", { name: "Search" }).fill(
+    "Documentation MCP"
+  );
+  await expect(
+    dialog.getByRole("link", { name: /Documentation MCP/i }).first()
+  ).toBeVisible();
 });
 
 test("registers a read-only WebMCP tool when the API is available", async ({
@@ -303,15 +421,30 @@ test("registers a read-only WebMCP tool when the API is available", async ({
   });
 
   await page.addInitScript(() => {
+    window.__webMcpRegistrationMethods = [];
     window.__webMcpTools = [];
     Object.defineProperty(Document.prototype, "modelContext", {
       configurable: true,
       get() {
         return {
           registerTool: async (tool: WebMcpToolProbe) => {
+            window.__webMcpRegistrationMethods?.push("document.registerTool");
             window.__webMcpTools?.push(tool);
           },
         };
+      },
+    });
+    Object.defineProperty(window.navigator, "modelContext", {
+      configurable: true,
+      value: {
+        provideContext: ({ tools }: { tools: WebMcpToolProbe[] }) => {
+          window.__webMcpRegistrationMethods?.push("navigator.provideContext");
+          window.__webMcpTools?.push(...tools);
+        },
+        registerTool: (tool: WebMcpToolProbe) => {
+          window.__webMcpRegistrationMethods?.push("navigator.registerTool");
+          window.__webMcpTools?.push(tool);
+        },
       },
     });
   });
@@ -320,6 +453,9 @@ test("registers a read-only WebMCP tool when the API is available", async ({
   await expect
     .poll(() => page.evaluate(() => window.__webMcpTools?.length ?? 0))
     .toBe(1);
+  expect(await page.evaluate(() => window.__webMcpRegistrationMethods)).toEqual(
+    ["document.registerTool"]
+  );
 
   const tool = await page.evaluate(() => {
     const registered = window.__webMcpTools?.[0];
@@ -427,6 +563,78 @@ test("registers a read-only WebMCP tool when the API is available", async ({
     "/cache/overview.md",
     "/cache/quickstart.md",
   ]);
+});
+
+test("falls back to legacy navigator.registerTool for WebMCP", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.__webMcpRegistrationMethods = [];
+    window.__webMcpTools = [];
+    Object.defineProperty(Document.prototype, "modelContext", {
+      configurable: true,
+      get: () => undefined,
+    });
+    Object.defineProperty(window.navigator, "modelContext", {
+      configurable: true,
+      value: {
+        provideContext: ({ tools }: { tools: WebMcpToolProbe[] }) => {
+          window.__webMcpRegistrationMethods?.push("navigator.provideContext");
+          window.__webMcpTools?.push(...tools);
+        },
+        registerTool: (tool: WebMcpToolProbe) => {
+          window.__webMcpRegistrationMethods?.push("navigator.registerTool");
+          window.__webMcpTools?.push(tool);
+        },
+      },
+    });
+  });
+
+  await page.goto("/cache/overview/");
+  await expect
+    .poll(() => page.evaluate(() => window.__webMcpTools?.length ?? 0))
+    .toBe(1);
+
+  expect(await page.evaluate(() => window.__webMcpRegistrationMethods)).toEqual(
+    ["navigator.registerTool"]
+  );
+  expect(
+    await page.evaluate(() => window.__webMcpTools?.[0]?.annotations)
+  ).toEqual({ readOnlyHint: true, untrustedContentHint: false });
+});
+
+test("falls back to legacy navigator.provideContext for WebMCP", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.__webMcpRegistrationMethods = [];
+    window.__webMcpTools = [];
+    Object.defineProperty(Document.prototype, "modelContext", {
+      configurable: true,
+      get: () => undefined,
+    });
+    Object.defineProperty(window.navigator, "modelContext", {
+      configurable: true,
+      value: {
+        provideContext: ({ tools }: { tools: WebMcpToolProbe[] }) => {
+          window.__webMcpRegistrationMethods?.push("navigator.provideContext");
+          window.__webMcpTools?.push(...tools);
+        },
+      },
+    });
+  });
+
+  await page.goto("/cache/overview/");
+  await expect
+    .poll(() => page.evaluate(() => window.__webMcpTools?.length ?? 0))
+    .toBe(1);
+
+  expect(await page.evaluate(() => window.__webMcpRegistrationMethods)).toEqual(
+    ["navigator.provideContext"]
+  );
+  expect(
+    await page.evaluate(() => window.__webMcpTools?.[0]?.annotations)
+  ).toEqual({ readOnlyHint: true, untrustedContentHint: false });
 });
 
 test("persists desktop sidebar disclosure state across navigation", async ({
