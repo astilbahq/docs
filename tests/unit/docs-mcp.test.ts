@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { docsProducts } from "../../src/docs/catalog";
+import { parseDocsCorpus } from "../../src/docs/mcp-corpus";
 import {
   handleDocsMcpRequest,
-  parseDocsCorpus,
   readDoc,
   searchDocs,
 } from "../../worker/docs-mcp";
@@ -136,6 +136,102 @@ describe("generated MCP corpus", () => {
     overview.productId = "different";
     expect(() => parseDocsCorpus(value)).toThrow(
       "differs from the public documentation catalog",
+    );
+  });
+
+  it("rejects empty and overlong titles and descriptions", () => {
+    const emptyTitle = createCorpusValue();
+    emptyTitle.pages[0].title = "";
+
+    expect(() => parseDocsCorpus(emptyTitle)).toThrow("non-empty string");
+
+    const overlongTitle = createCorpusValue();
+    overlongTitle.pages[0].title = "a".repeat(257);
+
+    expect(() => parseDocsCorpus(overlongTitle)).toThrow(
+      "at most 256 characters",
+    );
+
+    const emptyDescription = createCorpusValue();
+    emptyDescription.pages[0].description = "";
+
+    expect(() => parseDocsCorpus(emptyDescription)).toThrow(
+      "non-empty string",
+    );
+
+    const overlongDescription = createCorpusValue();
+    overlongDescription.pages[0].description = "a".repeat(1025);
+
+    expect(() => parseDocsCorpus(overlongDescription)).toThrow(
+      "at most 1024 characters",
+    );
+  });
+
+  it("requires the complete catalogue metadata tuple on product pages", () => {
+    const value = createCorpusValue();
+    const overview = value.pages.find(
+      (page) => page.markdownPath === "/cache/overview.md",
+    );
+
+    if (!overview || !("productId" in overview)) {
+      throw new Error("Missing overview fixture.");
+    }
+
+    for (const field of [
+      "docsVersion",
+      "docsVersionId",
+      "lifecycle",
+      "product",
+      "productId",
+    ]) {
+      Reflect.deleteProperty(overview, field);
+    }
+
+    expect(() => parseDocsCorpus(value)).toThrow(
+      "differs from the public documentation catalog",
+    );
+  });
+
+  it("rejects empty and overlong catalogue metadata", () => {
+    const emptyMetadata = createCorpusValue();
+    const emptyOverview = emptyMetadata.pages.find(
+      (page) => page.markdownPath === "/cache/overview.md",
+    );
+
+    if (!emptyOverview || !("productId" in emptyOverview)) {
+      throw new Error("Missing overview fixture.");
+    }
+
+    emptyOverview.productId = "";
+    expect(() => parseDocsCorpus(emptyMetadata)).toThrow("non-empty string");
+
+    const overlongMetadata = createCorpusValue();
+    const overlongOverview = overlongMetadata.pages.find(
+      (page) => page.markdownPath === "/cache/overview.md",
+    );
+
+    if (!overlongOverview || !("productId" in overlongOverview)) {
+      throw new Error("Missing overview fixture.");
+    }
+
+    overlongOverview.productId = "a".repeat(129);
+    expect(() => parseDocsCorpus(overlongMetadata)).toThrow(
+      "at most 128 characters",
+    );
+  });
+
+  it("rejects product metadata on the catalogue-independent homepage", () => {
+    const value = createCorpusValue();
+    Object.assign(value.pages[0], {
+      docsVersion: "Unreleased",
+      docsVersionId: "unreleased",
+      lifecycle: "unreleased",
+      product: "Cache",
+      productId: "cache",
+    });
+
+    expect(() => parseDocsCorpus(value)).toThrow(
+      "is not present in the public documentation catalog",
     );
   });
 

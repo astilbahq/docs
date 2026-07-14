@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { parseDocsCorpus } from "../src/docs/mcp-corpus.ts";
 
 const siteValue = process.env.ASTILBA_DOCS_SITE;
 
@@ -402,19 +403,9 @@ assertExact(
   pagePatterns.sort()
 );
 
-const mcpCorpus = JSON.parse(artifacts.get("_mcp/docs.json"));
-assertExact(
-  "_mcp/docs.json",
-  "schema version",
-  mcpCorpus.schemaVersion,
-  1
+const mcpCorpus = parseDocsCorpus(
+  JSON.parse(artifacts.get("_mcp/docs.json"))
 );
-
-if (!Array.isArray(mcpCorpus.pages)) {
-  throw new Error(
-    "[agent-artifacts] dist/_mcp/docs.json must contain a pages array."
-  );
-}
 
 const sortMcpResources = (left, right) => {
   if (left.markdownPath === "/index.md") {

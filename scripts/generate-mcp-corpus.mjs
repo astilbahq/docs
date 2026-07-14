@@ -1,5 +1,6 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { parseDocsCorpus } from "../src/docs/mcp-corpus.ts";
 
 const maxCorpusBytes = 1_000_000;
 const maxPageBytes = 128_000;
@@ -16,9 +17,6 @@ if (!siteValue) {
 
 const site = new URL(siteValue);
 const decoder = new TextDecoder("utf-8", { fatal: true });
-const compareStrings = (left, right) =>
-  left < right ? -1 : left > right ? 1 : 0;
-
 const collectFiles = async (directory) => {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = await Promise.all(
@@ -245,25 +243,14 @@ for (const file of files) {
   });
 }
 
-pages.sort((left, right) => {
-  if (left.markdownPath === "/index.md") {
-    return -1;
-  }
-
-  if (right.markdownPath === "/index.md") {
-    return 1;
-  }
-
-  return compareStrings(left.markdownPath, right.markdownPath);
-});
-
 if (pages.length === 0) {
   throw new Error(
     "[mcp-corpus] No public documentation pages with Markdown alternates were found.",
   );
 }
 
-const output = `${JSON.stringify({ schemaVersion: 1, pages })}\n`;
+const corpus = parseDocsCorpus({ pages, schemaVersion: 1 });
+const output = `${JSON.stringify(corpus)}\n`;
 const outputBytes = new TextEncoder().encode(output).byteLength;
 
 if (outputBytes > maxCorpusBytes) {

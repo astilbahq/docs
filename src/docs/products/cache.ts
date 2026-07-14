@@ -1,4 +1,4 @@
-import type { DocsProduct } from "../types";
+import type { DocsProduct } from "../types.ts";
 
 const cacheSections = [
   {
