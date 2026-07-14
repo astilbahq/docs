@@ -1,5 +1,21 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
+import { createHash } from "node:crypto";
+
+interface WebMcpToolProbe {
+  annotations: {
+    readOnlyHint: boolean;
+    untrustedContentHint: boolean;
+  };
+  execute: (input?: { offset?: number }) => Promise<string>;
+  name: string;
+}
+
+declare global {
+  interface Window {
+    __webMcpTools?: WebMcpToolProbe[];
+  }
+}
 
 const expectNoAxeViolations = async (page: Page): Promise<void> => {
   const results = await new AxeBuilder({ page })
@@ -23,6 +39,61 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   page,
   request,
 }) => {
+  const homeMarkdownResponse = await request.get("/", {
+    headers: { Accept: "text/markdown" },
+  });
+  expect(homeMarkdownResponse.ok()).toBe(true);
+  expect(homeMarkdownResponse.headers()["content-type"]).toContain(
+    "text/markdown"
+  );
+  expect(homeMarkdownResponse.headers().vary).toContain("Accept");
+  expect(await homeMarkdownResponse.text()).toContain(
+    "# Astilba documentation"
+  );
+
+  const negotiatedMarkdownResponse = await request.get(
+    "/cache/overview/",
+    { headers: { Accept: "text/markdown" } }
+  );
+  expect(negotiatedMarkdownResponse.ok()).toBe(true);
+  expect(negotiatedMarkdownResponse.headers()["content-type"]).toContain(
+    "text/markdown"
+  );
+  expect(negotiatedMarkdownResponse.headers()["content-location"]).toBe(
+    "/cache/overview.md"
+  );
+  expect(negotiatedMarkdownResponse.headers()["content-signal"]).toBe(
+    "ai-train=no, search=yes, ai-input=yes"
+  );
+  expect(negotiatedMarkdownResponse.headers().link).toContain(
+    'rel="describedby"'
+  );
+  expect(negotiatedMarkdownResponse.headers().vary).toContain("Accept");
+  expect(await negotiatedMarkdownResponse.text()).toContain(
+    "For React applications, “server-side” means"
+  );
+
+  const markdownHeadResponse = await request.head("/cache/overview/", {
+    headers: { Accept: "text/markdown" },
+  });
+  expect(markdownHeadResponse.ok()).toBe(true);
+  expect(markdownHeadResponse.headers()["content-type"]).toContain(
+    "text/markdown"
+  );
+
+  const canonicalRedirect = await request.get("/cache/overview", {
+    headers: { Accept: "text/markdown" },
+    maxRedirects: 0,
+  });
+  expect(canonicalRedirect.status()).toBe(307);
+  expect(canonicalRedirect.headers().location).toBe("/cache/overview/");
+
+  const htmlResponse = await request.get("/cache/overview/", {
+    headers: { Accept: "text/html, text/markdown;q=0" },
+  });
+  expect(htmlResponse.headers()["content-type"]).toContain("text/html");
+  expect(htmlResponse.headers().vary).toContain("Accept");
+
   const markdownResponse = await request.get("/cache/overview.md");
   expect(markdownResponse.ok()).toBe(true);
   expect(markdownResponse.headers()["content-type"]).toContain(
@@ -32,6 +103,56 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   expect(markdown).toContain("# Overview");
   expect(markdown).toContain(
     "For React applications, “server-side” means"
+  );
+
+  const missingMarkdownResponse = await request.get("/missing/", {
+    headers: { Accept: "text/markdown" },
+  });
+  expect(missingMarkdownResponse.status()).toBe(404);
+  expect(missingMarkdownResponse.headers()["content-type"]).toContain(
+    "text/html"
+  );
+
+  const missingDirectResponse = await request.get("/missing.md");
+  const missingEtag = missingDirectResponse.headers().etag;
+  expect(missingDirectResponse.status()).toBe(404);
+  expect(missingEtag).toBeTruthy();
+
+  const missingRevalidationResponse = await request.get("/missing/", {
+    headers: {
+      Accept: "text/markdown",
+      "If-None-Match": missingEtag,
+    },
+  });
+  expect(missingRevalidationResponse.status()).toBe(304);
+  expect(missingRevalidationResponse.headers()["content-type"]).toContain(
+    "text/html"
+  );
+  expect(
+    missingRevalidationResponse.headers()["content-location"]
+  ).toBeUndefined();
+  expect(missingRevalidationResponse.headers().link).toBeUndefined();
+
+  const skillsIndexResponse = await request.get(
+    "/.well-known/agent-skills/index.json"
+  );
+  expect(skillsIndexResponse.ok()).toBe(true);
+  expect(skillsIndexResponse.headers()["content-type"]).toContain(
+    "application/json"
+  );
+  expect(skillsIndexResponse.headers()["access-control-allow-origin"]).toBe(
+    "*"
+  );
+  const skillsIndex = await skillsIndexResponse.json();
+  const skillEntry = skillsIndex.skills[0];
+  expect(skillEntry.name).toBe("astilba-cache-docs");
+
+  const skillResponse = await request.get(skillEntry.url);
+  expect(skillResponse.ok()).toBe(true);
+  expect(skillResponse.headers()["content-type"]).toContain("text/markdown");
+  const skillContent = await skillResponse.body();
+  expect(skillEntry.digest).toBe(
+    `sha256:${createHash("sha256").update(skillContent).digest("hex")}`
   );
 
   await page.goto("/cache/overview/");
@@ -78,6 +199,58 @@ test("searches the production Pagefind index", async ({ page }) => {
   await expect(
     dialog.getByRole("link", { name: /Runtime architecture/i }).first()
   ).toBeVisible();
+});
+
+test("registers a read-only WebMCP tool when the API is available", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.__webMcpTools = [];
+    Object.defineProperty(Document.prototype, "modelContext", {
+      configurable: true,
+      get() {
+        return {
+          registerTool: async (tool: WebMcpToolProbe) => {
+            window.__webMcpTools?.push(tool);
+          },
+        };
+      },
+    });
+  });
+
+  await page.goto("/cache/overview/");
+  await expect
+    .poll(() => page.evaluate(() => window.__webMcpTools?.length ?? 0))
+    .toBe(1);
+
+  const tool = await page.evaluate(() => {
+    const registered = window.__webMcpTools?.[0];
+
+    return registered
+      ? { annotations: registered.annotations, name: registered.name }
+      : undefined;
+  });
+  expect(tool).toEqual({
+    annotations: { readOnlyHint: true, untrustedContentHint: false },
+    name: "read_current_page_markdown",
+  });
+
+  const markdownChunks = await page.evaluate(async () => {
+    const registered = window.__webMcpTools?.[0];
+    const first = await registered?.execute({ offset: 0 });
+    const nextOffset = first?.match(/Next offset: (\d+)\./)?.[1];
+    const second = nextOffset
+      ? await registered?.execute({ offset: Number(nextOffset) })
+      : undefined;
+
+    return [first, second].filter((chunk) => chunk !== undefined);
+  });
+  expect(markdownChunks).toHaveLength(2);
+  expect(markdownChunks.every((chunk) => chunk.length <= 1500)).toBe(true);
+  expect(markdownChunks.join("\n")).toContain("# Overview");
+  expect(markdownChunks.join("\n")).toContain(
+    "For React applications, “server-side” means"
+  );
 });
 
 test("persists desktop sidebar disclosure state across navigation", async ({

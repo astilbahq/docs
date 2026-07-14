@@ -50,7 +50,7 @@ pnpm verify
 
 Development and type checks do not require a deployed origin. Production builds do: `ASTILBA_DOCS_SITE` must be the public HTTP or HTTPS origin, with no path, so canonical links and generated agent resources cannot silently point at the wrong host.
 
-`pnpm verify` regenerates Panda bindings, checks Astro and TypeScript, runs focused Vitest coverage, checks unused code and dependencies with Knip, builds and validates the Wrangler bundle without uploading it, and drives the production build in Chromium with Playwright and axe. The browser suite covers Pagefind, mobile navigation, persisted sidebar state, themes, page actions, raw Markdown routes, and representative light/dark/overlay accessibility states. Install Chromium once per machine with `pnpm test:browser:install`.
+`pnpm verify` regenerates Panda bindings, checks generated Worker binding types plus Astro and TypeScript, runs focused Vitest coverage, checks unused code and dependencies with Knip, builds and validates the Wrangler bundle without uploading it, and drives the production Worker in Chromium with Playwright and axe. The browser suite covers Markdown negotiation, WebMCP registration, Pagefind, mobile navigation, persisted sidebar state, themes, page actions, raw Markdown routes, and representative light/dark/overlay accessibility states. Install Chromium once per machine with `pnpm test:browser:install`.
 
 The production build creates the Pagefind search index, validates internal links, and then verifies the deployed artifact set in `dist/`. Run `pnpm preview` to inspect that build locally.
 
@@ -58,7 +58,9 @@ Repository automation also runs Actionlint, Zizmor, dependency review, a complet
 
 ## Deployment
 
-The production site is configured for [Cloudflare Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/) at `docs.astilba.com`. Astro still generates the entire site at build time; there is no Worker entry point or server-side request path. This keeps the current deployment static while leaving room to add a Worker later if the docs gain genuine runtime behavior.
+The production site is configured for [Cloudflare Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/) at `docs.astilba.com`. Astro generates every HTML and Markdown representation at build time. A small Worker entry point handles content negotiation by serving those existing Markdown assets when a canonical page receives an explicit `Accept: text/markdown`; it does not convert content at request time.
+
+Selective Worker-first routing covers only the root and canonical trailing-slash page URLs. Direct Markdown, Pagefind, JavaScript, CSS, fonts, images, and well-known artifacts remain on the free static-asset path. Canonical page requests count toward the Workers request allowance, and Cloudflare does not fall back to static delivery after that allowance is exhausted. Monitor Worker invocations and move the project to Workers Paid before traffic can approach the plan's daily limit; otherwise remove or redesign content negotiation rather than accepting a whole-site `429` failure mode.
 
 Validate the generated assets and Wrangler configuration without uploading anything:
 
@@ -78,9 +80,11 @@ GitHub Actions automatically runs the same deployment after the verification job
 
 ## Agent-readable documentation
 
-Each catalogued documentation page has a sibling `.md` representation with YAML provenance for its canonical page, product, documentation version, lifecycle, and public source file. HTML pages advertise that representation with `rel="alternate"` and point to the site-wide `llms.txt` index with `rel="describedby"`.
+The homepage and each catalogued documentation page have sibling `.md` representations. Product pages include YAML provenance for their canonical page, product, documentation version, lifecycle, and public source file. HTML pages advertise that representation with `rel="alternate"`, point to the site-wide `llms.txt` index with `rel="describedby"`, and return the authored Markdown at the same canonical URL when a client explicitly requests `text/markdown`.
 
-Production builds also create `llms-small.txt`, `llms-full.txt`, a Cache-specific document set under `_llms-txt/`, `robots.txt`, and the sitemap. The Cache document set follows the typed sidebar order and states that the package is unreleased and not installable. HTTP responses and `robots.txt` allow search indexing and real-time AI input while reserving the documentation from model training. The production artifact check keeps those signals aligned and verifies the response-level links to Markdown and `llms.txt`.
+Production builds also create `llms-small.txt`, `llms-full.txt`, a Cache-specific document set under `_llms-txt/`, `robots.txt`, the sitemap, and a digest-verified Agent Skills discovery index under `.well-known/agent-skills/`. The Cache skill teaches agents to consult the public corpus and preserve its unreleased boundary; it does not embed private product material. A feature-detected, read-only WebMCP tool returns the current page's Markdown in bounded chunks in browsers that implement the current `document.modelContext.registerTool` API.
+
+The Cache document set follows the typed sidebar order and states that the package is unreleased and not installable. HTTP responses and `robots.txt` allow search indexing and real-time AI input while reserving the documentation from model training. The production artifact check keeps those signals, negotiated representations, links, and skill digests aligned.
 
 ## Keeping product status current
 

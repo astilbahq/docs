@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "astro build && node scripts/generate-agent-headers.mjs && node scripts/verify-agent-artifacts.mjs",
+    "build": "astro build && node scripts/generate-agent-skills-index.mjs && node scripts/generate-agent-headers.mjs && node scripts/verify-agent-artifacts.mjs",
     "build:production": "ASTILBA_DOCS_SITE=https://docs.astilba.com pnpm build",
-    "check": "astro check",
+    "check": "wrangler types --check && astro check",
     "deploy": "pnpm build:production && wrangler deploy",
     "deploy:dry-run": "pnpm build:production && wrangler deploy --dry-run",
     "dev": "astro dev",
@@ -20,7 +20,8 @@
     "test:browser:install:ci": "playwright install --with-deps chromium",
     "test:browser:run": "playwright test",
     "test:watch": "vitest",
-    "typecheck": "astro check",
+    "typecheck": "pnpm check",
+    "worker:types": "wrangler types",
     "verify": "pnpm panda:codegen && pnpm check && pnpm test && pnpm knip && pnpm deploy:dry-run && pnpm test:browser:run",
     "verify:agent-artifacts": "node scripts/verify-agent-artifacts.mjs"
   },

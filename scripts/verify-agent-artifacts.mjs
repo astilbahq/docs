@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
@@ -109,10 +110,14 @@ const assertLink = (html, rel, href) => {
 };
 
 const requiredArtifacts = [
+  ".well-known/agent-skills/astilba-cache-docs/SKILL.md",
+  ".well-known/agent-skills/index.json",
   "_headers",
   "_llms-txt/astilba-cache.txt",
   "cache/overview.md",
   "cache/overview/index.html",
+  "index.md",
+  "index.html",
   "llms-full.txt",
   "llms-small.txt",
   "llms.txt",
@@ -133,6 +138,7 @@ const staticHeaders = artifacts.get("_headers");
 const headerRules = parseHeaderRules(staticHeaders);
 assertHeaderValues(headerRules, "/*", "Content-Signal", [contentSignal]);
 assertHeaderValues(headerRules, "/", "Link", [
+  '</index.md>; rel="alternate"; type="text/markdown"',
   '</llms.txt>; rel="describedby"; type="text/plain"',
 ]);
 assertHeaderValues(headerRules, "/*.md", "Content-Type", [
@@ -141,6 +147,24 @@ assertHeaderValues(headerRules, "/*.md", "Content-Type", [
 assertHeaderValues(headerRules, "/*.md", "X-Content-Type-Options", [
   "nosniff",
 ]);
+assertHeaderValues(
+  headerRules,
+  "/.well-known/agent-skills/*",
+  "Access-Control-Allow-Origin",
+  ["*"]
+);
+assertHeaderValues(
+  headerRules,
+  "/.well-known/agent-skills/*",
+  "Cache-Control",
+  ["public, max-age=3600"]
+);
+assertHeaderValues(
+  headerRules,
+  "/.well-known/agent-skills/index.json",
+  "Content-Type",
+  ["application/json; charset=utf-8"]
+);
 
 const contentSignals = headerRules.flatMap(
   (rule) => rule.headers.get("content-signal") ?? []
@@ -149,8 +173,39 @@ assertExact("_headers", "Content-Signal values", contentSignals, [
   contentSignal,
 ]);
 
+const skillArtifact = ".well-known/agent-skills/astilba-cache-docs/SKILL.md";
+const skill = artifacts.get(skillArtifact);
+const skillDigest = `sha256:${createHash("sha256")
+  .update(skill)
+  .digest("hex")}`;
+const skillsIndex = JSON.parse(
+  artifacts.get(".well-known/agent-skills/index.json")
+);
+assertExact(
+  ".well-known/agent-skills/index.json",
+  "discovery index",
+  skillsIndex,
+  {
+    $schema: "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
+    skills: [
+      {
+        name: "astilba-cache-docs",
+        type: "skill-md",
+        description:
+          "Consult Astilba's public Cache documentation to explain or evaluate the unreleased TypeScript cache preview without inventing installation or production support.",
+        url: `/${skillArtifact}`,
+        digest: skillDigest,
+      },
+    ],
+  }
+);
+assertIncludes(skillArtifact, skill, "# Astilba Cache documentation");
+assertIncludes(skillArtifact, skill, "https://docs.astilba.com/cache/api-status.md");
+
 const pageUrl = new URL("/cache/overview/", site).href;
 const markdownUrl = new URL("/cache/overview.md", site).href;
+const homeUrl = new URL("/", site).href;
+const homeMarkdownUrl = new URL("/index.md", site).href;
 const llmsUrl = new URL("/llms.txt", site).href;
 const cacheSetUrl = new URL("/_llms-txt/astilba-cache.txt", site).href;
 const sitemapUrl = new URL("/sitemap-index.xml", site).href;
@@ -167,12 +222,14 @@ for (const sitemapPage of sitemapPages) {
     );
   }
 
-  if (sitemapPage.pathname === "/") {
-    continue;
-  }
-
   const pagePattern = sitemapPage.pathname;
-  const htmlArtifact = `${decodeURIComponent(pagePattern).replace(/^\/+|\/+$/g, "")}/index.html`;
+  const pageDirectory = decodeURIComponent(pagePattern).replace(
+    /^\/+|\/+$/g,
+    ""
+  );
+  const htmlArtifact = pageDirectory
+    ? `${pageDirectory}/index.html`
+    : "index.html";
   const pageHtml = await readArtifact(htmlArtifact);
   const markdownLinks = getMarkdownLinks(pageHtml);
 
@@ -251,6 +308,14 @@ if (firstCacheHeading !== "# Overview") {
 const html = artifacts.get("cache/overview/index.html");
 assertLink(html, "alternate", markdownUrl);
 assertLink(html, "describedby", llmsUrl);
+
+const homeHtml = artifacts.get("index.html");
+assertLink(homeHtml, "alternate", homeMarkdownUrl);
+assertLink(homeHtml, "describedby", llmsUrl);
+
+const homeMarkdown = artifacts.get("index.md");
+assertIncludes("index.md", homeMarkdown, `canonical: ${JSON.stringify(homeUrl)}`);
+assertIncludes("index.md", homeMarkdown, "# Astilba documentation");
 
 const markdown = artifacts.get("cache/overview.md");
 assertIncludes("cache/overview.md", markdown, `canonical: ${JSON.stringify(pageUrl)}`);

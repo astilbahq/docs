@@ -1,0 +1,100 @@
+interface WebMcpTool {
+  annotations: {
+    readOnlyHint: boolean;
+    untrustedContentHint: boolean;
+  };
+  description: string;
+  execute: (input?: { offset?: number }) => Promise<string>;
+  inputSchema: {
+    additionalProperties: false;
+    properties: {
+      offset: {
+        description: string;
+        minimum: number;
+        type: "integer";
+      };
+    };
+    type: "object";
+  };
+  name: string;
+}
+
+interface WebMcpModelContext {
+  registerTool: (tool: WebMcpTool) => Promise<void>;
+}
+
+type WebMcpDocument = Document & {
+  modelContext?: WebMcpModelContext;
+};
+
+const MARKDOWN_CHUNK_LENGTH = 1200;
+const markdownLink = document.querySelector<HTMLLinkElement>(
+  'link[rel="alternate"][type="text/markdown"]'
+);
+const modelContext = (document as WebMcpDocument).modelContext;
+
+if (markdownLink && typeof modelContext?.registerTool === "function") {
+  const markdownPath = new URL(markdownLink.href).pathname;
+
+  void modelContext
+    .registerTool({
+      annotations: {
+        readOnlyHint: true,
+        untrustedContentHint: false,
+      },
+      description:
+        "Return one bounded chunk of the Markdown page open in this tab. Start at offset 0, then request the next offset reported in each result.",
+      execute: async ({ offset = 0 } = {}) => {
+        if (!Number.isSafeInteger(offset) || offset < 0) {
+          throw new Error("Offset must be a non-negative integer.");
+        }
+
+        const response = await fetch(markdownPath, {
+          headers: { Accept: "text/markdown" },
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `The page Markdown request failed with status ${response.status}.`
+          );
+        }
+
+        const characters = [...(await response.text())];
+
+        if (offset > characters.length) {
+          throw new Error(
+            `Offset ${offset} exceeds the page length of ${characters.length} characters.`
+          );
+        }
+
+        const end = Math.min(
+          offset + MARKDOWN_CHUNK_LENGTH,
+          characters.length
+        );
+        const continuation =
+          end < characters.length
+            ? `Next offset: ${end}.`
+            : "End of page.";
+
+        return [
+          `Markdown characters ${offset}–${end} of ${characters.length}.`,
+          characters.slice(offset, end).join(""),
+          continuation,
+        ].join("\n\n");
+      },
+      inputSchema: {
+        additionalProperties: false,
+        properties: {
+          offset: {
+            description:
+              "Zero-based character offset. Begin with 0 and continue from the offset reported by the previous result.",
+            minimum: 0,
+            type: "integer",
+          },
+        },
+        type: "object",
+      },
+      name: "read_current_page_markdown",
+    })
+    .catch(() => undefined);
+}
