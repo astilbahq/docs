@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "astro build && node scripts/generate-agent-headers.mjs && node scripts/verify-agent-artifacts.mjs",
-    "build:production": "ASTILBA_DOCS_SITE=https://docs.astilba.com pnpm build",
-    "check": "astro check",
+    "build": "astro build && node scripts/generate-agent-skills-index.mjs && node scripts/generate-agent-headers.mjs && node scripts/verify-agent-artifacts.mjs",
+    "build:production": "cross-env ASTILBA_DOCS_SITE=https://docs.astilba.com pnpm build",
+    "check": "wrangler types --check && astro check",
     "deploy": "pnpm build:production && wrangler deploy",
     "deploy:dry-run": "pnpm build:production && wrangler deploy --dry-run",
     "dev": "astro dev",
@@ -20,7 +20,8 @@
     "test:browser:install:ci": "playwright install --with-deps chromium",
     "test:browser:run": "playwright test",
     "test:watch": "vitest",
-    "typecheck": "astro check",
+    "typecheck": "pnpm check",
+    "worker:types": "wrangler types",
     "verify": "pnpm panda:codegen && pnpm check && pnpm test && pnpm knip && pnpm deploy:dry-run && pnpm test:browser:run",
     "verify:agent-artifacts": "node scripts/verify-agent-artifacts.mjs"
   },
@@ -40,13 +41,14 @@
     "starlight-llms-txt": "0.11.0"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.12.1",
     "@astrojs/check": "0.9.9",
+    "@axe-core/playwright": "4.12.1",
     "@pandacss/dev": "1.11.4",
     "@pandacss/preset-base": "1.11.4",
     "@playwright/test": "1.61.1",
     "@types/react": "19.2.17",
     "@types/react-dom": "19.2.3",
+    "cross-env": "10.1.0",
     "knip": "6.26.0",
     "postcss": "8.5.16",
     "typescript": "6.0.3",

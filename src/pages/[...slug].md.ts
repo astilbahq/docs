@@ -7,11 +7,11 @@ interface MarkdownPageProps {
   body: string | undefined;
   canonicalPath: string;
   description: string;
-  docsVersion: string;
-  docsVersionId: string;
-  lifecycle: string;
-  product: string;
-  productId: string;
+  docsVersion?: string;
+  docsVersionId?: string;
+  lifecycle?: string;
+  product?: string;
+  productId?: string;
   source: string;
   title: string;
 }
@@ -24,16 +24,21 @@ const createMarkdown = (
   props: MarkdownPageProps,
   canonical: string
 ): string => {
+  const productFrontmatter = props.product
+    ? [
+        `product: ${yamlString(props.product)}`,
+        `productId: ${yamlString(props.productId ?? "")}`,
+        `docsVersion: ${yamlString(props.docsVersion ?? "")}`,
+        `docsVersionId: ${yamlString(props.docsVersionId ?? "")}`,
+        `lifecycle: ${yamlString(props.lifecycle ?? "")}`,
+      ]
+    : [];
   const frontmatter = [
     "---",
     `title: ${yamlString(props.title)}`,
     `description: ${yamlString(props.description)}`,
     `canonical: ${yamlString(canonical)}`,
-    `product: ${yamlString(props.product)}`,
-    `productId: ${yamlString(props.productId)}`,
-    `docsVersion: ${yamlString(props.docsVersion)}`,
-    `docsVersionId: ${yamlString(props.docsVersionId)}`,
-    `lifecycle: ${yamlString(props.lifecycle)}`,
+    ...productFrontmatter,
     `source: ${yamlString(props.source)}`,
     "---",
   ].join("\n");
@@ -55,7 +60,18 @@ export const getStaticPaths = (async () => {
 
   return entries.flatMap((entry) => {
     if (entry.id === "index") {
-      return [];
+      return [
+        {
+          params: { slug: entry.id },
+          props: {
+            body: entry.body,
+            canonicalPath: "/",
+            description: entry.data.description ?? "",
+            source: getDocsSourceUrl(entry.filePath, entry.id),
+            title: entry.data.title,
+          } satisfies MarkdownPageProps,
+        },
+      ];
     }
 
     const context = findDocsContext(`/${entry.id}/`);

@@ -1,14 +1,12 @@
 ---
 import StarlightHead from "@astrojs/starlight/components/Head.astro";
-import { findDocsContext } from "../docs/catalog";
 
 const { entry } = Astro.locals.starlightRoute;
-const docsContext = findDocsContext(Astro.url.pathname);
 const isDocumentationPage =
   entry.id !== "404" && !entry.id.endsWith("/404");
 const baseUrl = Astro.site ?? Astro.url;
-const markdownUrl = docsContext
-  ? new URL(`/${entry.id}.md`, baseUrl)
+const markdownUrl = isDocumentationPage
+  ? new URL(entry.id ? `/${entry.id}.md` : "/index.md", baseUrl)
   : undefined;
 const llmsUrl = isDocumentationPage && Astro.site
   ? new URL("/llms.txt", Astro.site)
@@ -31,3 +29,7 @@ const llmsUrl = isDocumentationPage && Astro.site
     <link href={llmsUrl} rel="describedby" type="text/plain" />
   )
 }
+
+<script>
+  import "../scripts/register-webmcp";
+</script>
