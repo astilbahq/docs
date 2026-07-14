@@ -1,23 +1,36 @@
 import { API_CATALOG_LINK_VALUE } from "../src/docs/agent-discovery";
-import { docsProducts } from "../src/docs/catalog";
+import { docsProducts, getPageHref } from "../src/docs/catalog";
 import { siteDocsPages } from "../src/docs/site-pages";
 import { DOCS_MCP_PATH, handleDocsMcpRequest } from "./docs-mcp";
 
 const MARKDOWN_MEDIA_TYPE = "text/markdown";
+const STRICT_TRANSPORT_SECURITY = "max-age=31536000";
 const TOKEN_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 const QUALITY_PATTERN = /^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/;
-const MARKDOWN_PATHS = new Set([
-  ...siteDocsPages.map(({ markdownPath }) => markdownPath),
+const PAGE_MARKDOWN_ENTRIES = [
+  ...siteDocsPages.map(
+    ({ canonicalPath, markdownPath }) =>
+      [canonicalPath, markdownPath] as const
+  ),
   ...docsProducts.flatMap((product) =>
     product.versions.flatMap((version) =>
       version.sections.flatMap((section) =>
         section.items.map(
-          (page) => `/${version.basePath}/${page.slug}.md`
+          (page) =>
+            [
+              getPageHref(version, page),
+              `/${version.basePath}/${page.slug}.md`,
+            ] as const
         )
       )
     )
   ),
-]);
+];
+const PAGE_MARKDOWN_PATHS = new Map(PAGE_MARKDOWN_ENTRIES);
+
+if (PAGE_MARKDOWN_PATHS.size !== PAGE_MARKDOWN_ENTRIES.length) {
+  throw new Error("Documentation pages must have unique canonical paths.");
+}
 
 const addVaryAccept = (response: Response): Response => {
   const headers = new Headers(response.headers);
@@ -29,6 +42,58 @@ const addVaryAccept = (response: Response): Response => {
   if (!variesOnAccept) {
     headers.set("Vary", vary ? `${vary}, Accept` : "Accept");
   }
+
+  return new Response(response.body, {
+    headers,
+    status: response.status,
+    statusText: response.statusText,
+  });
+};
+
+const addDirectMarkdownHeaders = (response: Response): Response => {
+  if (!(response.ok || response.status === 304)) {
+    return response;
+  }
+
+  const headers = new Headers(response.headers);
+  headers.set("Content-Type", `${MARKDOWN_MEDIA_TYPE}; charset=utf-8`);
+  headers.set("X-Content-Type-Options", "nosniff");
+
+  return new Response(response.body, {
+    headers,
+    status: response.status,
+    statusText: response.statusText,
+  });
+};
+
+const addStrictTransportSecurity = (response: Response): Response => {
+  const headers = new Headers(response.headers);
+  headers.set("Strict-Transport-Security", STRICT_TRANSPORT_SECURITY);
+
+  return new Response(response.body, {
+    headers,
+    status: response.status,
+    statusText: response.statusText,
+  });
+};
+
+const getPageDiscoveryLink = (markdownPath: string): string =>
+  `<${markdownPath}>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain", ${API_CATALOG_LINK_VALUE}`;
+
+const addCanonicalPageDiscovery = (
+  response: Response,
+  markdownPath: string
+): Response => {
+  const contentType = response.headers.get("Content-Type");
+  const isHtml =
+    response.ok && contentType?.toLowerCase().startsWith("text/html");
+
+  if (!(isHtml || response.status === 304)) {
+    return response;
+  }
+
+  const headers = new Headers(response.headers);
+  headers.set("Link", getPageDiscoveryLink(markdownPath));
 
   return new Response(response.body, {
     headers,
@@ -295,16 +360,7 @@ export const acceptsMarkdown = (accept: string | null): boolean => {
 };
 
 export const getMarkdownPath = (pathname: string): string | undefined => {
-  const markdownPath =
-    pathname === "/"
-      ? "/index.md"
-      : `${pathname.replace(/\/$/, "")}.md`;
-
-  if (!pathname.endsWith("/") || !MARKDOWN_PATHS.has(markdownPath)) {
-    return undefined;
-  }
-
-  return markdownPath;
+  return PAGE_MARKDOWN_PATHS.get(pathname);
 };
 
 const getAsset = (
@@ -328,7 +384,7 @@ const getAsset = (
   );
 };
 
-export const handleRequest = async (
+const routeRequest = async (
   request: Request,
   assets: Fetcher,
   mcpRateLimiter?: RateLimit
@@ -363,6 +419,10 @@ export const handleRequest = async (
     return assets.fetch(request);
   }
 
+  if (url.pathname.endsWith(".md")) {
+    return addDirectMarkdownHeaders(await getAsset(assets, request));
+  }
+
   const markdownPath = getMarkdownPath(url.pathname);
 
   if (markdownPath && acceptsMarkdown(request.headers.get("Accept"))) {
@@ -376,15 +436,9 @@ export const handleRequest = async (
 
     if (isNotModified || isMarkdown) {
       const headers = new Headers(markdownResponse.headers);
-      headers.set(
-        "Content-Type",
-        contentType ?? `${MARKDOWN_MEDIA_TYPE}; charset=utf-8`
-      );
+      headers.set("Content-Type", `${MARKDOWN_MEDIA_TYPE}; charset=utf-8`);
       headers.set("Content-Location", markdownPath);
-      headers.set(
-        "Link",
-        `<${markdownPath}>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain", ${API_CATALOG_LINK_VALUE}`
-      );
+      headers.set("Link", getPageDiscoveryLink(markdownPath));
 
       return addVaryAccept(
         new Response(markdownResponse.body, {
@@ -398,8 +452,23 @@ export const handleRequest = async (
     await markdownResponse.body?.cancel();
   }
 
-  return addVaryAccept(await getAsset(assets, request));
+  const response = await getAsset(assets, request);
+
+  return addVaryAccept(
+    markdownPath
+      ? addCanonicalPageDiscovery(response, markdownPath)
+      : response
+  );
 };
+
+export const handleRequest = async (
+  request: Request,
+  assets: Fetcher,
+  mcpRateLimiter?: RateLimit
+): Promise<Response> =>
+  addStrictTransportSecurity(
+    await routeRequest(request, assets, mcpRateLimiter)
+  );
 
 export default {
   fetch(request, env) {

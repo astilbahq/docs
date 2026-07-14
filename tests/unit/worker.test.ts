@@ -5,6 +5,9 @@ import {
   handleRequest,
 } from "../../worker/index";
 
+const getExpectedPageDiscoveryLink = (markdownPath: string): string =>
+  `<${markdownPath}>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`;
+
 const createAssets = () => {
   const fetch = vi.fn<Fetcher["fetch"]>(async (input, init) => {
     const request = new Request(input, init);
@@ -17,7 +20,10 @@ const createAssets = () => {
     ) {
       if (request.headers.get("If-None-Match") === '"markdown"') {
         return new Response(null, {
-          headers: { ETag: '"markdown"' },
+          headers: {
+            "Content-Type": "text/markdown",
+            ETag: '"markdown"',
+          },
           status: 304,
         });
       }
@@ -31,16 +37,28 @@ const createAssets = () => {
       });
     }
 
-    if (path === "/missing.md" || path === "/missing/") {
+    if (path.endsWith("/missing.md") || path.endsWith("/missing/")) {
       return new Response("Not found", {
         headers: { "Content-Type": "text/html; charset=utf-8" },
         status: 404,
       });
     }
 
+    if (request.headers.get("If-None-Match") === '"html"') {
+      return new Response(null, {
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          ETag: '"html"',
+          Vary: "Accept-Encoding",
+        },
+        status: 304,
+      });
+    }
+
     return new Response("<h1>Overview</h1>", {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
+        ETag: '"html"',
         Vary: "Accept-Encoding",
       },
     });
@@ -158,7 +176,7 @@ describe("Markdown negotiation", () => {
       "/cache/overview.md"
     );
     expect(response.headers.get("Link")).toBe(
-      '</cache/overview.md>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"'
+      getExpectedPageDiscoveryLink("/cache/overview.md")
     );
     expect(response.headers.get("Vary")).toBe("Accept");
     expect(response.headers.get("ETag")).toBe('"markdown"');
@@ -192,34 +210,148 @@ describe("Markdown negotiation", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it("serves HTML for normal requests and merges Vary", async () => {
+  it.each(["/index.md", "/cache/overview.md"])(
+    "sets direct Markdown headers for %s without buffering the asset",
+    async (path) => {
+      const { assets, fetch } = createAssets();
+      const response = await handleRequest(
+        new Request(`https://docs.astilba.com${path}`),
+        assets
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Content-Type")).toBe(
+        "text/markdown; charset=utf-8"
+      );
+      expect(response.headers.get("X-Content-Type-Options")).toBe(
+        "nosniff"
+      );
+      expect(response.headers.get("Strict-Transport-Security")).toBe(
+        "max-age=31536000"
+      );
+      expect(response.headers.get("ETag")).toBe('"markdown"');
+      expect(await response.text()).toContain("# ");
+      expect(fetch).toHaveBeenCalledTimes(1);
+    }
+  );
+
+  it("preserves direct Markdown revalidation headers", async () => {
     const { assets } = createAssets();
     const response = await handleRequest(
-      new Request("https://docs.astilba.com/cache/overview/"),
-      assets
-    );
-
-    expect(response.headers.get("Content-Type")).toBe(
-      "text/html; charset=utf-8"
-    );
-    expect(response.headers.get("Vary")).toBe("Accept-Encoding, Accept");
-  });
-
-  it("falls back to the real HTML 404 when no Markdown sibling exists", async () => {
-    const { assets, fetch } = createAssets();
-    const response = await handleRequest(
-      new Request("https://docs.astilba.com/missing/", {
-        headers: { Accept: "text/markdown" },
+      new Request("https://docs.astilba.com/cache/overview.md", {
+        headers: { "If-None-Match": '"markdown"' },
       }),
       assets
     );
 
-    expect(response.status).toBe(404);
+    expect(response.status).toBe(304);
     expect(response.headers.get("Content-Type")).toBe(
-      "text/html; charset=utf-8"
+      "text/markdown; charset=utf-8"
     );
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(response.headers.get("X-Content-Type-Options")).toBe(
+      "nosniff"
+    );
+    expect(response.headers.get("ETag")).toBe('"markdown"');
   });
+
+  it.each(["/missing.md", "/cache/missing.md"])(
+    "preserves the HTML 404 for unknown direct Markdown path %s",
+    async (path) => {
+      const { assets } = createAssets();
+      const response = await handleRequest(
+        new Request(`https://docs.astilba.com${path}`),
+        assets
+      );
+
+      expect(response.status).toBe(404);
+      expect(response.headers.get("Content-Type")).toBe(
+        "text/html; charset=utf-8"
+      );
+      expect(response.headers.get("X-Content-Type-Options")).toBeNull();
+      expect(response.headers.get("Strict-Transport-Security")).toBe(
+        "max-age=31536000"
+      );
+      expect(await response.text()).toBe("Not found");
+    }
+  );
+
+  it.each([
+    { markdownPath: "/index.md", pagePath: "/" },
+    {
+      markdownPath: "/cache/overview.md",
+      pagePath: "/cache/overview/",
+    },
+  ])(
+    "adds discovery links to GET, HEAD, and revalidation for $pagePath",
+    async ({ markdownPath, pagePath }) => {
+      const { assets, fetch } = createAssets();
+      const expectedLink = getExpectedPageDiscoveryLink(markdownPath);
+      const response = await handleRequest(
+        new Request(`https://docs.astilba.com${pagePath}`),
+        assets
+      );
+
+      expect(response.status).toBe(200);
+      expect(response.headers.get("Content-Type")).toBe(
+        "text/html; charset=utf-8"
+      );
+      expect(response.headers.get("Link")).toBe(expectedLink);
+      expect(response.headers.get("Vary")).toBe(
+        "Accept-Encoding, Accept"
+      );
+
+      const headResponse = await handleRequest(
+        new Request(`https://docs.astilba.com${pagePath}`, {
+          method: "HEAD",
+        }),
+        assets
+      );
+      expect(headResponse.status).toBe(200);
+      expect(headResponse.headers.get("Link")).toBe(expectedLink);
+
+      const revalidationResponse = await handleRequest(
+        new Request(`https://docs.astilba.com${pagePath}`, {
+          headers: { "If-None-Match": '"html"' },
+        }),
+        assets
+      );
+      expect(revalidationResponse.status).toBe(304);
+      expect(revalidationResponse.headers.get("Link")).toBe(expectedLink);
+      expect(revalidationResponse.headers.get("Vary")).toBe(
+        "Accept-Encoding, Accept"
+      );
+      expect(fetch).toHaveBeenCalledTimes(3);
+    }
+  );
+
+  it.each(["/missing/", "/cache/missing/"])(
+    "preserves unknown page behavior for %s",
+    async (pagePath) => {
+      const { assets, fetch } = createAssets();
+      const response = await handleRequest(
+        new Request(`https://docs.astilba.com${pagePath}`, {
+          headers: { Accept: "text/markdown" },
+        }),
+        assets
+      );
+
+      expect(response.status).toBe(404);
+      expect(response.headers.get("Content-Type")).toBe(
+        "text/html; charset=utf-8"
+      );
+      expect(response.headers.get("Link")).toBeNull();
+
+      const headResponse = await handleRequest(
+        new Request(`https://docs.astilba.com${pagePath}`, {
+          method: "HEAD",
+        }),
+        assets
+      );
+      expect(headResponse.status).toBe(404);
+      expect(headResponse.headers.get("Link")).toBeNull();
+      expect(fetch).toHaveBeenCalledTimes(2);
+    }
+  );
 
   it("does not treat the slash-suffixed MCP path as the protocol endpoint", async () => {
     const { assets, fetch } = createAssets();
@@ -230,5 +362,18 @@ describe("Markdown negotiation", () => {
 
     expect(response.status).toBe(200);
     expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("adds HSTS to Worker-generated MCP failures", async () => {
+    const { assets } = createAssets();
+    const response = await handleRequest(
+      new Request("https://docs.astilba.com/mcp"),
+      assets
+    );
+
+    expect(response.status).toBe(503);
+    expect(response.headers.get("Strict-Transport-Security")).toBe(
+      "max-age=31536000"
+    );
   });
 });

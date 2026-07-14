@@ -126,6 +126,23 @@ const assertLink = (html, rel, href) => {
   }
 };
 
+const linkHeaderHasRelation = (value, relation) => {
+  const relationPattern = /(?:^|;)\s*rel\s*=\s*(?:"([^"]*)"|([^;,\s]+))/gi;
+
+  for (const match of value.matchAll(relationPattern)) {
+    const relations = (match[1] ?? match[2] ?? "")
+      .trim()
+      .split(/\s+/)
+      .map((item) => item.toLowerCase());
+
+    if (relations.includes(relation.toLowerCase())) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 const getFrontmatterString = (
   markdown,
   field,
@@ -248,20 +265,28 @@ if (!validateServerCard(serverCard)) {
 const contentSignal = "ai-train=yes, search=yes, ai-input=yes";
 const staticHeaders = artifacts.get("_headers");
 const headerRules = parseHeaderRules(staticHeaders);
+const markdownHeaderPatterns = headerRules
+  .filter((rule) =>
+    (rule.headers.get("content-type") ?? []).some((value) =>
+      value.toLowerCase().startsWith("text/markdown")
+    )
+  )
+  .map((rule) => rule.pattern)
+  .sort();
+
+assertExact(
+  "_headers",
+  "static Markdown response rule patterns",
+  markdownHeaderPatterns,
+  []
+);
+
 assertHeaderValues(headerRules, "/*", "Content-Signal", [contentSignal]);
+assertHeaderValues(headerRules, "/*", "Strict-Transport-Security", [
+  "max-age=31536000",
+]);
 assertHeaderValues(headerRules, "/_astro/*", "Cache-Control", [
   "public, max-age=31536000, immutable",
-]);
-assertHeaderValues(headerRules, "/", "Link", [
-  '</index.md>; rel="alternate"; type="text/markdown"',
-  '</llms.txt>; rel="describedby"; type="text/plain"',
-  API_CATALOG_LINK_VALUE,
-]);
-assertHeaderValues(headerRules, "/*.md", "Content-Type", [
-  "text/markdown; charset=utf-8",
-]);
-assertHeaderValues(headerRules, "/*.md", "X-Content-Type-Options", [
-  "nosniff",
 ]);
 assertHeaderValues(
   headerRules,
@@ -345,13 +370,13 @@ for (const discoveryPattern of [
     headerRules,
     discoveryPattern,
     "Access-Control-Allow-Headers",
-    ["Content-Type"]
+    []
   );
   assertHeaderValues(
     headerRules,
     discoveryPattern,
     "Access-Control-Allow-Methods",
-    ["GET, HEAD"]
+    []
   );
   assertHeaderValues(headerRules, discoveryPattern, "Cache-Control", [
     "public, max-age=3600",
@@ -494,11 +519,6 @@ for (const sitemapPage of sitemapPages) {
 
   assertLink(pageHtml, "describedby", llmsUrl);
   assertLink(pageHtml, "api-catalog", apiCatalogUrl);
-  assertHeaderValues(headerRules, pagePattern, "Link", [
-    `<${alternateUrl.pathname}>; rel="alternate"; type="text/markdown"`,
-    '</llms.txt>; rel="describedby"; type="text/plain"',
-    API_CATALOG_LINK_VALUE,
-  ]);
   pagePatterns.push(pagePattern);
   mcpResources.push({
     canonicalUrl,
@@ -551,19 +571,19 @@ if (pagePatterns.length === 0) {
   );
 }
 
-const advertisedPagePatterns = headerRules
+const staticMarkdownAlternatePatterns = headerRules
   .filter((rule) =>
     (rule.headers.get("link") ?? []).some((value) =>
-      value.includes('rel="alternate"')
+      linkHeaderHasRelation(value, "alternate")
     )
   )
   .map((rule) => rule.pattern)
   .sort();
 assertExact(
   "_headers",
-  "Markdown alternate rule patterns",
-  advertisedPagePatterns,
-  pagePatterns.sort()
+  "static Markdown alternate Link rule patterns",
+  staticMarkdownAlternatePatterns,
+  []
 );
 
 const mcpCorpus = parseDocsCorpus(
