@@ -4,6 +4,7 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { expect, type Page, test } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { EXPECTED_CORPUS_PAGES } from "../../src/docs/mcp-corpus";
+import { GLOBAL_SECURITY_HEADERS } from "../../src/docs/security";
 
 interface WebMcpToolProbe {
   annotations: {
@@ -31,6 +32,14 @@ const expectSimpleGetCors = (headers: Record<string, string>): void => {
   expect(headers["access-control-allow-origin"]).toBe("*");
   expect(headers["access-control-allow-headers"]).toBeUndefined();
   expect(headers["access-control-allow-methods"]).toBeUndefined();
+};
+
+const expectGlobalSecurityHeaders = (
+  headers: Record<string, string>
+): void => {
+  for (const [name, value] of Object.entries(GLOBAL_SECURITY_HEADERS)) {
+    expect(headers[name.toLowerCase()]).toBe(value);
+  }
 };
 
 const getExpectedPageDiscoveryLink = (markdownPath: string): string =>
@@ -132,9 +141,7 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
   expect(apiCatalogResponse.headers()["x-content-type-options"]).toBe(
     "nosniff"
   );
-  expect(apiCatalogResponse.headers()["strict-transport-security"]).toBe(
-    "max-age=31536000"
-  );
+  expectGlobalSecurityHeaders(apiCatalogResponse.headers());
   expect(await apiCatalogResponse.json()).toEqual({
     linkset: [
       {
@@ -227,9 +234,7 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
 
   const unsupportedMcpMethod = await request.get("/mcp");
   expect(unsupportedMcpMethod.status()).toBe(405);
-  expect(
-    unsupportedMcpMethod.headers()["strict-transport-security"]
-  ).toBe("max-age=31536000");
+  expectGlobalSecurityHeaders(unsupportedMcpMethod.headers());
 
   const initializeMcp = await request.post("/mcp", {
     data: {
@@ -249,9 +254,7 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
     },
   });
   expect(initializeMcp.status()).toBe(200);
-  expect(initializeMcp.headers()["strict-transport-security"]).toBe(
-    "max-age=31536000"
-  );
+  expectGlobalSecurityHeaders(initializeMcp.headers());
 
   const usageResponse = await request.get("/agents/mcp/", {
     maxRedirects: 0,
@@ -380,6 +383,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   });
   expect(htmlResponse.headers()["content-type"]).toContain("text/html");
   expect(htmlResponse.headers().vary).toContain("Accept");
+  expectGlobalSecurityHeaders(htmlResponse.headers());
 
   const preferredHtmlResponse = await request.get("/cache/overview/", {
     headers: { Accept: "text/html;q=1, text/markdown;q=0.1" },
@@ -396,6 +400,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   expect(markdownResponse.headers()["x-content-type-options"]).toBe(
     "nosniff"
   );
+  expectGlobalSecurityHeaders(markdownResponse.headers());
   const markdownEtag = markdownResponse.headers().etag;
   expect(markdownEtag).toBeTruthy();
   if (!markdownEtag) {

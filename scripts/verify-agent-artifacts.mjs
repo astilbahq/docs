@@ -19,7 +19,10 @@ import {
   createContentSecurityPolicy,
   getInlineScriptHashes,
 } from "./security-headers.mjs";
-import { CONTENT_SECURITY_POLICY_ASSET_PATH } from "../src/docs/security.ts";
+import {
+  CONTENT_SECURITY_POLICY_ASSET_PATH,
+  GLOBAL_SECURITY_HEADERS,
+} from "../src/docs/security.ts";
 
 const siteValue = process.env.ASTILBA_DOCS_SITE;
 
@@ -310,9 +313,11 @@ assertExact(
 );
 
 assertHeaderValues(headerRules, "/*", "Content-Signal", [contentSignal]);
-assertHeaderValues(headerRules, "/*", "Strict-Transport-Security", [
-  "max-age=31536000",
-]);
+
+for (const [name, value] of Object.entries(GLOBAL_SECURITY_HEADERS)) {
+  assertHeaderValues(headerRules, "/*", name, [value]);
+}
+
 assertHeaderValues(headerRules, "/*", "Content-Security-Policy", [
   expectedContentSecurityPolicy,
 ]);

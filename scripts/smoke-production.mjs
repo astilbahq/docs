@@ -1,3 +1,5 @@
+import { GLOBAL_SECURITY_HEADERS } from "../src/docs/security.ts";
+
 const CANONICAL_ORIGIN = "https://docs.astilba.com";
 const HTML_PATH = "/cache/overview/";
 const MARKDOWN_PATH = "/cache/overview.md";
@@ -110,13 +112,11 @@ const requireHeaderAbsent = (response, name, label) => {
   }
 };
 
-const requireHsts = (response, label) =>
-  requireHeaderEquals(
-    response,
-    "Strict-Transport-Security",
-    "max-age=31536000",
-    label
-  );
+const requireGlobalSecurityHeaders = (response, label) => {
+  for (const [name, value] of Object.entries(GLOBAL_SECURITY_HEADERS)) {
+    requireHeaderEquals(response, name, value, label);
+  }
+};
 
 const parseContentSecurityPolicy = (value) => {
   const directives = new Map();
@@ -251,7 +251,7 @@ const checkHtml = async () => {
     '</cache/overview.md>; rel="alternate"',
     "HTML page"
   );
-  requireHsts(response, "HTML page");
+  requireGlobalSecurityHeaders(response, "HTML page");
   requireContentSecurityPolicy(response, "HTML page");
   const html = await response.text();
 
@@ -287,7 +287,7 @@ const checkMarkdown = async () => {
   }
 
   requireHeaderIncludes(response, "Vary", "accept", "negotiated Markdown");
-  requireHsts(response, "negotiated Markdown");
+  requireGlobalSecurityHeaders(response, "negotiated Markdown");
   const markdown = await response.text();
 
   if (!markdown.includes("# Overview")) {
@@ -312,7 +312,7 @@ const checkDirectMarkdown = async () => {
     "nosniff",
     "direct Markdown"
   );
-  requireHsts(response, "direct Markdown");
+  requireGlobalSecurityHeaders(response, "direct Markdown");
 
   if (!(await response.text()).includes("# Overview")) {
     throw new Error(
@@ -336,7 +336,7 @@ const checkMissingMarkdown = async () => {
     "text/html",
     "missing Markdown"
   );
-  requireHsts(response, "missing Markdown");
+  requireGlobalSecurityHeaders(response, "missing Markdown");
   await response.body?.cancel();
 };
 
@@ -365,7 +365,7 @@ const checkDiscovery = async () => {
     "Access-Control-Allow-Methods",
     "API catalog"
   );
-  requireHsts(response, "API catalog");
+  requireGlobalSecurityHeaders(response, "API catalog");
   await response.body?.cancel();
 };
 
@@ -389,7 +389,7 @@ const checkFingerprintAsset = async (asset) => {
     }
   }
 
-  requireHsts(response, "fingerprinted asset");
+  requireGlobalSecurityHeaders(response, "fingerprinted asset");
   await response.body?.cancel();
 };
 
@@ -439,7 +439,7 @@ const callMcp = async (method, params) => {
     "application/json",
     `MCP ${method}`
   );
-  requireHsts(response, `MCP ${method}`);
+  requireGlobalSecurityHeaders(response, `MCP ${method}`);
   const payload = await response.json();
 
   if (
@@ -475,7 +475,7 @@ const notifyMcpInitialized = async () => {
   }
 
   captureMcpSession(response);
-  requireHsts(response, "MCP notifications/initialized");
+  requireGlobalSecurityHeaders(response, "MCP notifications/initialized");
   await response.body?.cancel();
 };
 
