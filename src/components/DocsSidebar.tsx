@@ -1,5 +1,6 @@
 import { Collapsible } from "@base-ui/react/collapsible";
 import { Menu } from "@base-ui/react/menu";
+import { ScrollArea } from "@base-ui/react/scroll-area";
 import {
   useCallback,
   useEffect,
@@ -375,13 +376,23 @@ export default function DocsSidebar({
     >
       <DocsContext context={context} />
       {entries.length > 0 && (
-        <div className={styles.navigation} data-docs-sidebar-scroll="">
-          <SidebarList
-            entries={entries}
-            onOpenChange={handleOpenChange}
-            openGroups={openGroups}
-          />
-        </div>
+        <ScrollArea.Root className={styles.navigation}>
+          <ScrollArea.Viewport
+            className={styles.navigationViewport}
+            data-docs-sidebar-scroll=""
+          >
+            <ScrollArea.Content className={styles.navigationContent}>
+              <SidebarList
+                entries={entries}
+                onOpenChange={handleOpenChange}
+                openGroups={openGroups}
+              />
+            </ScrollArea.Content>
+          </ScrollArea.Viewport>
+          <ScrollArea.Scrollbar className={styles.navigationScrollbar}>
+            <ScrollArea.Thumb className={styles.navigationThumb} />
+          </ScrollArea.Scrollbar>
+        </ScrollArea.Root>
       )}
     </div>
   );

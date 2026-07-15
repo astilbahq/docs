@@ -891,7 +891,8 @@ test("keeps sidebar controls in place while only navigation scrolls", async ({
   await expect(searchTrigger).toBeVisible();
   await expect(searchTrigger).toHaveCSS("position", "static");
   await expect(sidebar).toHaveCSS("overflow-y", "hidden");
-  await expect(navigation).toHaveCSS("overflow-y", "auto");
+  await expect(navigation).toHaveCSS("overflow-y", "scroll");
+  await expect(navigation).toHaveCSS("mask-image", /linear-gradient/);
   await expect
     .poll(() =>
       navigation.evaluate(
@@ -899,6 +900,22 @@ test("keeps sidebar controls in place while only navigation scrolls", async ({
       )
     )
     .toBe(true);
+  await expect(navigation).toHaveAttribute("data-overflow-y-end", "");
+  await expect(navigation).not.toHaveAttribute("data-overflow-y-start");
+
+  const scrollThumb = navigation
+    .locator("..")
+    .locator('[data-orientation="vertical"] [data-orientation="vertical"]');
+  await expect(scrollThumb).toHaveCount(1);
+  await page.emulateMedia({ forcedColors: "active" });
+  await expect(navigation).toHaveCSS("mask-image", "none");
+  await expect(scrollThumb).toHaveCSS("forced-color-adjust", "none");
+  await expect(scrollThumb).not.toHaveCSS(
+    "background-color",
+    "rgba(0, 0, 0, 0)"
+  );
+  await page.emulateMedia({ forcedColors: "none" });
+  await expect(navigation).toHaveCSS("mask-image", /linear-gradient/);
 
   const searchBefore = await searchTrigger.boundingBox();
   const contextBefore = await context.boundingBox();
@@ -908,6 +925,7 @@ test("keeps sidebar controls in place while only navigation scrolls", async ({
   await expect
     .poll(() => navigation.evaluate((element) => element.scrollTop))
     .toBeGreaterThan(0);
+  await expect(navigation).toHaveAttribute("data-overflow-y-start", "");
   const searchAfter = await searchTrigger.boundingBox();
   const contextAfter = await context.boundingBox();
 
@@ -917,6 +935,17 @@ test("keeps sidebar controls in place while only navigation scrolls", async ({
 
   expect(searchAfter.y).toBeCloseTo(searchBefore.y, 1);
   expect(contextAfter.y).toBeCloseTo(contextBefore.y, 1);
+
+  await navigation.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(navigation).not.toHaveAttribute("data-overflow-y-end");
+  await expect(navigation).toHaveAttribute("data-overflow-y-start", "");
+
+  await page.keyboard.press("Tab");
+  await navigation.focus();
+  await expect(navigation).toHaveCSS("outline-style", "none");
+  await expect(navigation.locator("..")).toHaveCSS("outline-style", "solid");
 
   await searchTrigger.click();
   await expect(page.getByRole("dialog", { name: "Search" })).toBeVisible();
