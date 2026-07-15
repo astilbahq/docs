@@ -4,10 +4,19 @@ import {
   getMarkdownPath,
   handleRequest,
 } from "../../worker/index";
-import { CONTENT_SECURITY_POLICY_ASSET_PATH } from "../../src/docs/security";
+import {
+  CONTENT_SECURITY_POLICY_ASSET_PATH,
+  GLOBAL_SECURITY_HEADERS,
+} from "../../src/docs/security";
 
 const TEST_CONTENT_SECURITY_POLICY =
   "default-src 'none'; script-src 'self'; style-src 'self'";
+
+const expectGlobalSecurityHeaders = (response: Response): void => {
+  for (const [name, value] of Object.entries(GLOBAL_SECURITY_HEADERS)) {
+    expect(response.headers.get(name)).toBe(value);
+  }
+};
 
 const getExpectedPageDiscoveryLink = (markdownPath: string): string =>
   `<${markdownPath}>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`;
@@ -242,9 +251,7 @@ describe("Markdown negotiation", () => {
       expect(response.headers.get("X-Content-Type-Options")).toBe(
         "nosniff"
       );
-      expect(response.headers.get("Strict-Transport-Security")).toBe(
-        "max-age=31536000"
-      );
+      expectGlobalSecurityHeaders(response);
       expect(response.headers.get("ETag")).toBe('"markdown"');
       expect(await response.text()).toContain("# ");
       expect(fetch).toHaveBeenCalledTimes(1);
@@ -267,6 +274,7 @@ describe("Markdown negotiation", () => {
     expect(response.headers.get("X-Content-Type-Options")).toBe(
       "nosniff"
     );
+    expectGlobalSecurityHeaders(response);
     expect(response.headers.get("ETag")).toBe('"markdown"');
   });
 
@@ -287,9 +295,7 @@ describe("Markdown negotiation", () => {
         TEST_CONTENT_SECURITY_POLICY
       );
       expect(response.headers.get("X-Content-Type-Options")).toBeNull();
-      expect(response.headers.get("Strict-Transport-Security")).toBe(
-        "max-age=31536000"
-      );
+      expectGlobalSecurityHeaders(response);
       expect(await response.text()).toBe("Not found");
     }
   );
@@ -410,7 +416,7 @@ describe("Markdown negotiation", () => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
 
-  it("adds HSTS to Worker-generated MCP failures", async () => {
+  it("adds global security headers to Worker-generated MCP failures", async () => {
     const { assets } = createAssets();
     const response = await handleRequest(
       new Request("https://docs.astilba.com/mcp"),
@@ -418,9 +424,7 @@ describe("Markdown negotiation", () => {
     );
 
     expect(response.status).toBe(503);
-    expect(response.headers.get("Strict-Transport-Security")).toBe(
-      "max-age=31536000"
-    );
+    expectGlobalSecurityHeaders(response);
   });
 
   it.each([
@@ -443,9 +447,7 @@ describe("Markdown negotiation", () => {
         expect(response.status).toBe(503);
         expect(response.headers.get("Cache-Control")).toBe("no-store");
         expect(response.headers.get("Content-Security-Policy")).toBeNull();
-        expect(response.headers.get("Strict-Transport-Security")).toBe(
-          "max-age=31536000"
-        );
+        expectGlobalSecurityHeaders(response);
         expect(await response.text()).toBe(
           "Documentation is temporarily unavailable."
         );

@@ -1,5 +1,7 @@
 /*
   Content-Signal: ai-train=yes, search=yes, ai-input=yes
+  Permissions-Policy: accelerometer=(), ambient-light-sensor=(), autoplay=(), bluetooth=(), camera=(), clipboard-read=(self), clipboard-write=(self), display-capture=(), encrypted-media=(), fullscreen=(), gamepad=(), geolocation=(), gyroscope=(), hid=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-create=(), publickey-credentials-get=(), screen-wake-lock=(), serial=(), tools=(self), usb=(), web-share=(), xr-spatial-tracking=()
+  Referrer-Policy: strict-origin-when-cross-origin
   Strict-Transport-Security: max-age=31536000
 
 /_astro/*

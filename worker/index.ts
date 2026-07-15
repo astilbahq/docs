@@ -3,12 +3,12 @@ import { docsProducts, getPageHref } from "../src/docs/catalog";
 import {
   CONTENT_SECURITY_POLICY_ASSET_PATH,
   CONTENT_SECURITY_POLICY_HEADER,
+  GLOBAL_SECURITY_HEADERS,
 } from "../src/docs/security";
 import { siteDocsPages } from "../src/docs/site-pages";
 import { DOCS_MCP_PATH, handleDocsMcpRequest } from "./docs-mcp";
 
 const MARKDOWN_MEDIA_TYPE = "text/markdown";
-const STRICT_TRANSPORT_SECURITY = "max-age=31536000";
 const TOKEN_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 const QUALITY_PATTERN = /^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/;
 const PAGE_MARKDOWN_ENTRIES = [
@@ -70,9 +70,12 @@ const addDirectMarkdownHeaders = (response: Response): Response => {
   });
 };
 
-const addStrictTransportSecurity = (response: Response): Response => {
+const addGlobalSecurityHeaders = (response: Response): Response => {
   const headers = new Headers(response.headers);
-  headers.set("Strict-Transport-Security", STRICT_TRANSPORT_SECURITY);
+
+  for (const [name, value] of Object.entries(GLOBAL_SECURITY_HEADERS)) {
+    headers.set(name, value);
+  }
 
   return new Response(response.body, {
     headers,
@@ -557,7 +560,7 @@ export const handleRequest = async (
     );
   }
 
-  return addStrictTransportSecurity(securedResponse);
+  return addGlobalSecurityHeaders(securedResponse);
 };
 
 export default {
