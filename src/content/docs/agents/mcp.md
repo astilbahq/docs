@@ -5,7 +5,7 @@ prev: false
 next: false
 ---
 
-Astilba provides a public, read-only Model Context Protocol endpoint for its published documentation.
+Astilba provides a public, read-only Model Context Protocol endpoint for the same Markdown corpus published on this site.
 
 Configure a remote Streamable HTTP server with this URL:
 
@@ -13,7 +13,9 @@ Configure a remote Streamable HTTP server with this URL:
 https://docs.astilba.com/mcp
 ```
 
-The endpoint does not require credentials. It cannot change documentation, access accounts, or read private Astilba material.
+The endpoint does not require credentials or create a session. It cannot change documentation, access accounts, follow arbitrary URLs, or read private Astilba material.
+
+Add it to an MCP client as a remote server. Client configuration formats differ, so use the endpoint above rather than copying configuration intended for another client.
 
 ## Tools
 
@@ -22,13 +24,30 @@ The endpoint does not require credentials. It cannot change documentation, acces
 | `search_docs` | Find published pages by words or API names, with optional product and documentation-version filters. |
 | `read_doc` | Read a bounded chunk from a page returned by search or resource discovery. |
 
-Both tools are read-only, non-destructive, and idempotent. Search returns at most 10 results per call. A read returns at most 32,000 UTF-16 characters and reports the next offset when more content remains.
+Both tools are read-only, non-destructive, and idempotent. Search returns five results by default and at most 10 per call. A read returns 16,000 UTF-16 characters by default and at most 32,000, avoids splitting a surrogate pair, and reports the next offset when more content remains.
 
 ## Resources
 
 Every published Markdown page is also exposed as a fixed MCP resource. Resource URIs stay on `docs.astilba.com`; the server does not fetch arbitrary URLs.
 
+Prefer resources when your client supports them: discovery gives you the canonical page list and a resource read returns the published document directly. Use `search_docs` and `read_doc` when the client exposes tools more reliably than resources.
+
 When you need to make a release or availability claim about Cache, read [API status](/cache/api-status/) before relying on examples elsewhere in the documentation.
+
+## Usage limits
+
+The endpoint has a Cloudflare-native allowance of 60 units per minute for each source IP within a Cloudflare location:
+
+- every accepted POST consumes one unit;
+- each `resources/read` or `tools/call` operation in that request consumes one additional unit;
+- clients behind the same outbound IP share capacity;
+- requests without a Cloudflare source address share one anonymous fallback key.
+
+An exhausted per-minute MCP guard returns HTTP 429 with `Retry-After: 60`. Treat this as an abuse guard, not an account quota or a guarantee of globally synchronized capacity.
+
+That guard is separate from the Cloudflare account's Workers request allowance. On the Free plan, Worker-first routes count toward a 100,000-request daily allowance; exhausting it can terminate those requests with Cloudflare Error 1027 rather than the MCP guard's HTTP 429 response. The active account plan remains the authority for that daily allowance.
+
+Request bodies are limited to 256,000 bytes. The server accepts up to 16 legacy batch messages only for protocol versions that still permit JSON-RPC batching; current structured-result protocol versions must send individual requests.
 
 ## Discovery
 

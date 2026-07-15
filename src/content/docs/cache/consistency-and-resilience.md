@@ -7,19 +7,19 @@ In Astilba Cache, consistency controls what a read must observe. Resilience cont
 
 The **Registry** is the authoritative invalidation record, the **Bus** delivers its updates to active instances, and **L2** is the shared Store used for values and recovery data. See [Core concepts](/cache/core-concepts/) for the complete vocabulary.
 
-These consistency levels become meaningful when <code>Registry</code> and <code>Bus</code> are configured together. L2 is separately required for factory fills and can hold durable replay data. Without the coordinated invalidation path, the current kernel treats decoded entries as fresh and <code>consistency</code> does not create a live check.
+These consistency levels become meaningful when <code>Registry</code>, <code>Bus</code>, and <code>L2</code> are configured together. L2 holds values and the durable recovery mirror; <code>createCache()</code> refuses a Registry-plus-Bus reader without it. Without the coordinated invalidation path, the current kernel treats decoded entries as fresh and <code>consistency</code> does not create a live check.
 
 ## Choose a consistency level
 
 | Level | Current behavior | Cost |
 | --- | --- | --- |
 | Eventual — default | Uses verified local invalidation knowledge. Unknown or suspect knowledge follows the configured unknown policy. | Usually no Registry round trip on a warm, known hit. Conservative misses or checks occur while knowledge reconverges. |
-| Strong — opt in | Performs a live, un-memoized Registry check before serving a stored entry. A soft-stale value is refilled in the foreground instead of returned through the eventual stale path. The documented snapshot does not add a separate pre-fill check on a bare miss. | Adds authoritative coordination to stored-entry reads and surfaces Registry failures. |
+| Strong — opt in | Performs a live, un-memoized Registry check before serving a stored entry and before running the factory for a miss. A soft-stale value is refilled in the foreground instead of returned through the eventual stale path. | Adds authoritative coordination to stored-entry reads and fills, and surfaces Registry failures. |
 
 Choose strong mode with <code>consistency: "strong"</code> on the call. Although <code>defaults.consistency</code> exists in the public type, the current read path does not consume it and still defaults an omitted call option to eventual.
 
 - Unknown or suspect knowledge never validates an entry as fresh or grace-servable by itself.
-- A hard invalidation observed during a fill can fence the result so it is not written against obsolete invalidation knowledge. The documented snapshot does not rerun that factory within the same read.
+- A hard invalidation observed during a fill can fence the result. When verified knowledge advanced, the kernel re-mints the birth epoch and may refetch within a three-attempt budget before surfacing <code>FencedError</code> or a miss entry.
 
 Strong mode may still use an eligible stale candidate when its foreground factory fails with a classified transient error and the call declared <code>grace</code>. It rechecks the candidate at serve time; a hard-dead or still-unknown value is not served.
 
@@ -34,6 +34,8 @@ Set <code>defaults.unknownPolicy</code> for eventual reads:
 | <code>error</code> | Declared as an error posture, but the current read path still treats the unknown entry as a miss and continues to fill. Do not rely on an exception yet. |
 
 <code>takedownSensitive: true</code> selects that same provisional <code>error</code> branch unless an explicit policy overrides it; it does not yet produce a takedown-safe exception. The typed <code>defaults.onUnavailable</code> option is also not implemented. A failed strong Registry call currently propagates the driver's error rather than degrading to eventual or being wrapped as <code>RegistryUnavailableError</code>.
+
+The source Workers factory explicitly chooses <code>registry-check</code>. Its request-piggyback poller helps future eventual reads reconverge, but it never turns unverified knowledge into a current-read hit; a read that is still suspect follows the fail-closed policy immediately.
 
 ## Serve stale data only for classified failures
 

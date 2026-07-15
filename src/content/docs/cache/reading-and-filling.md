@@ -56,10 +56,12 @@ On a newly filled origin result, <code>durable: false</code> does not mean the f
 1. **Read configured tiers.** Cache tries L1 before L2. It checks the stored codec identity before decoding, then validates the reconstructed entry.
 2. **Join compatible work.** Concurrent compatible calls share one in-isolate foreground factory execution.
 3. **Run the factory.** The factory receives an <code>AbortSignal</code>, optional request context, and typed failure helpers. The current kernel creates a fresh signal but does not yet abort it on a cache deadline.
-4. **Fence the result.** A hard invalidation observed during the fill can reject write-back so the result is not published against obsolete invalidation knowledge.
+4. **Fence the result.** A hard invalidation observed during the fill can reject write-back. When verified invalidation knowledge advanced, the kernel can re-mint the birth epoch and refetch within a bounded three-attempt budget.
 5. **Write by scope.** Shared scopes may reach L2; principal-derived values are L1-only. A successful fill hydrates L1 when one is configured.
 
-When a plain-value fill is fenced and no value can be served, <code>getOrSet()</code> throws <code>FencedError</code>. <code>getOrSetEntry()</code> reports a non-durable miss instead. The documented snapshot does not rerun the factory inside the same read; the caller may read again.
+When the bounded attempts still leave no servable value, <code>getOrSet()</code> throws <code>FencedError</code>. <code>getOrSetEntry()</code> reports a non-durable miss instead.
+
+A strong, coordinated miss also live-checks the tags known before the first factory attempt: the canonical key and namespace tags plus caller-declared tags. That makes the new value postdate every purge the check observed instead of fetching first and trying to bless the result afterward. Factory-discovered tags are not covered while <code>FactoryCtx.dependsOn()</code> and <code>setTags()</code> remain inert.
 
 ## Compatible concurrent calls
 
@@ -81,11 +83,11 @@ Per-call and default TTL and grace values do not currently expire entries by ela
 
 A soft-stale eventual read currently awaits a best-effort refresh, then still returns the stale value for that call. The planned background adoption and retry lifecycle is not implemented, so this path does not yet provide background stale-while-revalidate latency.
 
-<code>FactoryCtx.dependsOn()</code>, <code>setTags()</code>, and <code>setTtl()</code> are currently no-ops. <code>ctx.graced</code> is not populated and <code>reuseGraced()</code> throws <code>NotImplementedError</code>. Use call-level <code>tags</code> and the documented stale-on-error path instead.
+<code>FactoryCtx.dependsOn()</code>, <code>setTags()</code>, and <code>setTtl()</code> are currently no-ops in main. <code>ctx.graced</code> is not populated and <code>reuseGraced()</code> throws <code>NotImplementedError</code>. Use call-level <code>tags</code> and the documented stale-on-error path instead.
 
 ## Related
 
-- [Preview walkthrough](/cache/quickstart/) shows both value reads against a development-only Store.
+- [Local source quickstart](/cache/quickstart/) shows both value reads against the implemented memory Store used as a development-only L2.
 - [Core concepts](/cache/core-concepts/) explains the storage tiers and read vocabulary.
 - [Consistency and resilience](/cache/consistency-and-resilience/) explains when stale values may be reused.
 - [API status](/cache/api-status/) lists provisional metadata and unimplemented helpers.

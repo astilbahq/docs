@@ -4,26 +4,26 @@ description: Practical documentation for Astilba infrastructure libraries, with 
 tableOfContents: false
 ---
 
-Astilba builds portable infrastructure libraries with explicit correctness boundaries. These docs describe what the public code can do today, the guarantees it is designed to preserve, and the places where the implementation is still incomplete.
+Astilba builds portable infrastructure libraries with explicit correctness boundaries. These docs describe what the public code does today, what each guarantee costs, and which parts are still incomplete.
 
 :::caution[The current product is a development preview]
-Astilba Cache is not published and has no supported production installation path. Examples explain the public API in the source repository; they are not a release announcement.
+Astilba Cache is not available from npm and has no supported production installation path. The source repository now includes Cloudflare Workers and React Router adapters, but their presence in source is not a package release or production-support promise.
 :::
 
 ## Products
 
 ### [Cache](/cache/overview/)
 
-A portable TypeScript caching library with explicit soft and hard invalidation, classified stale-on-error resilience, and privacy-aware storage scopes.
+A server-side TypeScript cache with explicit soft and hard invalidation, classified stale-on-error resilience, privacy-aware storage scopes, and a portable capability boundary.
 
-Start with the [overview](/cache/overview/), check the [React and server-app boundary](/cache/react-and-server-apps/), or follow the [preview walkthrough](/cache/quickstart/).
+Start with the [overview](/cache/overview/), run the [local source quickstart](/cache/quickstart/), or inspect the source adapters for [Cloudflare Workers](/cache/cloudflare-workers/) and [React Router](/cache/react-and-server-apps/).
 
 ## How to read these docs
 
-- **Start** pages explain who the product is for, walk through the API shape, and define its vocabulary.
+- **Start** pages explain who the product is for, provide the shortest honest source examples, and introduce the supported-in-source runtime boundaries.
 - **Guides** focus on one task, such as reading or invalidating data.
 - **Concepts** explain the read, invalidation, consistency, and resilience models.
-- **Advanced** pages document runtime composition and driver implementation status.
+- **Advanced** pages document runtime composition, recovery, and driver implementation status.
 - **Reference** contains the complete root API surface and the release-state ledger. When another page and the status page appear to differ, follow the status page.
 
 ## For agents

@@ -1,12 +1,12 @@
 ---
 title: API reference
-description: Reference every export from the documented @astilba/cache preview snapshot.
+description: Reference the root, Cloudflare, and React Router exports in the current @astilba/cache source snapshot.
 ---
 
-This page documents the complete root export surface for this documentation's preview snapshot. Start with the [overview](/cache/overview/) or [preview walkthrough](/cache/quickstart/) if you are learning the library; use this page when you need an exact method, option, result field, or driver contract.
+This page documents the complete root export surface and the two public adapter subpaths in the current source snapshot. Start with the [overview](/cache/overview/) or [local source quickstart](/cache/quickstart/) if you are learning the library; use this page when you need an exact method, option, result field, or driver contract.
 
 :::caution[Unreleased and unevenly implemented]
-<code>@astilba/cache</code> is not published. Some declarations describe the intended API but currently throw or do not apply their full behavior. Each section calls out important boundaries; [API status](/cache/api-status/) is the authoritative implementation ledger.
+<code>@astilba/cache</code> is not published to npm. Some declarations describe intended behavior that still throws or remains inert. Each section calls out important boundaries; [API status](/cache/api-status/) is the authoritative implementation ledger.
 :::
 
 ## Create a cache
@@ -24,7 +24,7 @@ const cache = createCache({
 })
 ~~~
 
-The current implementation requires <code>namespace</code>, <code>clock</code>, and <code>rng</code>. A factory fill also requires <code>l2</code>; without it, the fill throws <code>NotImplementedError</code>.
+The raw constructor requires <code>namespace</code>, <code>clock</code>, and <code>rng</code>. A factory fill also requires <code>l2</code>; without it, the fill throws <code>NotImplementedError</code>. <code>createWorkersCache()</code> is the higher-level Workers constructor.
 
 ### <code>CacheConfig</code>
 
@@ -36,7 +36,7 @@ The current implementation requires <code>namespace</code>, <code>clock</code>, 
 | <code>l1</code> | <code>Store</code> | Optional local tier. Retains principal-derived values that cannot be written to shared storage. |
 | <code>l2</code> | <code>Store</code> | Shared or durable tier. Currently required whenever a factory runs and can also hold replication-mirror objects for recovery. |
 | <code>registry</code> | <code>Registry</code> | Authoritative invalidation driver. Required by the purge methods. |
-| <code>bus</code> | <code>Bus</code> | Live invalidation delivery. Coordinated validation is built when a Registry is also configured; L2 separately enables mirror resync and is required for factory fills. |
+| <code>bus</code> | <code>Bus</code> | Live invalidation delivery. Coordinated validation is built when Registry and L2 are also configured. Registry plus Bus without L2 throws at construction. |
 | <code>cdn</code> | <code>Cdn</code> | Declared L3 purge capability; not invoked by the current kernel. |
 | <code>lock</code> | <code>Lock</code> | Optional cross-instance fill lock. A read opts in with <code>lock: true</code>. |
 | <code>codec</code> | <code>Codec</code> | Value encoder and wire identity. Defaults to the built-in JSON round trip. |
@@ -56,9 +56,9 @@ The current implementation requires <code>namespace</code>, <code>clock</code>, 
 | <code>unknownPolicy</code> | Chooses <code>registry-check</code>, <code>miss</code>, or the provisional <code>error</code> posture for unknown invalidation knowledge. |
 | <code>staleIfError</code> | Replaces the default <code>isRetriableHttp()</code> failure classifier. |
 | <code>graceBackoff</code> | Declared retry backoff for grace behavior; not consumed today. |
-| <code>maxSyncLag</code> | Declared maximum synchronization lag. The documented snapshot does not consume it. |
+| <code>maxSyncLag</code> | Base cadence for the attached replication poller. Defaults to the Workers profile's 60 seconds when omitted. |
 | <code>acceptCodecs</code> | Additional stored codec identities the current Codec is allowed to decode. |
-| <code>heartbeatInterval</code> | Declared coordination heartbeat interval. The documented snapshot does not consume it. |
+| <code>heartbeatInterval</code> | Reader-side heartbeat interval used to derive the invalidation-silence threshold. The Workers factory defaults it to 30 seconds; the Coordinator deployment variable is configured separately. |
 | <code>onUnavailable</code> | Declares strong-read degradation to eventual; not consumed today. |
 
 ## Read or fill values
@@ -89,7 +89,7 @@ The current implementation requires <code>namespace</code>, <code>clock</code>, 
 | <code>grace</code> | Opts a stale candidate into classified error fallback. The declared duration is not enforced. |
 | <code>notFoundTtl</code> | Its presence allows an <code>HttpError</code> 404 to become a negative entry. The duration is not enforced. |
 | <code>scope</code> | <code>"public"</code> or <code>{ tenant }</code>. When omitted, visible identity derives a principal-local scope; contextless work resolves public. |
-| <code>consistency</code> | <code>"eventual"</code> or <code>"strong"</code>. Strong live-checks a stored entry when coordinated invalidation is active; the documented snapshot does not add a separate pre-fill check on a bare miss. |
+| <code>consistency</code> | <code>"eventual"</code> or <code>"strong"</code>. Strong live-checks a stored entry and pre-checks a miss before running its factory when coordinated invalidation is active. |
 | <code>lock</code> | Requests a configured cross-instance Lock. Without a driver, <code>true</code> currently continues unlocked. |
 | <code>request</code> | Adapter-provided <code>RequestContext</code> used for identity derivation and the development public-scope guard. |
 | <code>factory</code> | Async origin loader. Its context is <code>FactoryCtx&lt;T&gt;</code> or <code>EntryFactoryCtx&lt;T&gt;</code>. |
@@ -104,7 +104,7 @@ The exported option types are <code>GetOptions</code>, <code>GetOrSetOptions</co
 | <code>graced</code> | Optional <code>GracedInfo</code> describing a stale candidate. It is not populated today. |
 | <code>request</code> | The adapter request object. Under <code>dev: true</code> and explicit public scope, property reads can demote the fill to L1-only. |
 | <code>fail(err?)</code> | Throws a factory failure without pretending it is a returned <code>T</code>. |
-| <code>dependsOn(tag, options?)</code> | Declared factory-time dependency contribution; currently a no-op. |
+| <code>dependsOn(tag, options?)</code> | Declared factory-time dependency contribution, including optional <code>l3: false</code>; currently a no-op on main. |
 | <code>setTags(tags)</code> | Declared factory-time replacement of tags; currently a no-op. |
 | <code>setTtl(ttl)</code> | Declared factory-time TTL override; currently a no-op. |
 | <code>reuseGraced()</code> | Intended typed reuse of the graced value after provenance checks; currently throws <code>NotImplementedError</code>. |
@@ -158,17 +158,17 @@ See [Invalidating data](/cache/tags-and-invalidation/) for safe mutation order a
 | --- | --- |
 | <code>Tag</code> | Branded string accepted by cache reads and invalidation selectors. |
 | <code>TagPart</code> | <code>string &#124; number</code> input used by tag helpers. |
-| <code>compound(...parts)</code> | Implemented positional tag builder with escaping and explicit arity. |
-| <code>t</code> | Tagged-template builder declared for readable tags; currently throws <code>NotImplementedError</code>. |
+| <code>compound(...parts)</code> | Implemented positional builder. Escapes <code>%</code>, <code>:</code>, and <code>|</code> and prefixes arity. It does not currently apply <code>t</code>'s remaining character or byte-budget validation to its parts. |
+| <code>t</code> | Implemented tagged-template trust boundary. Validates a non-empty, non-reserved final tag against the lowercase grammar and 256 UTF-8-byte ceiling; it rejects rather than escaping interpolations. |
 | <code>globalTag(name)</code> | Declared globally scoped tag helper; currently throws <code>NotImplementedError</code>. |
 
-User tags beginning with <code>__</code> are reserved and rejected with <code>InvalidTagError</code> at the cache boundary. <code>compound()</code> is the usable helper in the current source.
+User tags beginning with <code>__</code> are reserved and rejected with <code>InvalidTagError</code> at the cache boundary.
 
 ### Duration exports
 
 <code>Duration</code> is a template-literal type such as <code>"250ms"</code>, <code>"5m"</code>, or <code>"1.5h"</code>. <code>DurationUnit</code> is <code>"ms" | "s" | "m" | "h" | "d"</code>; <code>m</code> means minutes.
 
-<code>duration(value, unit)</code> is the computed-value helper, but currently throws <code>NotImplementedError</code>. Duration strings can still appear in typed options, although elapsed TTL and grace behavior is unfinished.
+<code>duration(value, unit)</code> is the implemented computed-value helper. It rejects non-positive or non-finite values and any multiplied millisecond result that is not a finite, positive, safe integer, throwing <code>InvalidDurationError</code>. Duration strings can appear in typed options, although elapsed TTL and grace behavior is unfinished.
 
 ## Driver contracts
 
@@ -180,7 +180,7 @@ The core Store shape is:
 
 ~~~ts
 interface Store {
-  get(key: string): Promise<StoreValue | undefined>
+  get(key: string, readKind?: ReadKind): Promise<StoreValue | undefined>
   set(
     key: string,
     value: string,
@@ -193,13 +193,16 @@ interface Store {
 | Export | Purpose |
 | --- | --- |
 | <code>Store</code> | Async <code>get()</code>, <code>set()</code>, and <code>delete()</code> contract used by L1, L2, and mirror storage. |
+| <code>ReadKind</code> | Optional Store read hint: <code>"pointer"</code>, <code>"delta"</code>, or <code>"snap"</code>. Drivers may map it to different read-cache policy. |
 | <code>StoreValue</code> | Stored string value plus optional metadata. |
 | <code>StoreMetadata</code> | Readonly metadata record. |
 | <code>StoreWriteOptions</code> | Optional physical <code>expirationTtl</code> in seconds and metadata. |
 | <code>StoreWriteError</code> | Structural write rejection with code <code>throttled</code>, <code>too_large</code>, or <code>unavailable</code>, plus retryability and optional cause. |
 | <code>isStoreWriteError(value)</code> | Implemented shape-based type guard for <code>StoreWriteError</code>. |
-| <code>MemoryOptions</code> | Declares <code>maxEntries</code> and <code>maxBytes</code> for the planned local Store. |
-| <code>memory(options?)</code> | Planned in-process L1 Store; currently throws <code>NotImplementedError</code>. |
+| <code>MemoryOptions</code> | Optional <code>clock</code>, <code>maxEntries</code>, and UTF-8 <code>maxBytes</code> for the local Store. |
+| <code>memory(options?)</code> | Implemented per-instance LRU Store. It evicts to both configured bounds, rejects a single oversize value as <code>too_large</code>, and honors Store-level <code>expirationTtl</code> when a Clock is supplied. |
+
+Calling <code>Store.set()</code> with <code>expirationTtl</code> on a clockless memory Store fails loudly instead of silently ignoring residency. The Cache kernel does not currently pass value TTL through as Store residency, so this behavior matters primarily to direct Store users and replication objects.
 
 <code>CasOrder</code> contains <code>epoch</code> and <code>fence</code>. <code>CasRecord</code> adds an optimistic-concurrency <code>token</code>. <code>CasStore</code> declares <code>seed(key, order)</code>, <code>load(key)</code>, and <code>swap(key, expectedToken, next)</code>. It is an optional atomic compare-and-set capability for durable drivers; the current kernel does not consume it.
 
@@ -207,11 +210,11 @@ interface Store {
 
 | Export | Purpose |
 | --- | --- |
-| <code>Registry</code> | Live checks, soft and hard mutations, and retention registration. |
+| <code>Registry</code> | Registry identity, live checks, soft and hard mutations, and retention registration. |
 | <code>RegistryAck</code> | Mutation acknowledgement containing the accepted epoch. |
 | <code>TagChange</code> | One tag's optional soft and hard watermark changes. |
 | <code>BusFrame</code> | A contiguous <code>fromEpoch</code> to <code>toEpoch</code> range of changes. |
-| <code>BusEvent</code> | <code>frame</code>, <code>gap</code>, or <code>reset</code> event delivered to a subscriber. |
+| <code>BusEvent</code> | <code>frame</code>, <code>gap</code>, <code>reset</code>, or <code>hello</code> event delivered to a subscriber. |
 | <code>Bus</code> | Subscribes the kernel to Bus events. The kernel validates continuity. |
 | <code>Subscription</code> | Handle with <code>close()</code>. |
 
@@ -221,6 +224,7 @@ The <code>Registry</code> contract exposes:
 
 | Member | Meaning |
 | --- | --- |
+| <code>regId</code> | Stable Registry identity used to scope and verify recovery-mirror objects. |
 | <code>check(tags)</code> | Returns live <code>TagKnowledge</code> for each requested tag. |
 | <code>expire(tags)</code> | Advances soft watermarks and returns a <code>RegistryAck</code>. |
 | <code>delete(tags)</code> | Advances hard watermarks and returns a <code>RegistryAck</code>. |
@@ -229,8 +233,9 @@ The <code>Registry</code> contract exposes:
 <code>RegistryAck</code> contains the accepted <code>epoch</code>. <code>TagChange</code> contains a <code>tag</code> plus optional <code>softEpoch</code> and <code>hardEpoch</code>. <code>BusFrame</code> contains <code>fromEpoch</code>, <code>toEpoch</code>, and a list of changes. <code>BusEvent</code> is one of:
 
 - <code>{ kind: "frame", frame }</code> for a contiguous change frame;
-- <code>{ kind: "gap" }</code> when delivery loss is known;
-- <code>{ kind: "reset" }</code> when the transport is re-established.
+- <code>{ kind: "gap", head }</code> when delivery loss is known and the transport declares the minimum head the reader must reach;
+- <code>{ kind: "reset" }</code> when the transport is re-established;
+- <code>{ kind: "hello", head }</code> immediately after establishment, declaring the live channel's current head.
 
 ### Other capabilities
 
@@ -306,6 +311,7 @@ The standalone collector decision exists. Cache-hit contribution, supported head
 | <code>CacheTimeoutError</code> | Timeout carrying a <code>CacheTimeoutSource</code> of <code>cache</code> or <code>caller</code>. The kernel does not currently create cache-deadline aborts. |
 | <code>FencedError</code> | A plain-value fill was fenced by a conflicting hard invalidation, leaving no value to return. |
 | <code>InvalidTagError</code> | Caller supplied a malformed or reserved tag at the cache boundary. |
+| <code>InvalidDurationError</code> | <code>duration()</code> received a non-positive, non-finite, fractional-millisecond, or unsafe computed duration. |
 | <code>NotImplementedError</code> | A declared preview surface was called before implementation. |
 | <code>RegistryUnavailableError</code> | Intended strong-read Registry failure. Exported but not emitted by the current path. |
 
@@ -319,8 +325,48 @@ The standalone collector decision exists. Cache-hit contribution, supported head
 
 A plain sink may receive raw identifiers. Hosted mode with a salt HMAC-pseudonymizes emitted string fields except the structural event type. Hosted mode without a salt suppresses events rather than forwarding raw strings.
 
+## Cloudflare adapter exports
+
+Import these names from <code>@astilba/cache/cloudflare</code>. The subpath resolves only in a Workers-compatible runtime because <code>Coordinator</code> uses <code>cloudflare:workers</code>.
+
+| Export | Purpose and current boundary |
+| --- | --- |
+| <code>createWorkersCache(config)</code> | Composes a Workers Clock and Rng, bounded memory L1, KV L2, named Coordinator Registry, and redialing Bus. |
+| <code>WorkersCacheConfig</code> | Requires <code>name</code>, <code>kv</code>, and <code>coordinator</code>; accepts optional <code>CacheDefaults</code> overrides. |
+| <code>Coordinator</code> | Durable Object class the Worker must export and bind with a SQLite migration. Its environment requires <code>REGISTRY_KV</code> and accepts Registry heartbeat and snapshot tuning variables. |
+| <code>cloudflareKV(namespace)</code> | Builds the Cloudflare KV Store driver. |
+| <code>doRegistry(stub, regId?)</code> | Builds the thin Coordinator RPC Registry. The Registry ID must match the named Durable Object identity. |
+| <code>doBus(dial, options)</code> | Builds a mechanism-only WebSocket Bus client. It reports closure but does not reconnect itself. |
+| <code>Dial</code> | Function returning a compatible client socket synchronously or asynchronously. |
+| <code>DoBusOptions</code> | Requires <code>regId</code> and accepts an <code>onClose</code> status callback. |
+| <code>DoBusCloseInfo</code> | Close code, reason, and whether the client initiated the closure. |
+| <code>redialingDoBus(dial, options)</code> | Wraps <code>doBus()</code> with jittered exponential reconnection. |
+| <code>RedialOptions</code> | Registry identity, injected Rng, and optional close callback, scheduler, base delay, and jitter fraction. |
+| <code>Scheduler</code> | Injectable delayed-redial seam; the default uses platform timers. |
+| <code>InvalidRegistryNameError</code> | A named Coordinator identity violates the lowercase <code>[a-z0-9._-]</code>, 1–64-character Registry grammar. |
+
+See [Cloudflare Workers](/cache/cloudflare-workers/) for the binding relationship and operational limits.
+
+## React Router adapter exports
+
+Import these names from <code>@astilba/cache/react-router</code>. React and React Router are optional peer dependencies so root and Cloudflare-only consumers do not need them.
+
+| Export | Purpose and current boundary |
+| --- | --- |
+| <code>cacheMiddleware(options)</code> | Creates React Router v8 server middleware that provides Cache, opens the request frame, triggers poll ticks, and stamps private responses. |
+| <code>CacheMiddlewareOptions</code> | Requires <code>cache</code>; accepts synchronous request identity derivation, <code>waitUntil</code>, and poll-tick telemetry. |
+| <code>CacheMiddlewareArgs</code> | The argument object React Router passes to server middleware, re-exported for identity mappers. |
+| <code>cacheContext</code> | Typed Router context key. Loaders and actions read the request's Cache with <code>context.get(cacheContext)</code>. |
+| <code>currentRequest()</code> | Returns the current AsyncLocalStorage-backed <code>RequestContext</code>, or <code>undefined</code> outside the middleware frame. |
+| <code>POLL_TICK_FAILED</code> | The <code>"poll_tick_failed"</code> telemetry event name emitted when out-of-band recovery work rejects. |
+| <code>TICK_MIN_INTERVAL_MS</code> | One-second minimum between request-piggyback ticks for the same Cache instance. |
+
+The adapter requires <code>nodejs_als</code> on Cloudflare Workers and currently enforces a private shared-response posture. See [React Router](/cache/react-and-server-apps/).
+
 ## Export boundary
 
-The root entry point exports every symbol documented above. The source workspace also exposes an internal <code>@astilba/cache/registry</code> state-machine subpath for the test harness and Cloudflare Coordinator, but the publish configuration omits it. It is not a supported application API and should not be imported from source.
+The publish configuration contains four supported doors: the root entry point, <code>./cloudflare</code>, <code>./react-router</code>, and <code>./package.json</code>. Deep source paths are not public APIs.
+
+The source workspace also exposes <code>@astilba/cache/registry</code> so its test harness and Coordinator can share the state machine. The publish configuration deliberately omits it; applications must not import that source-only subpath.
 
 For implementation gaps, inert fields, and integration availability, continue to [API status](/cache/api-status/).

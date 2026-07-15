@@ -30,14 +30,26 @@ await cache.delete({ tag: productTag })
 Invalidating a cached representation does not update or remove the underlying record. Apply the source-of-truth change before issuing a hard invalidation so a refill cannot reproduce the old value.
 :::
 
-## Build unambiguous tags
+## Choose a tag builder
 
-<code>compound()</code> escapes percent signs and delimiters, then prefixes the vector's arity. Delimiter-like values, empty strings, and vectors of different lengths therefore remain distinct.
+Use <code>t</code> when the final tag is already in the public tag grammar: lowercase letters, digits, <code>:</code>, <code>_</code>, <code>-</code>, <code>.</code>, <code>|</code>, and <code>%</code>. It rejects an empty value, a reserved <code>__</code> prefix, off-grammar characters, and values over 256 UTF-8 bytes.
+
+~~~ts
+const productTag = t`product:${productId}`
+~~~
+
+Interpolated values are not escaped. A space, slash, uppercase letter, or other off-grammar character throws <code>InvalidTagError</code> rather than being silently rewritten.
+
+Use <code>compound()</code> when positional structure matters. It escapes percent signs and the <code>:</code> and <code>|</code> delimiters, then prefixes the vector's arity. Delimiter-like values, empty strings, and vectors of different lengths therefore remain distinct.
 
 ~~~ts
 const productTag = compound("product", productId)
 const categoryListingTag = compound("category", categoryId, "listing")
 ~~~
+
+:::caution[Current <code>compound()</code> validation boundary]
+The current source encodes <code>%</code>, <code>:</code>, and <code>|</code> but does not run <code>t</code>'s remaining character or 256-byte validation over compound parts. Keep every part lowercase and grammar-safe, and keep the encoded result within the byte budget. This is a current implementation boundary, not permission to use arbitrary raw identifiers as tags.
+:::
 
 Caller-supplied tags on <code>getOrSet()</code> and <code>getOrSetEntry()</code> are rejected when they begin with <code>__</code>. The kernel reserves that prefix for its per-key and per-namespace tags. The <code>Tag</code> brand prevents ordinary raw-string selectors; do not bypass it with a type assertion.
 
@@ -73,7 +85,9 @@ Do not use those completion fields as rollout or takedown guarantees yet.
 
 ## Configuration boundary
 
-The purge verbs require a <code>Registry</code>. For reads to observe coordinated invalidation, configure Registry and Bus together. L2 remains required for fills and lets suspect readers replay durable delta batches. The production Bus, CDN path, and supported adapter exports are not implemented.
+The purge verbs require a <code>Registry</code>. For reads to observe coordinated invalidation, configure Registry, Bus, and L2 together. L2 remains required for fills and lets suspect readers recover through durable deltas and snapshots.
+
+The source Workers factory wires the Coordinator Registry, redialing Durable Object Bus, and KV mirror. The CDN path and real purge-completion promises are still not implemented.
 
 ## Related
 

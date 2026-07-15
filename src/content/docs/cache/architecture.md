@@ -3,21 +3,22 @@ title: Runtime architecture
 description: See how the portable Astilba Cache kernel composes storage, coordination, time, and encoding capabilities.
 ---
 
-Astilba Cache keeps its behavior in a portable kernel and receives runtime capabilities through typed contracts. The kernel owns keys, scopes, tier order, decode safety, fill coordination, and invalidation decisions. Your runtime supplies storage, coordination, time, randomness, and any custom encoding.
+Astilba Cache keeps cache semantics in a portable kernel and receives runtime capabilities through typed contracts. The kernel owns keys, scopes, tier order, decode safety, fill coordination, and invalidation decisions. A runtime supplies storage, coordination, time, randomness, scheduling, and any custom encoding.
 
-This is an advanced integration page. For application-level definitions and a smaller starting point, begin with [Core concepts](/cache/core-concepts/) or the [preview walkthrough](/cache/quickstart/).
+This is an advanced integration page. For application-level definitions and a smaller starting point, begin with [Core concepts](/cache/core-concepts/) or the [local source quickstart](/cache/quickstart/).
 
 ## Capabilities at the boundary
 
 | Capability | What Cache uses it for | Current requirement |
 | --- | --- | --- |
 | <code>Clock</code> and <code>Rng</code> | Injected time and randomness keep the kernel portable and deterministic in tests. | Required by <code>createCache()</code>; a future runtime preset should normally supply them. |
-| <code>Store</code> | Key/value I/O for local L1, shared L2, and the replication mirror. | L2 is currently required whenever a factory must run. L1 is optional. |
+| <code>Store</code> | Key/value I/O for local L1, shared L2, and the replication mirror. | L2 is required whenever a factory must run. <code>memory()</code> and <code>cloudflareKV()</code> are implemented source drivers. |
 | <code>Registry</code> | The authoritative record of soft, hard, and namespace invalidation. | Required by <code>expire()</code>, <code>delete()</code>, and <code>clear()</code>. |
-| <code>Bus</code> | The live delivery path for ordered invalidation events. | Participates in coordinated read validation when Registry is also configured. L2 separately supports fills and mirror replay. |
+| <code>Bus</code> | The live delivery path for ordered invalidation events. | Participates in coordinated read validation when Registry and L2 are also configured. The Cloudflare subpath includes a Durable Object Bus and reconnecting wrapper. |
 | <code>Codec</code> | Value encoding and a wire identity checked before decode. | Optional when the built-in JSON round trip is sufficient. |
 | <code>Lock</code> | Cross-isolate exclusion and write arbitration. | Optional and only used when a driver is supplied and the call opts in. |
 | <code>Cdn</code> | A future edge-purge boundary. | Declared but not wired in the current kernel. |
+| Poll tick driver | Calls the kernel's attached recovery poller outside the read path. | React Router provides request-piggyback ticks. Other embeddings need an equivalent scheduler if they want proactive recovery. |
 
 These contracts keep the correctness rules independent of a storage vendor. They do not make every driver combination equivalent: coordinated invalidation needs a complete coordination path.
 
@@ -25,7 +26,7 @@ These contracts keep the correctness rules independent of a storage vendor. They
 
 1. Cache resolves the namespace, scope, and user key into one canonical storage key.
 2. It checks L1 before L2, verifies the stored codec identity, and reconstructs the entry.
-3. When coordinated invalidation is configured, it decides whether its tag knowledge is sufficient for the requested consistency level.
+3. When coordinated invalidation is configured, it decides whether its tag knowledge is sufficient for the requested consistency level. A strong miss performs a live check before its factory.
 4. On a miss, compatible callers share one in-isolate factory execution.
 5. Before write-back, Cache checks for a conflicting hard invalidation, then writes only to tiers allowed by the resolved scope.
 
@@ -38,18 +39,24 @@ See [Reading and filling](/cache/reading-and-filling/) for return metadata, sing
 | <code>clock</code> + <code>rng</code> + <code>l2</code> | Reads and fills through the portable kernel without coordinated invalidation. |
 | Add <code>l1</code> | Adds an isolate-local read tier and retains principal-derived, L1-only values. |
 | Add <code>registry</code> | Enables the purge methods. Reads do not build the coordinated invalidation path without Bus. |
-| Add <code>registry</code> + <code>bus</code> together | Enables coordinated validation and live delivery. With L2, a suspect reader can also replay durable delta batches. |
+| Add <code>registry</code> + <code>bus</code> alongside <code>l2</code> | Enables coordinated validation, live delivery, delta-and-snapshot recovery, and construction of the internal replication poller. A Registry-plus-Bus configuration without L2 is rejected. |
 | Add <code>lock</code> | Allows opted-in calls to coordinate work across isolates. No production Lock driver is exported. |
 | Add a custom <code>codec</code> | Changes the wire format and identity. Accepted older identities must still be decodable by that codec. |
+| Use <code>createWorkersCache()</code> | Supplies Clock, Rng, bounded memory L1, KV L2, Coordinator Registry, and a redialing Durable Object Bus with safe source defaults. |
 
-Supplying Bus without Registry does not build the invalidation reader. Registry without Bus can still accept purge commands, but it is not a coordinated read configuration.
+Supplying Bus without Registry does not build the invalidation reader. Registry without Bus can still accept purge commands, but it is not a coordinated read configuration. Supplying Registry and Bus without L2 throws at construction because the reader would have no recovery mirror.
 
 ## Keep runtime integrations outside the kernel
 
-The repository exercises Cloudflare-backed storage, coordination, and recovery internally, but those modules are not supported package entry points. There is no public deployment bundle or framework adapter yet, and the internal worker is a test host rather than an application template.
+The source repository now exposes two publish-shaped adapter entry points:
+
+- <code>@astilba/cache/cloudflare</code> contains the Workers factory plus its KV, Coordinator, Registry, Bus, and reconnecting transport pieces.
+- <code>@astilba/cache/react-router</code> contains React Router v8 server middleware, typed Cache context, request-frame access, and the observable poll-tick constants.
+
+Both are part of the package export map and covered by source tests. Neither is installable from npm yet, and the repository's integration worker and React Router fixture remain test hosts rather than application templates.
 
 :::caution[Source preview only]
-These combinations describe the current source behavior. <code>@astilba/cache</code> is not published and does not yet have a supported installation or production deployment path.
+These combinations describe current main-branch source behavior. <code>@astilba/cache</code> is not published and does not yet have a supported installation, compatibility policy, or production deployment path.
 :::
 
 ## Related
