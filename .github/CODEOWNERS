@@ -3,9 +3,12 @@
 /.github/ @ReesMorris
 /astro.config.mjs @ReesMorris
 /package.json @ReesMorris
+/oxfmt.config.ts @ReesMorris
+/oxlint.config.ts @ReesMorris
 /playwright.config.ts @ReesMorris
 /pnpm-lock.yaml @ReesMorris
 /renovate.json @ReesMorris
+/SECURITY.md @ReesMorris
 /scripts/ @ReesMorris
 /worker/ @ReesMorris
 /wrangler.jsonc @ReesMorris

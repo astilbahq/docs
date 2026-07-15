@@ -52,11 +52,11 @@ pnpm verify
 
 Development and type checks do not require a deployed origin. Production builds do: `ASTILBA_DOCS_SITE` must be the public HTTP or HTTPS origin, with no path, so canonical links and generated agent resources cannot silently point at the wrong host.
 
-`pnpm verify` regenerates Panda bindings, checks generated Worker binding types plus Astro and TypeScript, runs focused Vitest coverage, checks unused code and dependencies with Knip, builds and validates the Wrangler bundle without uploading it, and drives the production Worker in Chromium with Playwright and axe. The browser suite covers Markdown negotiation, WebMCP registration, Pagefind, mobile navigation, persisted sidebar state, themes, page actions, raw Markdown routes, and representative light/dark/overlay accessibility states. Install Chromium once per machine with `pnpm test:browser:install`.
+`pnpm verify` regenerates Panda bindings, runs Ultracite's Oxlint and Oxfmt checks, checks generated Worker binding types plus Astro and TypeScript, runs focused Vitest coverage, checks unused code and dependencies with Knip, builds and validates the Wrangler bundle without uploading it, and drives the production Worker in Chromium with Playwright and axe. The browser suite covers Markdown negotiation, WebMCP registration, Pagefind, mobile navigation, persisted sidebar state, themes, page actions, raw Markdown routes, and representative light/dark/overlay accessibility states. Install Chromium once per machine with `pnpm test:browser:install`.
 
 The production build creates the Pagefind search index, validates internal links, and then verifies the deployed artifact set in `dist/`. Run `pnpm preview` to inspect that build locally.
 
-Repository automation also runs Actionlint, Zizmor, CodeQL analysis for the application and Actions workflows, dependency review, a complete-lockfile OSV scan, and Conventional Commit PR-title validation. Renovate keeps exact package and immutable workflow pins current on a weekly cadence; major changes, lockfile maintenance, Wrangler, production-path Actions, and CodeQL always require manual review.
+Repository automation also runs Actionlint, Zizmor, CodeQL analysis for the application and Actions workflows, dependency review, a complete-lockfile OSV scan, and Conventional Commit PR-title validation. Renovate keeps exact package and immutable workflow pins current on a weekly cadence, groups routine updates, and holds major updates in the Dependency Dashboard for approval. Lockfile maintenance, zero-major packages, Wrangler, and GitHub Actions always require a maintainer merge.
 
 ## Deployment
 
@@ -76,7 +76,7 @@ For an intentional fallback outside the normal production workflow, build and de
 pnpm deploy
 ```
 
-`wrangler.jsonc` is the deployment source of truth. Its Custom Domain route lets Cloudflare own the `docs.astilba.com` DNS record and certificate rather than proxying an external origin.
+`wrangler.jsonc` is the deployment source of truth. Its Custom Domain route lets Cloudflare own the `docs.astilba.com` DNS record and certificate rather than proxying an external origin. Wrangler also uploads private source maps so production exceptions resolve to the original TypeScript without publishing those maps as site assets.
 
 The production build also derives a Content Security Policy from the exact inline scripts Astro and Starlight emit. Arbitrary inline JavaScript and inline event handlers remain blocked; same-origin executable assets and the narrow WebAssembly evaluation capability required by Pagefind are allowed. Starlight and Expressive Code still require inline styles, so that exception is deliberately limited to `style-src`. Static-asset-first routes receive the policy from `_headers`; Worker-first HTML reads the same generated policy asset and attaches it directly, as required by Cloudflare's routing model. Both paths also apply a Permissions Policy that denies a curated set of unused browser capabilities while explicitly preserving same-origin clipboard and WebMCP access, plus a strict-origin referrer policy. The artifact verifier, Worker tests, browser suite, and production smoke test all fail if these policies are missing or stop matching the built site.
 

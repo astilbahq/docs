@@ -1,8 +1,10 @@
+import { createHash } from "node:crypto";
+
 import AxeBuilder from "@axe-core/playwright";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { expect, type Page, test } from "@playwright/test";
-import { createHash } from "node:crypto";
+
 import { EXPECTED_CORPUS_PAGES } from "../../src/docs/mcp-corpus";
 import { GLOBAL_SECURITY_HEADERS } from "../../src/docs/security";
 
@@ -34,9 +36,7 @@ const expectSimpleGetCors = (headers: Record<string, string>): void => {
   expect(headers["access-control-allow-methods"]).toBeUndefined();
 };
 
-const expectGlobalSecurityHeaders = (
-  headers: Record<string, string>
-): void => {
+const expectGlobalSecurityHeaders = (headers: Record<string, string>): void => {
   for (const [name, value] of Object.entries(GLOBAL_SECURITY_HEADERS)) {
     expect(headers[name.toLowerCase()]).toBe(value);
   }
@@ -63,9 +63,7 @@ const expectNoAxeViolations = async (page: Page): Promise<void> => {
   ).toEqual([]);
 };
 
-test("serves the public documentation corpus over MCP", async ({
-  baseURL,
-}) => {
+test("serves the public documentation corpus over MCP", async ({ baseURL }) => {
   if (!baseURL) {
     throw new Error("The MCP test requires Playwright's local Worker URL.");
   }
@@ -74,9 +72,7 @@ test("serves the public documentation corpus over MCP", async ({
     name: "astilba-docs-test",
     version: "1.0.0",
   });
-  const transport = new StreamableHTTPClientTransport(
-    new URL("/mcp", baseURL)
-  );
+  const transport = new StreamableHTTPClientTransport(new URL("/mcp", baseURL));
 
   try {
     await client.connect(transport);
@@ -170,9 +166,7 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
     '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"'
   );
 
-  const mcpCatalogResponse = await request.get(
-    "/.well-known/mcp/catalog.json"
-  );
+  const mcpCatalogResponse = await request.get("/.well-known/mcp/catalog.json");
   expect(mcpCatalogResponse.status()).toBe(200);
   expect(mcpCatalogResponse.headers()["content-type"]).toContain(
     "application/json"
@@ -341,10 +335,9 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     expect(pageRevalidationResponse.headers().link).toBe(expectedLink);
   }
 
-  const negotiatedMarkdownResponse = await request.get(
-    "/cache/overview/",
-    { headers: { Accept: "text/markdown" } }
-  );
+  const negotiatedMarkdownResponse = await request.get("/cache/overview/", {
+    headers: { Accept: "text/markdown" },
+  });
   expect(negotiatedMarkdownResponse.ok()).toBe(true);
   expect(negotiatedMarkdownResponse.headers()["content-type"]).toContain(
     "text/markdown"
@@ -397,9 +390,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   expect(markdownResponse.headers()["content-type"]).toBe(
     "text/markdown; charset=utf-8"
   );
-  expect(markdownResponse.headers()["x-content-type-options"]).toBe(
-    "nosniff"
-  );
+  expect(markdownResponse.headers()["x-content-type-options"]).toBe("nosniff");
   expectGlobalSecurityHeaders(markdownResponse.headers());
   const markdownEtag = markdownResponse.headers().etag;
   expect(markdownEtag).toBeTruthy();
@@ -408,21 +399,18 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   }
   const markdown = await markdownResponse.text();
   expect(markdown).toContain("# Overview");
-  expect(markdown).toContain(
-    "For React applications, “server-side” means"
-  );
+  expect(markdown).toContain("For React applications, “server-side” means");
 
-  const markdownRevalidationResponse = await request.get(
-    "/cache/overview.md",
-    { headers: { "If-None-Match": markdownEtag } }
-  );
+  const markdownRevalidationResponse = await request.get("/cache/overview.md", {
+    headers: { "If-None-Match": markdownEtag },
+  });
   expect(markdownRevalidationResponse.status()).toBe(304);
   expect(markdownRevalidationResponse.headers()["content-type"]).toBe(
     "text/markdown; charset=utf-8"
   );
-  expect(
-    markdownRevalidationResponse.headers()["x-content-type-options"]
-  ).toBe("nosniff");
+  expect(markdownRevalidationResponse.headers()["x-content-type-options"]).toBe(
+    "nosniff"
+  );
 
   const missingMarkdownResponse = await request.get("/missing/", {
     headers: { Accept: "text/markdown" },
@@ -504,10 +492,9 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     name: "Copy Markdown",
   });
 
+  await expect(copyMarkdown).toBeEnabled();
   await copyMarkdown.click();
-  await expect(page.getByRole("status")).toHaveText(
-    "Page Markdown copied."
-  );
+  await expect(page.getByRole("status")).toHaveText("Page Markdown copied.");
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(
     "# Overview"
   );
@@ -517,9 +504,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
 
   await page.getByRole("button", { name: "Open in" }).click();
   await page.getByRole("menuitem", { name: "Copy Markdown link" }).click();
-  await expect(page.getByRole("status")).toHaveText(
-    "Markdown link copied."
-  );
+  await expect(page.getByRole("status")).toHaveText("Markdown link copied.");
   await expect(copyMarkdown).toHaveAttribute("data-copy-state", "idle");
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
@@ -529,23 +514,21 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
 test("searches the production Pagefind index", async ({ page }) => {
   await page.goto("/cache/overview/");
 
-  const searchButton = page.locator(
-    "site-search > button[data-open-modal]"
-  );
+  const searchButton = page.locator("site-search > button[data-open-modal]");
   await expect(searchButton).toBeEnabled();
   await searchButton.click();
 
   const dialog = page.locator("site-search dialog");
   await expect(dialog).toBeVisible();
-  await dialog.getByRole("textbox", { name: "Search" }).fill(
-    "Runtime architecture"
-  );
+  await dialog
+    .getByRole("textbox", { name: "Search" })
+    .fill("Runtime architecture");
   await expect(
     dialog.getByRole("link", { name: /Runtime architecture/i }).first()
   ).toBeVisible();
-  await dialog.getByRole("textbox", { name: "Search" }).fill(
-    "Documentation MCP"
-  );
+  await dialog
+    .getByRole("textbox", { name: "Search" })
+    .fill("Documentation MCP");
   await expect(
     dialog.getByRole("link", { name: /Documentation MCP/i }).first()
   ).toBeVisible();
@@ -579,9 +562,9 @@ test("enforces CSP without blocking the interactive shell", async ({
   await page.getByRole("button", { name: "Switch to dark theme" }).click();
   await page.locator("site-search > button[data-open-modal]").click();
   const search = page.getByRole("dialog", { name: "Search" });
-  await search.getByRole("textbox", { name: "Search" }).fill(
-    "Runtime architecture"
-  );
+  await search
+    .getByRole("textbox", { name: "Search" })
+    .fill("Runtime architecture");
   await expect(
     search.getByRole("link", { name: /Runtime architecture/i }).first()
   ).toBeVisible();
@@ -852,9 +835,7 @@ test("switches themes and opens mobile navigation", async ({ page }) => {
   await page.reload();
   await expect(root).toHaveAttribute("data-theme", nextTheme);
 
-  const menuButton = page.locator(
-    'button[aria-controls="starlight__sidebar"]'
-  );
+  const menuButton = page.locator('button[aria-controls="starlight__sidebar"]');
   const menuBox = await menuButton.boundingBox();
   expect(menuBox?.x ?? 0).toBeGreaterThan(300);
   await menuButton.click();
@@ -888,9 +869,7 @@ test("has no automatically detectable accessibility violations", async ({
   await expectNoAxeViolations(page);
   await page.keyboard.press("Escape");
 
-  const searchButton = page.locator(
-    "site-search > button[data-open-modal]"
-  );
+  const searchButton = page.locator("site-search > button[data-open-modal]");
   await searchButton.click();
   const searchDialog = page.getByRole("dialog", { name: "Search" });
   await expect(searchDialog).toBeVisible();
@@ -900,9 +879,7 @@ test("has no automatically detectable accessibility violations", async ({
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
-  const menuButton = page.locator(
-    'button[aria-controls="starlight__sidebar"]'
-  );
+  const menuButton = page.locator('button[aria-controls="starlight__sidebar"]');
   await menuButton.click();
   await expect(menuButton).toHaveAttribute("aria-expanded", "true");
   await expectNoAxeViolations(page);

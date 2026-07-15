@@ -1,12 +1,11 @@
 import { SUPPORTED_PROTOCOL_VERSIONS } from "@modelcontextprotocol/sdk/types.js";
+
 import { DOCS_ORIGIN } from "./mcp-corpus.ts";
 
 export const API_CATALOG_PATH = "/.well-known/api-catalog";
-export const API_CATALOG_LINK_VALUE =
-  `<${API_CATALOG_PATH}>; rel="api-catalog"; type="application/linkset+json"`;
+export const API_CATALOG_LINK_VALUE = `<${API_CATALOG_PATH}>; rel="api-catalog"; type="application/linkset+json"`;
 export const MCP_CATALOG_PATH = "/.well-known/mcp/catalog.json";
-export const MCP_COMPATIBILITY_CARD_PATH =
-  "/.well-known/mcp/server-card.json";
+export const MCP_COMPATIBILITY_CARD_PATH = "/.well-known/mcp/server-card.json";
 export const MCP_ENDPOINT_PATH = "/mcp";
 export const MCP_SERVER_CARD_PATH = "/mcp/server-card";
 const MCP_USAGE_PATH = "/agents/mcp/";

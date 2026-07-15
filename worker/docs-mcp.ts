@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { DEFAULT_NEGOTIATED_PROTOCOL_VERSION } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod/v4";
+
 import {
   MCP_ENDPOINT_PATH,
   MCP_SERVER_INFO,
@@ -71,7 +72,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const logMcpError = (
   event: string,
   error: unknown,
-  details: Record<string, string> = {},
+  details: Record<string, string> = {}
 ): void => {
   console.error({
     error: error instanceof Error ? error.message : String(error),
@@ -85,19 +86,19 @@ const corpusCache = new WeakMap<object, Promise<DocsCorpus>>();
 
 const readCorpus = async (
   assets: Fetcher,
-  requestUrl: string,
+  requestUrl: string
 ): Promise<DocsCorpus> => {
   const corpusUrl = new URL(CORPUS_PATH, requestUrl);
   const response = await assets.fetch(
     new Request(corpusUrl, {
       headers: { Accept: "application/json" },
-    }),
+    })
   );
 
   if (!response.ok) {
     await response.body?.cancel();
     throw new Error(
-      `[docs-mcp] Generated corpus returned HTTP ${response.status}.`,
+      `[docs-mcp] Generated corpus returned HTTP ${response.status}.`
     );
   }
 
@@ -112,7 +113,7 @@ const readCorpus = async (
 
 const loadCorpus = async (
   assets: Fetcher,
-  requestUrl: string,
+  requestUrl: string
 ): Promise<DocsCorpus> => {
   const cacheKey = assets as object;
   const cached = corpusCache.get(cacheKey);
@@ -167,7 +168,7 @@ const prepareCorpus = (corpus: DocsCorpus): readonly PreparedPage[] => {
         searchText: normalizeSearchText(plainText),
         titleText: normalizeSearchText(page.title),
       });
-    }),
+    })
   );
   preparedCorpusCache.set(corpus, prepared);
   return prepared;
@@ -204,7 +205,7 @@ const createSnippet = (text: string, terms: readonly string[]): string => {
   const idealStart = Number.isFinite(firstMatch)
     ? Math.max(
         0,
-        Math.min(firstMatch, text.length) - Math.floor(SNIPPET_LENGTH / 3),
+        Math.min(firstMatch, text.length) - Math.floor(SNIPPET_LENGTH / 3)
       )
     : 0;
   let start = idealStart;
@@ -243,7 +244,7 @@ export const searchDocs = (corpus: DocsCorpus, input: SearchDocsInput) => {
         (term) =>
           prepared.titleText.includes(term) ||
           prepared.descriptionText.includes(term) ||
-          prepared.searchText.includes(term),
+          prepared.searchText.includes(term)
       );
 
       if (
@@ -291,14 +292,14 @@ export const searchDocs = (corpus: DocsCorpus, input: SearchDocsInput) => {
       (left, right) =>
         right.score - left.score ||
         compareStrings(left.title, right.title) ||
-        compareStrings(left.uri, right.uri),
+        compareStrings(left.uri, right.uri)
     )
     .slice(0, Math.min(limit, MAX_SEARCH_LIMIT));
 };
 
 const findPage = (
   corpus: DocsCorpus,
-  reference: string,
+  reference: string
 ): DocsCorpusPage | undefined => {
   let url: URL;
 
@@ -322,14 +323,14 @@ const findPage = (
     (page) =>
       page.uri === url.href ||
       page.canonicalUrl === url.href ||
-      page.markdownPath === url.pathname,
+      page.markdownPath === url.pathname
   );
 };
 
 const avoidSplitSurrogate = (
   content: string,
   offset: number,
-  end: number,
+  end: number
 ): number => {
   const before = content.charCodeAt(end - 1);
   const after = content.charCodeAt(end);
@@ -400,17 +401,14 @@ const toolAnnotations = {
 
 const createDocsMcpServer = (
   corpus: DocsCorpus,
-  protocolVersion = DEFAULT_NEGOTIATED_PROTOCOL_VERSION,
+  protocolVersion = DEFAULT_NEGOTIATED_PROTOCOL_VERSION
 ): McpServer => {
   const supportsStructuredToolResults =
     /^\d{4}-\d{2}-\d{2}$/.test(protocolVersion) &&
     protocolVersion >= STRUCTURED_TOOL_RESULTS_VERSION;
-  const server = new McpServer(
-    MCP_SERVER_INFO,
-    {
-      instructions: MCP_SERVER_INSTRUCTIONS,
-    },
-  );
+  const server = new McpServer(MCP_SERVER_INFO, {
+    instructions: MCP_SERVER_INSTRUCTIONS,
+  });
 
   for (const page of corpus.pages) {
     server.registerResource(
@@ -435,7 +433,7 @@ const createDocsMcpServer = (
             uri: page.uri,
           },
         ],
-      }),
+      })
     );
   }
 
@@ -488,7 +486,7 @@ const createDocsMcpServer = (
                   uri: z.url(),
                   version: z.string().nullable(),
                   versionId: z.string().nullable(),
-                }),
+                })
               ),
             },
           }
@@ -523,7 +521,7 @@ const createDocsMcpServer = (
         ],
         ...(supportsStructuredToolResults ? { structuredContent: output } : {}),
       };
-    },
+    }
   );
 
   server.registerTool(
@@ -553,7 +551,7 @@ const createDocsMcpServer = (
           .min(1)
           .max(2048)
           .describe(
-            "A resource URI or canonical docs path returned by this server.",
+            "A resource URI or canonical docs path returned by this server."
           ),
       },
       ...(supportsStructuredToolResults
@@ -614,7 +612,7 @@ const createDocsMcpServer = (
           ? { structuredContent: metadata }
           : {}),
       };
-    },
+    }
   );
 
   return server;
@@ -669,7 +667,7 @@ const getAllowedOrigin = (request: Request): string | undefined => {
 const getProtocolVersion = (request: Request, parsedBody: unknown): string => {
   const messages = Array.isArray(parsedBody) ? parsedBody : [parsedBody];
   const initializeRequest = messages.find(
-    (message) => isRecord(message) && message.method === "initialize",
+    (message) => isRecord(message) && message.method === "initialize"
   );
 
   if (
@@ -686,10 +684,7 @@ const getProtocolVersion = (request: Request, parsedBody: unknown): string => {
   );
 };
 
-const validateBatch = (
-  parsedBody: unknown,
-  protocolVersion: string,
-): void => {
+const validateBatch = (parsedBody: unknown, protocolVersion: string): void => {
   if (!Array.isArray(parsedBody)) {
     return;
   }
@@ -708,7 +703,7 @@ const validateBatch = (
     throw new McpRequestError(
       400,
       -32600,
-      "JSON-RPC batching is not supported by this protocol version.",
+      "JSON-RPC batching is not supported by this protocol version."
     );
   }
 };
@@ -722,7 +717,7 @@ const countExpensiveOperations = (parsedBody: unknown): number => {
     (message) =>
       isRecord(message) &&
       typeof message.method === "string" &&
-      EXPENSIVE_METHODS.has(message.method),
+      EXPENSIVE_METHODS.has(message.method)
   ).length;
 };
 
@@ -742,7 +737,7 @@ const consumeRateLimitUnits = async (
   rateLimiter: RateLimit,
   request: Request,
   units: number,
-  message: string,
+  message: string
 ): Promise<void> => {
   const key = getRateLimitKey(request);
 
@@ -761,7 +756,7 @@ const rateLimitErrorResponse = (
   error: unknown,
   phase: RateLimitPhase,
   allowedOrigin?: string,
-  id: number | string | null = null,
+  id: number | string | null = null
 ): Response => {
   if (error instanceof McpRequestError) {
     console.warn({
@@ -774,7 +769,7 @@ const rateLimitErrorResponse = (
       error.code,
       error.message,
       allowedOrigin,
-      id,
+      id
     );
     response.headers.set("Retry-After", "60");
     return response;
@@ -786,13 +781,13 @@ const rateLimitErrorResponse = (
     -32603,
     "The MCP endpoint is temporarily unavailable.",
     allowedOrigin,
-    id,
+    id
   );
 };
 
 const withProtocolHeaders = (
   response: Response,
-  allowedOrigin?: string,
+  allowedOrigin?: string
 ): Response => {
   const headers = new Headers(response.headers);
   headers.set("Cache-Control", "no-store");
@@ -800,7 +795,7 @@ const withProtocolHeaders = (
   headers.set("X-Content-Type-Options", "nosniff");
   headers.set(
     "Access-Control-Expose-Headers",
-    "MCP-Protocol-Version, MCP-Session-Id",
+    "MCP-Protocol-Version, MCP-Session-Id"
   );
 
   if (allowedOrigin) {
@@ -825,7 +820,7 @@ const errorResponse = (
   code: number,
   message: string,
   allowedOrigin?: string,
-  id: number | string | null = null,
+  id: number | string | null = null
 ): Response =>
   withProtocolHeaders(
     Response.json(
@@ -834,9 +829,9 @@ const errorResponse = (
         id,
         jsonrpc: "2.0",
       },
-      { status },
+      { status }
     ),
-    allowedOrigin,
+    allowedOrigin
   );
 
 const getResponseId = (parsedBody: unknown): number | string | null => {
@@ -898,7 +893,7 @@ const readRequestJson = async (request: Request): Promise<unknown> => {
 export const handleDocsMcpRequest = async (
   request: Request,
   assets: Fetcher,
-  rateLimiter: RateLimit,
+  rateLimiter: RateLimit
 ): Promise<Response> => {
   let allowedOrigin: string | undefined;
 
@@ -923,7 +918,7 @@ export const handleDocsMcpRequest = async (
 
     return withProtocolHeaders(
       new Response(null, { headers, status: 204 }),
-      allowedOrigin,
+      allowedOrigin
     );
   }
 
@@ -932,7 +927,7 @@ export const handleDocsMcpRequest = async (
       405,
       -32000,
       "Method not allowed. This stateless server accepts POST requests.",
-      allowedOrigin,
+      allowedOrigin
     );
     response.headers.set("Allow", "POST, OPTIONS");
     return response;
@@ -943,7 +938,7 @@ export const handleDocsMcpRequest = async (
       rateLimiter,
       request,
       1,
-      "MCP request rate limit exceeded. Retry later.",
+      "MCP request rate limit exceeded. Retry later."
     );
   } catch (error) {
     return rateLimitErrorResponse(error, "request", allowedOrigin);
@@ -959,7 +954,7 @@ export const handleDocsMcpRequest = async (
         error.status,
         error.code,
         error.message,
-        allowedOrigin,
+        allowedOrigin
       );
     }
 
@@ -968,7 +963,7 @@ export const handleDocsMcpRequest = async (
       500,
       -32603,
       "Internal MCP server error.",
-      allowedOrigin,
+      allowedOrigin
     );
   }
 
@@ -983,7 +978,7 @@ export const handleDocsMcpRequest = async (
         error.status,
         error.code,
         error.message,
-        allowedOrigin,
+        allowedOrigin
       );
     }
 
@@ -992,7 +987,7 @@ export const handleDocsMcpRequest = async (
       500,
       -32603,
       "Internal MCP server error.",
-      allowedOrigin,
+      allowedOrigin
     );
   }
 
@@ -1001,14 +996,14 @@ export const handleDocsMcpRequest = async (
       rateLimiter,
       request,
       countExpensiveOperations(parsedBody),
-      "MCP operation rate limit exceeded. Retry later.",
+      "MCP operation rate limit exceeded. Retry later."
     );
   } catch (error) {
     return rateLimitErrorResponse(
       error,
       "operation",
       allowedOrigin,
-      responseId,
+      responseId
     );
   }
 
@@ -1023,7 +1018,7 @@ export const handleDocsMcpRequest = async (
       -32603,
       "Documentation resources are temporarily unavailable.",
       allowedOrigin,
-      responseId,
+      responseId
     );
   }
 
@@ -1044,7 +1039,7 @@ export const handleDocsMcpRequest = async (
       -32603,
       "Internal MCP server error.",
       allowedOrigin,
-      responseId,
+      responseId
     );
   } finally {
     try {

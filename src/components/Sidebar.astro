@@ -27,10 +27,14 @@ const activeGroupIds = collectDocsSidebarGroupIds(
 >
   (() => {
     try {
-      if (!matchMedia("(min-width: 50em)").matches) return;
+      if (!matchMedia("(min-width: 50em)").matches) {
+        return;
+      }
 
       const script = document.currentScript;
-      if (!(script instanceof HTMLScriptElement)) return;
+      if (!(script instanceof HTMLScriptElement)) {
+        return;
+      }
 
       const groupIds = JSON.parse(script.dataset.groupIds || "[]");
       const activeGroupIds = JSON.parse(
@@ -90,10 +94,14 @@ const activeGroupIds = collectDocsSidebarGroupIds(
   (() => {
     const scroller = document.getElementById("starlight__sidebar");
     const storedScroll = scroller?.dataset.docsSidebarScrollRestore;
-    if (!scroller || storedScroll === undefined) return;
+    if (!scroller || storedScroll === undefined) {
+      return;
+    }
 
     const scroll = Number(storedScroll);
-    if (Number.isFinite(scroll)) scroller.scrollTop = scroll;
+    if (Number.isFinite(scroll)) {
+      scroller.scrollTop = scroll;
+    }
     delete scroller.dataset.docsSidebarScrollRestore;
   })();
 </script>

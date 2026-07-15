@@ -3,13 +3,14 @@
   "name": "astilba-docs",
   "main": "worker/index.ts",
   "compatibility_date": "2026-07-14",
+  "upload_source_maps": true,
   "workers_dev": false,
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
     "html_handling": "force-trailing-slash",
     "not_found_handling": "404-page",
-    "run_worker_first": ["/", "/mcp", "/*.md", "/*/", "!/_astro/*"]
+    "run_worker_first": ["/", "/mcp", "/*.md", "/*/", "!/_astro/*"],
   },
   "ratelimits": [
     {
@@ -17,26 +18,26 @@
       "namespace_id": "91005",
       "simple": {
         "limit": 60,
-        "period": 60
-      }
-    }
+        "period": 60,
+      },
+    },
   ],
   "observability": {
     "enabled": true,
     "logs": {
       "enabled": true,
       "head_sampling_rate": 0.1,
-      "invocation_logs": true
+      "invocation_logs": true,
     },
     "traces": {
       "enabled": true,
-      "head_sampling_rate": 0.01
-    }
+      "head_sampling_rate": 0.01,
+    },
   },
   "routes": [
     {
       "pattern": "docs.astilba.com",
-      "custom_domain": true
-    }
-  ]
+      "custom_domain": true,
+    },
+  ],
 }

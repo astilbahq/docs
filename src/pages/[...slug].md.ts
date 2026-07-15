@@ -1,5 +1,6 @@
 import type { APIRoute, GetStaticPaths } from "astro";
 import { getCollection } from "astro:content";
+
 import { findDocsContext } from "../docs/catalog";
 import { findSiteDocsPage } from "../docs/site-pages";
 import { getDocsSourceUrl } from "../docs/source";
@@ -44,19 +45,22 @@ const createMarkdown = (
     "---",
   ].join("\n");
 
-  return [
-    frontmatter,
-    `# ${props.title}`,
-    props.description ? `> ${props.description}` : undefined,
-    props.body?.trim(),
-  ]
-    .filter((section): section is string => Boolean(section))
-    .join("\n\n") + "\n";
+  return (
+    [
+      frontmatter,
+      `# ${props.title}`,
+      props.description ? `> ${props.description}` : undefined,
+      props.body?.trim(),
+    ]
+      .filter((section): section is string => Boolean(section))
+      .join("\n\n") + "\n"
+  );
 };
 
 export const getStaticPaths = (async () => {
-  const entries = await getCollection("docs", ({ data }) =>
-    import.meta.env.MODE !== "production" || data.draft === false
+  const entries = await getCollection(
+    "docs",
+    ({ data }) => import.meta.env.MODE !== "production" || data.draft === false
   );
 
   return entries.flatMap((entry) => {
@@ -105,10 +109,8 @@ export const getStaticPaths = (async () => {
 
 export const GET: APIRoute = ({ props, request, site }) => {
   const markdownPage = props as MarkdownPageProps;
-  const canonical = new URL(
-    markdownPage.canonicalPath,
-    site ?? request.url
-  ).href;
+  const canonical = new URL(markdownPage.canonicalPath, site ?? request.url)
+    .href;
 
   return new Response(createMarkdown(markdownPage, canonical), {
     headers: {

@@ -17,6 +17,5 @@ export const siteDocsPages = Object.freeze([
   },
 ] satisfies SiteDocsPage[]);
 
-export const findSiteDocsPage = (
-  id: string
-): SiteDocsPage | undefined => siteDocsPages.find((page) => page.id === id);
+export const findSiteDocsPage = (id: string): SiteDocsPage | undefined =>
+  siteDocsPages.find((page) => page.id === id);

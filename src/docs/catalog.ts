@@ -1,4 +1,5 @@
 import type { StarlightUserConfig } from "@astrojs/starlight/types";
+
 import { cacheProduct } from "./products/cache.ts";
 import {
   docsIcons,
@@ -120,13 +121,10 @@ export const docsSidebar: NonNullable<StarlightUserConfig["sidebar"]> =
 
 const docsIconNames = new Set<string>(docsIcons);
 
-const normalizePath = (path: string): string =>
-  path.replace(/^\/+|\/+$/g, "");
+const normalizePath = (path: string): string => path.replace(/^\/+|\/+$/g, "");
 
-export const getPageHref = (
-  version: DocsVersion,
-  page: DocsPage
-): string => `/${version.basePath}/${page.slug}/`;
+export const getPageHref = (version: DocsVersion, page: DocsPage): string =>
+  `/${version.basePath}/${page.slug}/`;
 
 export const getDefaultVersion = (product: DocsProduct): DocsVersion => {
   const version = product.versions.find(

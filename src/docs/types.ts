@@ -37,11 +37,7 @@ interface DocsSection {
   label: string;
 }
 
-type DocsVersionLifecycle =
-  | "archived"
-  | "latest"
-  | "maintained"
-  | "unreleased";
+type DocsVersionLifecycle = "archived" | "latest" | "maintained" | "unreleased";
 
 export interface DocsVersion {
   basePath: string;

@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  getDocsSourcePath,
-  getDocsSourceUrl,
-} from "../../src/docs/source";
+
+import { getDocsSourcePath, getDocsSourceUrl } from "../../src/docs/source";
 
 describe("documentation source links", () => {
   it("extracts repository-relative source paths", () => {

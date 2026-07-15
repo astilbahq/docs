@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+
 import { parse } from "parse5";
 
 const sha256SourcePattern = /^'sha256-[A-Za-z0-9+/]{43}='$/;

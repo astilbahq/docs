@@ -43,11 +43,12 @@ export const pageActionsStyles = {
       transitionTimingFunction: "inOut",
       pointerEvents: "none",
     },
-    '&[data-state="idle"] [data-copy-icon="idle"], &[data-state="copying"] [data-copy-icon="idle"], &[data-state="copied"] [data-copy-icon="copied"], &[data-state="error"] [data-copy-icon="error"]': {
-      opacity: 1,
-      filter: "blur(0)",
-      transform: "scale(1)",
-    },
+    '&[data-state="idle"] [data-copy-icon="idle"], &[data-state="copying"] [data-copy-icon="idle"], &[data-state="copied"] [data-copy-icon="copied"], &[data-state="error"] [data-copy-icon="error"]':
+      {
+        opacity: 1,
+        filter: "blur(0)",
+        transform: "scale(1)",
+      },
     _reducedMotion: {
       "& [data-copy-icon]": {
         transition: "none",

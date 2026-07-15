@@ -1,13 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
+
+import {
+  CONTENT_SECURITY_POLICY_ASSET_PATH,
+  GLOBAL_SECURITY_HEADERS,
+} from "../../src/docs/security";
 import {
   acceptsMarkdown,
   getMarkdownPath,
   handleRequest,
 } from "../../worker/index";
-import {
-  CONTENT_SECURITY_POLICY_ASSET_PATH,
-  GLOBAL_SECURITY_HEADERS,
-} from "../../src/docs/security";
 
 const TEST_CONTENT_SECURITY_POLICY =
   "default-src 'none'; script-src 'self'; style-src 'self'";
@@ -21,12 +22,10 @@ const expectGlobalSecurityHeaders = (response: Response): void => {
 const getExpectedPageDiscoveryLink = (markdownPath: string): string =>
   `<${markdownPath}>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`;
 
-const createAssets = (
-  {
-    policyBody = `${TEST_CONTENT_SECURITY_POLICY}\n`,
-    policyStatus = 200,
-  }: { policyBody?: string; policyStatus?: number } = {}
-) => {
+const createAssets = ({
+  policyBody = `${TEST_CONTENT_SECURITY_POLICY}\n`,
+  policyStatus = 200,
+}: { policyBody?: string; policyStatus?: number } = {}) => {
   const fetch = vi.fn<Fetcher["fetch"]>(async (input, init) => {
     const request = new Request(input, init);
     const path = new URL(request.url).pathname;
@@ -103,9 +102,7 @@ describe("Markdown negotiation", () => {
     expect(acceptsMarkdown(null)).toBe(false);
     expect(acceptsMarkdown("*/*")).toBe(false);
     expect(acceptsMarkdown("text/html, text/markdown;q=0")).toBe(false);
-    expect(
-      acceptsMarkdown("text/html;q=0.5, TEXT/MARKDOWN; q=0.8")
-    ).toBe(true);
+    expect(acceptsMarkdown("text/html;q=0.5, TEXT/MARKDOWN; q=0.8")).toBe(true);
     expect(acceptsMarkdown("text/markdown;q=0.8invalid")).toBe(false);
     expect(acceptsMarkdown("text/markdown;q=0x1")).toBe(false);
     expect(acceptsMarkdown("text/markdown;q=.8")).toBe(false);
@@ -113,30 +110,18 @@ describe("Markdown negotiation", () => {
   });
 
   it("honours quality and specificity when HTML is also acceptable", () => {
-    expect(
-      acceptsMarkdown("text/html;q=1, text/markdown;q=0.1")
-    ).toBe(false);
-    expect(
-      acceptsMarkdown("text/html;q=0.1, text/markdown;q=0.8")
-    ).toBe(true);
-    expect(
-      acceptsMarkdown("application/json;q=1, text/markdown;q=0.8")
-    ).toBe(true);
+    expect(acceptsMarkdown("text/html;q=1, text/markdown;q=0.1")).toBe(false);
+    expect(acceptsMarkdown("text/html;q=0.1, text/markdown;q=0.8")).toBe(true);
+    expect(acceptsMarkdown("application/json;q=1, text/markdown;q=0.8")).toBe(
+      true
+    );
     expect(acceptsMarkdown("text/html, text/markdown")).toBe(true);
-    expect(acceptsMarkdown("*/*;q=1, text/markdown;q=0.8")).toBe(
-      false
-    );
+    expect(acceptsMarkdown("*/*;q=1, text/markdown;q=0.8")).toBe(false);
+    expect(acceptsMarkdown("text/*;q=0.9, text/markdown;q=0.8")).toBe(false);
     expect(
-      acceptsMarkdown("text/*;q=0.9, text/markdown;q=0.8")
-    ).toBe(false);
-    expect(
-      acceptsMarkdown(
-        "text/*;q=0.9, text/html;q=0.1, text/markdown;q=0.8"
-      )
+      acceptsMarkdown("text/*;q=0.9, text/html;q=0.1, text/markdown;q=0.8")
     ).toBe(true);
-    expect(acceptsMarkdown("text/*;q=1, text/markdown;q=0")).toBe(
-      false
-    );
+    expect(acceptsMarkdown("text/*;q=1, text/markdown;q=0")).toBe(false);
   });
 
   it("matches media parameters before applying their quality", () => {
@@ -146,40 +131,26 @@ describe("Markdown negotiation", () => {
       )
     ).toBe(false);
     expect(
-      acceptsMarkdown(
-        "text/markdown;charset=iso-8859-1;q=1, text/html;q=0.5"
-      )
+      acceptsMarkdown("text/markdown;charset=iso-8859-1;q=1, text/html;q=0.5")
     ).toBe(false);
     expect(
-      acceptsMarkdown(
-        'text/html;q=0.5, text/markdown;charset="UTF-8";q=0.8'
-      )
+      acceptsMarkdown('text/html;q=0.5, text/markdown;charset="UTF-8";q=0.8')
     ).toBe(true);
     expect(
-      acceptsMarkdown(
-        'text/markdown;profile="x,y";q=0, text/html;q=1'
-      )
+      acceptsMarkdown('text/markdown;profile="x,y";q=0, text/html;q=1')
     ).toBe(false);
     expect(
-      acceptsMarkdown(
-        "text/html;q=0.5, text/markdown;q=0.8;charset=utf-8"
-      )
+      acceptsMarkdown("text/html;q=0.5, text/markdown;q=0.8;charset=utf-8")
     ).toBe(true);
     expect(
-      acceptsMarkdown(
-        "text/html;q=0.5, text/markdown;q=0.8;charset=iso-8859-1"
-      )
+      acceptsMarkdown("text/html;q=0.5, text/markdown;q=0.8;charset=iso-8859-1")
     ).toBe(false);
-    expect(acceptsMarkdown("text/markdown;q=0.8;broken")).toBe(
-      false
-    );
+    expect(acceptsMarkdown("text/markdown;q=0.8;broken")).toBe(false);
   });
 
   it("maps canonical pages to their authored Markdown siblings", () => {
     expect(getMarkdownPath("/")).toBe("/index.md");
-    expect(getMarkdownPath("/cache/overview/")).toBe(
-      "/cache/overview.md"
-    );
+    expect(getMarkdownPath("/cache/overview/")).toBe("/cache/overview.md");
     expect(getMarkdownPath("/agents/mcp/")).toBe("/agents/mcp.md");
     expect(getMarkdownPath("/cache/overview")).toBeUndefined();
     expect(getMarkdownPath("/missing/")).toBeUndefined();
@@ -197,9 +168,7 @@ describe("Markdown negotiation", () => {
     expect(response.headers.get("Content-Type")).toBe(
       "text/markdown; charset=utf-8"
     );
-    expect(response.headers.get("Content-Location")).toBe(
-      "/cache/overview.md"
-    );
+    expect(response.headers.get("Content-Location")).toBe("/cache/overview.md");
     expect(response.headers.get("Link")).toBe(
       getExpectedPageDiscoveryLink("/cache/overview.md")
     );
@@ -228,9 +197,7 @@ describe("Markdown negotiation", () => {
     expect(response.headers.get("Content-Type")).toBe(
       "text/markdown; charset=utf-8"
     );
-    expect(response.headers.get("Content-Location")).toBe(
-      "/cache/overview.md"
-    );
+    expect(response.headers.get("Content-Location")).toBe("/cache/overview.md");
     expect(response.headers.get("Vary")).toBe("Accept");
     expect(fetch).toHaveBeenCalledTimes(1);
   });
@@ -248,9 +215,7 @@ describe("Markdown negotiation", () => {
       expect(response.headers.get("Content-Type")).toBe(
         "text/markdown; charset=utf-8"
       );
-      expect(response.headers.get("X-Content-Type-Options")).toBe(
-        "nosniff"
-      );
+      expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
       expectGlobalSecurityHeaders(response);
       expect(response.headers.get("ETag")).toBe('"markdown"');
       expect(await response.text()).toContain("# ");
@@ -271,9 +236,7 @@ describe("Markdown negotiation", () => {
     expect(response.headers.get("Content-Type")).toBe(
       "text/markdown; charset=utf-8"
     );
-    expect(response.headers.get("X-Content-Type-Options")).toBe(
-      "nosniff"
-    );
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
     expectGlobalSecurityHeaders(response);
     expect(response.headers.get("ETag")).toBe('"markdown"');
   });
@@ -321,9 +284,7 @@ describe("Markdown negotiation", () => {
         "text/html; charset=utf-8"
       );
       expect(response.headers.get("Link")).toBe(expectedLink);
-      expect(response.headers.get("Vary")).toBe(
-        "Accept-Encoding, Accept"
-      );
+      expect(response.headers.get("Vary")).toBe("Accept-Encoding, Accept");
 
       const headResponse = await handleRequest(
         new Request(`https://docs.astilba.com${pagePath}`, {
@@ -348,9 +309,9 @@ describe("Markdown negotiation", () => {
       expect(revalidationResponse.headers.get("Vary")).toBe(
         "Accept-Encoding, Accept"
       );
-      expect(
-        revalidationResponse.headers.get("Content-Security-Policy")
-      ).toBe(TEST_CONTENT_SECURITY_POLICY);
+      expect(revalidationResponse.headers.get("Content-Security-Policy")).toBe(
+        TEST_CONTENT_SECURITY_POLICY
+      );
       expect(fetch).toHaveBeenCalledTimes(6);
       const policyRequests = fetch.mock.calls
         .map(([input, init]) => new Request(input, init))
@@ -452,9 +413,7 @@ describe("Markdown negotiation", () => {
           "Documentation is temporarily unavailable."
         );
         expect(consoleError).toHaveBeenCalledWith(
-          expect.stringContaining(
-            "docs.content_security_policy_unavailable"
-          )
+          expect.stringContaining("docs.content_security_policy_unavailable")
         );
       } finally {
         consoleError.mockRestore();

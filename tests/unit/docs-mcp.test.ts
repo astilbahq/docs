@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+
 import { MCP_SERVER_INFO } from "../../src/docs/agent-discovery";
 import { docsProducts } from "../../src/docs/catalog";
 import { parseDocsCorpus } from "../../src/docs/mcp-corpus";
@@ -63,9 +64,9 @@ const createCorpusValue = () => ({
               title: page.label,
               uri: `${docsOrigin}${markdownPath}`,
             };
-          }),
-        ),
-      ),
+          })
+        )
+      )
     ),
   ],
 });
@@ -74,7 +75,7 @@ const createAssets = () => {
   const corpus = JSON.stringify(createCorpusValue());
   const fetch = vi.fn<Fetcher["fetch"]>(async (input) => {
     const url = new URL(
-      input instanceof Request ? input.url : input.toString(),
+      input instanceof Request ? input.url : input.toString()
     );
 
     if (url.pathname === "/_mcp/docs.json") {
@@ -103,7 +104,7 @@ const createRpcRequest = (
     id?: number;
     origin?: string;
     protocolVersion?: string;
-  } = {},
+  } = {}
 ) =>
   new Request(`${docsOrigin}/mcp`, {
     body: JSON.stringify({
@@ -134,7 +135,7 @@ describe("generated MCP corpus", () => {
   it("rejects metadata that differs from the typed catalog", () => {
     const value = createCorpusValue();
     const overview = value.pages.find(
-      (page) => page.markdownPath === "/cache/overview.md",
+      (page) => page.markdownPath === "/cache/overview.md"
     );
 
     if (!overview || !("productId" in overview)) {
@@ -143,7 +144,7 @@ describe("generated MCP corpus", () => {
 
     overview.productId = "different";
     expect(() => parseDocsCorpus(value)).toThrow(
-      "differs from the public documentation catalog",
+      "differs from the public documentation catalog"
     );
   });
 
@@ -157,28 +158,26 @@ describe("generated MCP corpus", () => {
     overlongTitle.pages[0].title = "a".repeat(257);
 
     expect(() => parseDocsCorpus(overlongTitle)).toThrow(
-      "at most 256 characters",
+      "at most 256 characters"
     );
 
     const emptyDescription = createCorpusValue();
     emptyDescription.pages[0].description = "";
 
-    expect(() => parseDocsCorpus(emptyDescription)).toThrow(
-      "non-empty string",
-    );
+    expect(() => parseDocsCorpus(emptyDescription)).toThrow("non-empty string");
 
     const overlongDescription = createCorpusValue();
     overlongDescription.pages[0].description = "a".repeat(1025);
 
     expect(() => parseDocsCorpus(overlongDescription)).toThrow(
-      "at most 1024 characters",
+      "at most 1024 characters"
     );
   });
 
   it("requires the complete catalogue metadata tuple on product pages", () => {
     const value = createCorpusValue();
     const overview = value.pages.find(
-      (page) => page.markdownPath === "/cache/overview.md",
+      (page) => page.markdownPath === "/cache/overview.md"
     );
 
     if (!overview || !("productId" in overview)) {
@@ -196,14 +195,14 @@ describe("generated MCP corpus", () => {
     }
 
     expect(() => parseDocsCorpus(value)).toThrow(
-      "differs from the public documentation catalog",
+      "differs from the public documentation catalog"
     );
   });
 
   it("rejects empty and overlong catalogue metadata", () => {
     const emptyMetadata = createCorpusValue();
     const emptyOverview = emptyMetadata.pages.find(
-      (page) => page.markdownPath === "/cache/overview.md",
+      (page) => page.markdownPath === "/cache/overview.md"
     );
 
     if (!emptyOverview || !("productId" in emptyOverview)) {
@@ -215,7 +214,7 @@ describe("generated MCP corpus", () => {
 
     const overlongMetadata = createCorpusValue();
     const overlongOverview = overlongMetadata.pages.find(
-      (page) => page.markdownPath === "/cache/overview.md",
+      (page) => page.markdownPath === "/cache/overview.md"
     );
 
     if (!overlongOverview || !("productId" in overlongOverview)) {
@@ -224,7 +223,7 @@ describe("generated MCP corpus", () => {
 
     overlongOverview.productId = "a".repeat(129);
     expect(() => parseDocsCorpus(overlongMetadata)).toThrow(
-      "at most 128 characters",
+      "at most 128 characters"
     );
   });
 
@@ -239,14 +238,14 @@ describe("generated MCP corpus", () => {
     });
 
     expect(() => parseDocsCorpus(value)).toThrow(
-      "is not present in the public documentation catalog",
+      "is not present in the public documentation catalog"
     );
   });
 
   it("rejects site-wide resources outside the explicit allowlist", () => {
     const value = createCorpusValue();
     const sitePage = value.pages.find(
-      ({ markdownPath }) => markdownPath === "/agents/mcp.md",
+      ({ markdownPath }) => markdownPath === "/agents/mcp.md"
     );
 
     if (!sitePage) {
@@ -258,7 +257,7 @@ describe("generated MCP corpus", () => {
     sitePage.uri = `${docsOrigin}/agents/private.md`;
 
     expect(() => parseDocsCorpus(value)).toThrow(
-      "is not present in the public documentation catalog",
+      "is not present in the public documentation catalog"
     );
   });
 
@@ -285,10 +284,10 @@ describe("generated MCP corpus", () => {
       versionId: "unreleased",
     });
     expect(
-      searchDocs(corpus, { productId: "missing", query: "cache" }),
+      searchDocs(corpus, { productId: "missing", query: "cache" })
     ).toEqual([]);
     expect(
-      searchDocs(corpus, { query: "related cached values" })[0],
+      searchDocs(corpus, { query: "related cached values" })[0]
     ).toMatchObject({ title: "Invalidating data" });
   });
 
@@ -306,29 +305,29 @@ describe("generated MCP corpus", () => {
       returnedChars: 1,
     });
     expect(
-      readDoc(corpus, { uri: "https://example.com/private.md" }),
+      readDoc(corpus, { uri: "https://example.com/private.md" })
     ).toBeUndefined();
     expect(
-      readDoc(corpus, { uri: `${docsOrigin}/cache/overview/?draft=1` }),
+      readDoc(corpus, { uri: `${docsOrigin}/cache/overview/?draft=1` })
     ).toBeUndefined();
     expect(
       readDoc(corpus, {
         offset: 10_000,
         uri: `${docsOrigin}/cache/overview.md`,
-      }),
+      })
     ).toBeUndefined();
     expect(
       readDoc(corpus, {
         offset: 2,
         uri: `${docsOrigin}/cache/overview.md`,
-      }),
+      })
     ).toBeUndefined();
     expect(
       readDoc(corpus, {
         limit: 1,
         offset: 1,
         uri: `${docsOrigin}/cache/overview.md`,
-      }),
+      })
     ).toMatchObject({
       content: "😀",
       nextOffset: 3,
@@ -349,17 +348,17 @@ describe("documentation MCP transport", () => {
           clientInfo: { name: "test-client", version: "1.0.0" },
           protocolVersion: "2025-11-25",
         },
-        { origin: docsOrigin },
+        { origin: docsOrigin }
       ),
       assets,
-      rateLimiter,
+      rateLimiter
     );
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("no-store");
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe(
-      docsOrigin,
+      docsOrigin
     );
     expect(body).toMatchObject({
       result: {
@@ -383,14 +382,14 @@ describe("documentation MCP transport", () => {
       const response = await handleDocsMcpRequest(
         createRpcRequest(method, undefined, { clientIp: "203.0.113.7" }),
         assets,
-        rateLimiter,
+        rateLimiter
       );
 
       expect(response.status).toBe(200);
       expect(limit).toHaveBeenCalledExactlyOnceWith({
         key: "client:203.0.113.7",
       });
-    },
+    }
   );
 
   it("lists resources and invokes both bounded read-only tools", async () => {
@@ -399,14 +398,14 @@ describe("documentation MCP transport", () => {
     const resourcesResponse = await handleDocsMcpRequest(
       createRpcRequest("resources/list"),
       assets,
-      rateLimiter,
+      rateLimiter
     );
     const resourcesBody = (await resourcesResponse.json()) as {
       result: { resources: Array<Record<string, unknown>> };
     };
 
     expect(resourcesBody.result.resources).toHaveLength(
-      createCorpusValue().pages.length,
+      createCorpusValue().pages.length
     );
     expect(resourcesBody.result.resources[0]).toMatchObject({
       mimeType: "text/markdown",
@@ -421,7 +420,7 @@ describe("documentation MCP transport", () => {
           name: "search_docs",
         }),
         assets,
-        rateLimiter,
+        rateLimiter
       ),
       handleDocsMcpRequest(
         createRpcRequest("tools/call", {
@@ -432,7 +431,7 @@ describe("documentation MCP transport", () => {
           name: "read_doc",
         }),
         assets,
-        rateLimiter,
+        rateLimiter
       ),
     ]);
     const searchBody = (await searchResponse.json()) as {
@@ -458,7 +457,7 @@ describe("documentation MCP transport", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(limit).toHaveBeenCalledTimes(5);
     expect(limit.mock.calls).toEqual(
-      Array.from({ length: 5 }, () => [{ key: "client:anonymous" }]),
+      Array.from({ length: 5 }, () => [{ key: "client:anonymous" }])
     );
   });
 
@@ -469,7 +468,7 @@ describe("documentation MCP transport", () => {
     const response = await handleDocsMcpRequest(
       createRpcRequest("resources/read", { uri: overviewUri }),
       assets,
-      rateLimiter,
+      rateLimiter
     );
     const body = (await response.json()) as {
       result: { contents: Array<Record<string, unknown>> };
@@ -492,7 +491,7 @@ describe("documentation MCP transport", () => {
     const toolsResponse = await handleDocsMcpRequest(
       createRpcRequest("tools/list", undefined, options),
       assets,
-      rateLimiter,
+      rateLimiter
     );
     const toolsBody = (await toolsResponse.json()) as {
       result: { tools: Array<Record<string, unknown>> };
@@ -504,10 +503,10 @@ describe("documentation MCP transport", () => {
           arguments: { query: "tag invalidation" },
           name: "search_docs",
         },
-        options,
+        options
       ),
       assets,
-      rateLimiter,
+      rateLimiter
     );
     const callBody = (await callResponse.json()) as {
       result: {
@@ -517,7 +516,7 @@ describe("documentation MCP transport", () => {
     };
 
     expect(toolsBody.result.tools.some((tool) => "outputSchema" in tool)).toBe(
-      false,
+      false
     );
     expect(callBody.result.structuredContent).toBeUndefined();
     expect(callBody.result.content).toEqual([
@@ -542,14 +541,14 @@ describe("documentation MCP transport", () => {
         method: "POST",
       }),
       assets,
-      rateLimiter,
+      rateLimiter
     );
     const body = await response.json();
 
     expect(response.status).toBe(200);
     expect(body).toHaveLength(2);
     expect(
-      (body as Array<{ id: number }>).map(({ id }) => id).toSorted(),
+      (body as Array<{ id: number }>).map(({ id }) => id).toSorted()
     ).toEqual([1, 2]);
     expect(limit).toHaveBeenCalledExactlyOnceWith({
       key: "client:anonymous",
@@ -587,14 +586,14 @@ describe("documentation MCP transport", () => {
         method: "POST",
       }),
       assets,
-      rateLimiter,
+      rateLimiter
     );
 
     expect(response.status).toBe(200);
     expect(await response.json()).toHaveLength(3);
     expect(limit).toHaveBeenCalledTimes(3);
     expect(limit.mock.calls).toEqual(
-      Array.from({ length: 3 }, () => [{ key: "client:anonymous" }]),
+      Array.from({ length: 3 }, () => [{ key: "client:anonymous" }])
     );
   });
 
@@ -615,7 +614,7 @@ describe("documentation MCP transport", () => {
         method: "POST",
       }),
       assets,
-      rateLimiter,
+      rateLimiter
     );
 
     expect(response.status).toBe(400);
@@ -641,10 +640,10 @@ describe("documentation MCP transport", () => {
           arguments: { query: "cache" },
           name: "search_docs",
         },
-        { clientIp: "203.0.113.8" },
+        { clientIp: "203.0.113.8" }
       ),
       assets,
-      rateLimiter,
+      rateLimiter
     );
     const body = await response.json();
 
@@ -694,11 +693,7 @@ describe("documentation MCP transport", () => {
     } as RequestInit & { duplex: "half" });
 
     try {
-      const response = await handleDocsMcpRequest(
-        request,
-        assets,
-        rateLimiter,
-      );
+      const response = await handleDocsMcpRequest(request, assets, rateLimiter);
 
       expect(response.status).toBe(429);
       expect(response.headers.get("Retry-After")).toBe("60");
@@ -732,7 +727,7 @@ describe("documentation MCP transport", () => {
       const response = await handleDocsMcpRequest(
         createRpcRequest("ping"),
         assets,
-        rateLimiter,
+        rateLimiter
       );
 
       expect(response.status).toBe(503);
@@ -769,7 +764,7 @@ describe("documentation MCP transport", () => {
           uri: `${docsOrigin}/cache/overview.md`,
         }),
         assets,
-        rateLimiter,
+        rateLimiter
       );
 
       expect(response.status).toBe(503);
@@ -812,11 +807,7 @@ describe("documentation MCP transport", () => {
     } as RequestInit & { duplex: "half" });
 
     try {
-      const response = await handleDocsMcpRequest(
-        request,
-        assets,
-        rateLimiter,
-      );
+      const response = await handleDocsMcpRequest(request, assets, rateLimiter);
 
       expect(response.status).toBe(500);
       expect(await response.json()).toMatchObject({
@@ -840,7 +831,7 @@ describe("documentation MCP transport", () => {
         origin: "https://example.com",
       }),
       assets,
-      rateLimiter,
+      rateLimiter
     );
 
     expect(response.status).toBe(403);
@@ -854,7 +845,7 @@ describe("documentation MCP transport", () => {
     const response = await handleDocsMcpRequest(
       new Request("http://evil.example/mcp", request),
       assets,
-      rateLimiter,
+      rateLimiter
     );
 
     expect(response.status).toBe(403);
@@ -871,17 +862,17 @@ describe("documentation MCP transport", () => {
         method: "OPTIONS",
       }),
       assets,
-      rateLimiter,
+      rateLimiter
     );
     const getResponse = await handleDocsMcpRequest(
       new Request(`${docsOrigin}/mcp`),
       assets,
-      rateLimiter,
+      rateLimiter
     );
 
     expect(preflight.status).toBe(204);
     expect(preflight.headers.get("Access-Control-Allow-Origin")).toBe(
-      docsOrigin,
+      docsOrigin
     );
     expect(preflight.headers.get("Vary")).toBe("Origin");
     expect(getResponse.status).toBe(405);

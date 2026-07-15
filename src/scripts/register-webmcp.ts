@@ -141,14 +141,9 @@ if (registerTool) {
           );
         }
 
-        const end = Math.min(
-          offset + MARKDOWN_CHUNK_LENGTH,
-          characters.length
-        );
+        const end = Math.min(offset + MARKDOWN_CHUNK_LENGTH, characters.length);
         const continuation =
-          end < characters.length
-            ? `Next offset: ${end}.`
-            : "End of page.";
+          end < characters.length ? `Next offset: ${end}.` : "End of page.";
 
         return [
           `Markdown characters ${offset}–${end} of ${characters.length}.`,

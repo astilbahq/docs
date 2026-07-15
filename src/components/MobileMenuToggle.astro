@@ -149,11 +149,11 @@ const closeIconClass = css({
       this.button?.setAttribute("aria-expanded", String(expanded));
       document.body.toggleAttribute("data-mobile-menu-expanded", expanded);
 
-      document
-        .querySelectorAll<HTMLElement>(".main-frame, .sl-skip-link")
-        .forEach((element) => {
-          element.toggleAttribute("inert", expanded);
-        });
+      for (const element of document.querySelectorAll<HTMLElement>(
+        ".main-frame, .sl-skip-link"
+      )) {
+        element.toggleAttribute("inert", expanded);
+      }
     }
   }
 

@@ -36,9 +36,7 @@ const retryDelayMs = readInteger(
   2_000,
   30_000
 );
-const site = new URL(
-  process.env.ASTILBA_DOCS_SMOKE_ORIGIN ?? CANONICAL_ORIGIN
-);
+const site = new URL(process.env.ASTILBA_DOCS_SMOKE_ORIGIN ?? CANONICAL_ORIGIN);
 
 const isLoopback = new Set(["127.0.0.1", "[::1]", "localhost"]).has(
   site.hostname
@@ -167,10 +165,7 @@ const requireContentSecurityPolicy = (response, label) => {
     ["style-src", ["'self'", "'unsafe-inline'"]],
     ["worker-src", ["'self'"]],
   ]);
-  const knownDirectives = new Set([
-    ...expectedDirectives.keys(),
-    "script-src",
-  ]);
+  const knownDirectives = new Set([...expectedDirectives.keys(), "script-src"]);
 
   for (const name of directives.keys()) {
     if (!knownDirectives.has(name)) {
@@ -355,16 +350,8 @@ const checkDiscovery = async () => {
     "*",
     "API catalog"
   );
-  requireHeaderAbsent(
-    response,
-    "Access-Control-Allow-Headers",
-    "API catalog"
-  );
-  requireHeaderAbsent(
-    response,
-    "Access-Control-Allow-Methods",
-    "API catalog"
-  );
+  requireHeaderAbsent(response, "Access-Control-Allow-Headers", "API catalog");
+  requireHeaderAbsent(response, "Access-Control-Allow-Methods", "API catalog");
   requireGlobalSecurityHeaders(response, "API catalog");
   await response.body?.cancel();
 };
@@ -509,8 +496,7 @@ const checkMcp = async () => {
     !Array.isArray(results) ||
     !results.some(
       (result) =>
-        result?.uri ===
-        `${CANONICAL_ORIGIN}/cache/tags-and-invalidation.md`
+        result?.uri === `${CANONICAL_ORIGIN}/cache/tags-and-invalidation.md`
     )
   ) {
     throw new Error(
