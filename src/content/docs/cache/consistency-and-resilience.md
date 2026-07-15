@@ -5,7 +5,7 @@ description: Choose what a read must observe and which transient failures may re
 
 In Astilba Cache, consistency controls what a read must observe. Resilience controls which failures may reuse a previously good value. They are related, but they are not the same switch.
 
-The **Registry** is the authoritative invalidation record, the **Bus** delivers its updates to active instances, and **L2** is the shared Store used for values and recovery data. See [Core concepts](/cache/core-concepts/) for the complete vocabulary.
+The **Registry** is the authoritative invalidation record, the **Bus** delivers its updates to active instances, and **L2** is the shared Store used for values and recovery data. See [Cache fundamentals](/cache/core-concepts/) for the complete vocabulary.
 
 These consistency levels become meaningful when <code>Registry</code>, <code>Bus</code>, and <code>L2</code> are configured together. L2 holds values and the durable recovery mirror; <code>createCache()</code> refuses a Registry-plus-Bus reader without it. Without the coordinated invalidation path, the current kernel treats decoded entries as fresh and <code>consistency</code> does not create a live check.
 
@@ -77,6 +77,6 @@ An eventual soft-stale read also awaits its refresh in the current implementatio
 ## Related
 
 - [How Cache works](/cache/how-it-works/) explains the invalidation knowledge behind these read decisions.
-- [Core concepts](/cache/core-concepts/) defines Registry, Bus, consistency, and grace in plain language.
-- [Reading and filling](/cache/reading-and-filling/) follows the foreground fill and stale return shapes.
-- [API status](/cache/api-status/) records unfinished timing and unavailable-policy behavior.
+- [Cache fundamentals](/cache/core-concepts/) defines Registry, Bus, consistency, and grace in plain language.
+- [Read and cache values](/cache/reading-and-filling/) follows the foreground fill and stale return shapes.
+- [Implementation status](/cache/api-status/) records unfinished timing and unavailable-policy behavior.

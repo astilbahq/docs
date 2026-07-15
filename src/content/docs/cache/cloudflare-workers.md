@@ -146,4 +146,4 @@ It does not yet provide:
 - automatic shared-response <code>Cache-Tag</code> emission;
 - the chaos demo and deployed consistency measurements that complete the Workers release path.
 
-Continue with [React Router](/cache/react-and-server-apps/) if that is your server framework, [Drivers and runtime status](/cache/drivers-and-status/) for component-level status, or [API status](/cache/api-status/) for kernel limitations.
+Continue with [React Router](/cache/react-and-server-apps/) if that is your server framework, [Driver implementations](/cache/drivers-and-status/) for component-level status, or [Implementation status](/cache/api-status/) for kernel limitations.

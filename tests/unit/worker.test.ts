@@ -156,6 +156,24 @@ describe("Markdown negotiation", () => {
     expect(getMarkdownPath("/missing/")).toBeUndefined();
   });
 
+  it.each(["/cache", "/cache/"])(
+    "redirects version root %s to its configured default page",
+    async (versionRoot) => {
+      const { assets, fetch } = createAssets();
+      const response = await handleRequest(
+        new Request(`https://docs.astilba.com${versionRoot}?ref=product`),
+        assets
+      );
+
+      expect(response.status).toBe(307);
+      expect(response.headers.get("Location")).toBe(
+        "/cache/overview/?ref=product"
+      );
+      expectGlobalSecurityHeaders(response);
+      expect(fetch).not.toHaveBeenCalled();
+    }
+  );
+
   it("streams the Markdown asset at the canonical URL", async () => {
     const { assets, fetch } = createAssets();
     const response = await handleRequest(

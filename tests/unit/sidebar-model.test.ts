@@ -92,9 +92,24 @@ describe("documentation sidebar model", () => {
   it("describes known and unknown documentation contexts", () => {
     const known = createDocsSidebarContext("/cache/overview/");
     const unknown = createDocsSidebarContext("/outside/");
+    const docsHome = known.product.options?.find(
+      (option) => option.id === "docs-home"
+    );
+    const cache = known.product.options?.find(
+      (option) => option.id === "cache"
+    );
 
     expect(known.product.label).toBe("Cache");
-    expect(known.product.options?.[0]?.selected).toBe(true);
+    expect(docsHome).toMatchObject({
+      href: "/",
+      label: "Docs home",
+      selected: false,
+    });
+    expect(cache).toMatchObject({
+      href: "/cache/overview/",
+      label: "Cache",
+      selected: true,
+    });
     expect(known.version?.label).toBe("Unreleased");
     expect(unknown.product.label).toBe("All products");
     expect(unknown.product.options?.[0]?.href).toBe("/cache/overview/");

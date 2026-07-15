@@ -16,15 +16,15 @@ Astilba Cache is not available from npm and has no supported production installa
 
 A server-side TypeScript cache with explicit soft and hard invalidation, classified stale-on-error resilience, privacy-aware storage scopes, and a portable capability boundary.
 
-Start with the [overview](/cache/overview/), run the [local source quickstart](/cache/quickstart/), or inspect the source adapters for [Cloudflare Workers](/cache/cloudflare-workers/) and [React Router](/cache/react-and-server-apps/).
+Start with the [overview](/cache/overview/), run the [local quickstart](/cache/quickstart/), or inspect the source adapters for [Cloudflare Workers](/cache/cloudflare-workers/) and [React Router](/cache/react-and-server-apps/).
 
 ## How to read these docs
 
-- **Start** pages explain who the product is for, provide the shortest honest source examples, and introduce the supported-in-source runtime boundaries.
-- **Guides** focus on one task, such as reading or invalidating data.
-- **Concepts** explain the read, invalidation, consistency, and resilience models.
-- **Advanced** pages document runtime composition, recovery, and driver implementation status.
-- **Reference** contains the complete root API surface and the release-state ledger. When another page and the status page appear to differ, follow the status page.
+- **Get started** explains who a product is for and provides the shortest honest path through its current release state.
+- **Integrations** show how a product connects to a runtime or framework.
+- **Guides** help you complete one application task, such as reading or invalidating data.
+- **Concepts** explain the mental models and capability relationships behind those tasks.
+- **Reference** records exact public surfaces, available implementations, and current completeness. When another page and the implementation ledger appear to differ, follow the ledger.
 
 ## For agents
 

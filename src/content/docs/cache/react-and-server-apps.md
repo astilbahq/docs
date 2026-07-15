@@ -125,4 +125,4 @@ It does not currently:
 - add cache-hit dependencies to a render collector automatically;
 - purge a CDN or other L3 response cache.
 
-Treat the adapter as server value-cache wiring, not shared HTML caching. See [Scopes and privacy](/cache/scopes-and-privacy/) for value storage, [Consistency and resilience](/cache/consistency-and-resilience/) for recovery behavior, and [API status](/cache/api-status/) for current gaps.
+Treat the adapter as server value-cache wiring, not shared HTML caching. See [Control cache sharing](/cache/scopes-and-privacy/) for value storage, [Consistency and resilience](/cache/consistency-and-resilience/) for recovery behavior, and [Implementation status](/cache/api-status/) for current gaps.

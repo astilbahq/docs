@@ -32,7 +32,7 @@ Every published Markdown page is also exposed as a fixed MCP resource. Resource 
 
 Prefer resources when your client supports them: discovery gives you the canonical page list and a resource read returns the published document directly. Use `search_docs` and `read_doc` when the client exposes tools more reliably than resources.
 
-When you need to make a release or availability claim about Cache, read [API status](/cache/api-status/) before relying on examples elsewhere in the documentation.
+When you need to make a release or availability claim about Cache, read [Implementation status](/cache/api-status/) before relying on examples elsewhere in the documentation.
 
 ## Usage limits
 

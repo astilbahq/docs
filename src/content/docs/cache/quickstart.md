@@ -1,5 +1,5 @@
 ---
-title: Local source quickstart
+title: Local quickstart
 description: Run one Astilba Cache miss and hit with the implemented memory Store in the current source workspace.
 ---
 
@@ -106,5 +106,5 @@ The current kernel refuses a factory fill without an L2 Store. The same small <c
 
 - [Cloudflare Workers](/cache/cloudflare-workers/) replaces the manual clock, random source, and development Store with the current Workers factory and drivers.
 - [React Router](/cache/react-and-server-apps/) exposes that cache through server middleware and carries request identity to reads.
-- [Core concepts](/cache/core-concepts/) explains the storage and invalidation vocabulary.
-- [API status](/cache/api-status/) lists every incomplete or provisional surface.
+- [Cache fundamentals](/cache/core-concepts/) explains the storage and invalidation vocabulary.
+- [Implementation status](/cache/api-status/) lists every incomplete or provisional surface.

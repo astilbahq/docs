@@ -211,19 +211,28 @@ export const createDocsSidebarContext = (
   }
 
   const { page, product, version } = context;
-  const productOptions = docsProducts.map((option) => {
-    const selected = option.id === product.id;
-    const targetVersion = selected ? version : getDefaultVersion(option);
+  const productOptions: DocsMenuOption[] = [
+    {
+      href: "/",
+      icon: "open-book",
+      id: "docs-home",
+      label: "Docs home",
+      selected: false,
+    },
+    ...docsProducts.map((option) => {
+      const selected = option.id === product.id;
+      const targetVersion = selected ? version : getDefaultVersion(option);
 
-    return {
-      id: option.id,
-      label: option.label,
-      icon: option.icon,
-      status: option.status,
-      selected,
-      href: getVersionPageHref(option, targetVersion, page.key),
-    };
-  });
+      return {
+        id: option.id,
+        label: option.label,
+        icon: option.icon,
+        status: option.status,
+        selected,
+        href: getVersionPageHref(option, targetVersion, page.key),
+      };
+    }),
+  ];
   const versionOptions = product.versions.map((option) => ({
     id: option.id,
     label: option.label,

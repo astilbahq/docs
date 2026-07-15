@@ -3,10 +3,10 @@ title: API reference
 description: Reference the root, Cloudflare, and React Router exports in the current @astilba/cache source snapshot.
 ---
 
-This page documents the complete root export surface and the two public adapter subpaths in the current source snapshot. Start with the [overview](/cache/overview/) or [local source quickstart](/cache/quickstart/) if you are learning the library; use this page when you need an exact method, option, result field, or driver contract.
+This page documents the complete root export surface and the two public adapter subpaths in the current source snapshot. Start with the [overview](/cache/overview/) or [local quickstart](/cache/quickstart/) if you are learning the library; use this page when you need an exact method, option, result field, or driver contract.
 
 :::caution[Unreleased and unevenly implemented]
-<code>@astilba/cache</code> is not published to npm. Some declarations describe intended behavior that still throws or remains inert. Each section calls out important boundaries; [API status](/cache/api-status/) is the authoritative implementation ledger.
+<code>@astilba/cache</code> is not published to npm. Some declarations describe intended behavior that still throws or remains inert. Each section calls out important boundaries; [Implementation status](/cache/api-status/) is the authoritative implementation ledger.
 :::
 
 ## Create a cache
@@ -148,7 +148,7 @@ Related exports are <code>FactoryCtx</code>, <code>EntryFactoryCtx</code>, <code
 | <code>flushed({ timeout? })</code> | Intended durable, Bus, and mirror-acceptance completion. Resolves immediately today. |
 | <code>edgePurged({ timeout? })</code> | Intended CDN-acceptance completion. Resolves immediately without a CDN purge today. |
 
-See [Invalidating data](/cache/tags-and-invalidation/) for safe mutation order and [API status](/cache/api-status/) before using completion fields operationally.
+See [Invalidate cached data](/cache/tags-and-invalidation/) for safe mutation order and [Implementation status](/cache/api-status/) before using completion fields operationally.
 
 ## Build tags and durations
 
@@ -249,7 +249,7 @@ The <code>Registry</code> contract exposes:
 | <code>Cdn</code> | Accepts a set of tags and a <code>CdnMode</code>. Declared but not called today. |
 | <code>CdnMode</code> | CDN acceptance request: <code>enqueue</code>, <code>await</code>, or <code>block</code>. |
 
-See [Drivers and runtime status](/cache/drivers-and-status/) for available implementations.
+See [Driver implementations](/cache/drivers-and-status/) for available implementations.
 
 ## Consistency and stored data
 
@@ -369,4 +369,4 @@ The publish configuration contains four supported doors: the root entry point, <
 
 The source workspace also exposes <code>@astilba/cache/registry</code> so its test harness and Coordinator can share the state machine. The publish configuration deliberately omits it; applications must not import that source-only subpath.
 
-For implementation gaps, inert fields, and integration availability, continue to [API status](/cache/api-status/).
+For implementation gaps, inert fields, and integration availability, continue to [Implementation status](/cache/api-status/).
