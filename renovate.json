@@ -3,6 +3,7 @@
   "extends": [
     "config:recommended",
     ":dependencyDashboard",
+    ":approveMajorUpdates",
     ":semanticCommits",
     ":pinDevDependencies",
     "group:monorepos",
@@ -25,6 +26,25 @@
       "enabled": false
     },
     {
+      "description": "Group safe non-major development dependencies into one verified maintenance change.",
+      "groupName": "routine development dependencies",
+      "groupSlug": "routine-development-dependencies",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchCurrentVersion": "!/^0/",
+      "matchPackageNames": ["!parse5", "!wrangler"]
+    },
+    {
+      "description": "Group safe non-major runtime dependencies while keeping their merge manually reviewed.",
+      "groupName": "routine runtime dependencies",
+      "groupSlug": "routine-runtime-dependencies",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["dependencies"],
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchCurrentVersion": "!/^0/"
+    },
+    {
       "description": "Keep Astro and Starlight changes together for one documentation-shell review.",
       "groupName": "Astro and Starlight",
       "matchPackageNames": ["astro", "@astrojs/**", "starlight-*"]
@@ -41,6 +61,9 @@
         "@axe-core/playwright",
         "@playwright/test",
         "knip",
+        "oxfmt",
+        "oxlint",
+        "ultracite",
         "vitest"
       ]
     },
@@ -48,6 +71,7 @@
       "description": "Auto-merge non-major development-tool updates after verification succeeds.",
       "matchDepTypes": ["devDependencies"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "matchCurrentVersion": "!/^0/",
       "automerge": true
     },
     {
@@ -56,24 +80,19 @@
       "automerge": false
     },
     {
-      "description": "Auto-merge non-major GitHub Actions pin updates after verification succeeds.",
-      "matchManagers": ["github-actions"],
-      "matchUpdateTypes": ["minor", "patch", "digest", "pin"],
-      "automerge": true
+      "description": "Require a maintainer merge for updates to zero-major packages.",
+      "matchManagers": ["npm"],
+      "matchCurrentVersion": "/^0\\./",
+      "automerge": false
     },
     {
-      "description": "Require review for security-sensitive build tooling and actions that can change production or publish analysis.",
-      "matchPackageNames": [
-        "parse5",
-        "wrangler",
-        "actions/cache",
-        "actions/checkout",
-        "actions/download-artifact",
-        "actions/setup-node",
-        "actions/upload-artifact",
-        "github/codeql-action",
-        "pnpm/action-setup"
-      ],
+      "description": "Require a maintainer merge for every GitHub Actions update.",
+      "matchManagers": ["github-actions"],
+      "automerge": false
+    },
+    {
+      "description": "Require a maintainer merge for security-sensitive build tooling.",
+      "matchPackageNames": ["parse5", "wrangler"],
       "automerge": false
     }
   ]

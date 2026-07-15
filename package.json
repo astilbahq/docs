@@ -11,6 +11,8 @@
     "deploy:dry-run": "pnpm build:production && wrangler deploy --dry-run",
     "dev": "astro dev",
     "knip": "knip",
+    "lint": "ultracite check",
+    "lint:fix": "ultracite fix",
     "panda:codegen": "panda codegen",
     "prepare": "panda codegen",
     "preview": "astro preview",
@@ -22,9 +24,9 @@
     "test:browser:run": "playwright test",
     "test:watch": "vitest",
     "typecheck": "pnpm check",
-    "worker:types": "wrangler types",
-    "verify": "pnpm panda:codegen && pnpm check && pnpm test && pnpm knip && pnpm deploy:dry-run && pnpm test:browser:run",
-    "verify:agent-artifacts": "node scripts/verify-agent-artifacts.mjs"
+    "verify": "pnpm panda:codegen && pnpm lint && pnpm check && pnpm test && pnpm knip && pnpm deploy:dry-run && pnpm test:browser:run",
+    "verify:agent-artifacts": "node scripts/verify-agent-artifacts.mjs",
+    "worker:types": "wrangler types"
   },
   "dependencies": {
     "@astrojs/react": "6.0.1",
@@ -55,9 +57,12 @@
     "ajv-formats": "3.0.1",
     "cross-env": "10.1.0",
     "knip": "6.26.0",
+    "oxfmt": "0.59.0",
+    "oxlint": "1.74.0",
     "parse5": "8.0.1",
     "postcss": "8.5.17",
     "typescript": "6.0.3",
+    "ultracite": "7.9.4",
     "vitest": "4.1.10",
     "wrangler": "4.110.0"
   },

@@ -53,6 +53,8 @@ This repository contains the public documentation experience for Astilba product
 - Styling: Panda CSS for Astilba-owned components, plus modular Starlight compatibility CSS.
 - `pnpm dev` starts the local site.
 - `pnpm panda:codegen` regenerates the ignored typed styling bindings after Panda configuration changes.
+- `pnpm lint` runs Ultracite's Oxlint and Oxfmt checks over the JavaScript, TypeScript, and supported configuration surface. Authored Markdown, Astro, CSS, generated files, and vendored material retain their specialized formatters.
+- `pnpm lint:fix` applies the safe automatic lint and formatting fixes; inspect its diff before committing.
 - `pnpm check` validates Astro, content, and TypeScript.
 - `pnpm test` runs focused Vitest coverage for the documentation model and generated destinations.
 - `pnpm knip` checks for unused files, exports, and dependencies.

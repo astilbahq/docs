@@ -10,9 +10,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  createPageActionDestinations,
-} from "../docs/page-actions";
+
+import { createPageActionDestinations } from "../docs/page-actions";
 import { PageActionBrandIcon } from "./PageActionBrandIcon";
 import { pageActionsStyles as styles } from "./PageActions.styles";
 
@@ -49,23 +48,18 @@ const ActionIcon = ({
   />
 );
 
-export const PageActions = ({
-  markdownPath,
-  sourceUrl,
-}: PageActionsProps) => {
-  const [absoluteMarkdownUrl, setAbsoluteMarkdownUrl] =
-    useState(markdownPath);
+export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
+  const [absoluteMarkdownUrl, setAbsoluteMarkdownUrl] = useState(markdownPath);
   const [copyState, setCopyState] = useState<CopyState>("idle");
-  const [inputModality, setInputModality] =
-    useState<InputModality>("pointer");
+  const [isReady, setIsReady] = useState(false);
+  const [inputModality, setInputModality] = useState<InputModality>("pointer");
   const [status, setStatus] = useState("");
   const copyResetTimer = useRef<number | undefined>(undefined);
   const statusResetTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
-    setAbsoluteMarkdownUrl(
-      new URL(markdownPath, window.location.href).href
-    );
+    setIsReady(true);
+    setAbsoluteMarkdownUrl(new URL(markdownPath, window.location.href).href);
   }, [markdownPath]);
 
   useEffect(
@@ -140,10 +134,7 @@ export const PageActions = ({
       await copyText(await response.text());
       showCopyFeedback("copied", "Page Markdown copied.");
     } catch {
-      showCopyFeedback(
-        "error",
-        "Page Markdown could not be copied."
-      );
+      showCopyFeedback("error", "Page Markdown could not be copied.");
     }
   };
 
@@ -162,6 +153,7 @@ export const PageActions = ({
     <div
       aria-label="Page actions"
       className={styles.root}
+      data-ready={isReady ? "true" : "false"}
       data-pagefind-ignore=""
       role="group"
     >
@@ -169,7 +161,7 @@ export const PageActions = ({
         aria-busy={copyState === "copying"}
         className={`${styles.control} ${styles.copyControl}`}
         data-copy-state={copyState}
-        disabled={copyState === "copying"}
+        disabled={!isReady || copyState === "copying"}
         onClick={() => {
           void copyMarkdown();
         }}
@@ -196,6 +188,7 @@ export const PageActions = ({
       <Menu.Root modal={false}>
         <Menu.Trigger
           className={styles.control}
+          disabled={!isReady}
           onKeyDown={() => setInputModality("keyboard")}
           onPointerDown={() => setInputModality("pointer")}
         >
@@ -261,10 +254,7 @@ export const PageActions = ({
                     <span className={styles.menuLabel}>
                       {destination.label}
                     </span>
-                    <span
-                      aria-hidden="true"
-                      className={styles.menuTrailing}
-                    >
+                    <span aria-hidden="true" className={styles.menuTrailing}>
                       <ActionIcon icon={ExternalLink} size={14} />
                     </span>
                   </Menu.LinkItem>

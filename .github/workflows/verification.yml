@@ -41,6 +41,9 @@ jobs:
       - name: Generate Panda bindings
         run: pnpm panda:codegen
 
+      - name: Lint and check formatting
+        run: pnpm lint
+
       - name: Check Astro and TypeScript
         run: pnpm check
 
