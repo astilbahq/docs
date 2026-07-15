@@ -47,6 +47,7 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.9",
+    "@astrojs/sitemap": "3.7.3",
     "@axe-core/playwright": "4.12.1",
     "@pandacss/dev": "1.11.4",
     "@pandacss/preset-base": "1.11.4",

@@ -20,6 +20,7 @@
       "!/llms*.txt",
       "!/pagefind/*",
       "!/robots.txt",
+      "!/sitemap.xml",
       "!/sitemap-*.xml",
     ],
   },

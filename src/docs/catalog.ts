@@ -32,6 +32,11 @@ export const validateDocsProducts = (products: DocsProduct[]): void => {
     siteDocsPages.map(({ canonicalPath }) => normalizePath(canonicalPath))
   );
   const routes = new Set<string>();
+  const sourcePaths = new Set<string>();
+
+  for (const page of siteDocsPages) {
+    assertUnique(sourcePaths, page.sourcePath, "documentation source path");
+  }
 
   for (const product of products) {
     assertUnique(productIds, product.id, "documentation product id");
@@ -96,6 +101,7 @@ export const validateDocsProducts = (products: DocsProduct[]): void => {
           page.slug,
           `${product.label} ${version.label} page slug`
         );
+        assertUnique(sourcePaths, page.sourcePath, "documentation source path");
         assertUnique(routes, route, "documentation route");
 
         if (page.key === product.defaultPage) {

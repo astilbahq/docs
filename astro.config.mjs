@@ -1,5 +1,8 @@
 // @ts-check
+import { copyFile, readFile } from "node:fs/promises";
+
 import react from "@astrojs/react";
+import sitemap from "@astrojs/sitemap";
 import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 import starlightLinksValidator from "starlight-links-validator";
@@ -7,6 +10,10 @@ import starlightLlmsTxt from "starlight-llms-txt";
 
 import { docsProducts, docsSidebar } from "./src/docs/catalog.ts";
 import { siteDocsPages } from "./src/docs/site-pages.ts";
+import {
+  addDocsSitemapLastModified,
+  createDocsSitemapLastModified,
+} from "./src/docs/sitemap.ts";
 
 // starlight-llms-txt needs the deployed origin to generate canonical links.
 const DEPLOYED_DOCS_ORIGIN = "https://docs.astilba.com";
@@ -37,6 +44,7 @@ if (siteUrl && siteUrl.origin !== DEPLOYED_DOCS_ORIGIN) {
 }
 
 const site = siteUrl?.origin;
+const sitemapLastModified = site ? createDocsSitemapLastModified() : new Map();
 
 /** @type {import("astro").AstroIntegration} */
 const requireDocsSite = {
@@ -48,6 +56,38 @@ const requireDocsSite = {
           "ASTILBA_DOCS_SITE is required for production builds so canonical and agent-readable URLs cannot be generated with the wrong origin."
         );
       }
+    },
+  },
+};
+
+/** @type {import("astro").AstroIntegration} */
+const publishSingleSitemap = {
+  name: "astilba-publish-single-sitemap",
+  hooks: {
+    async "astro:build:done"({ dir }) {
+      if (!site) {
+        return;
+      }
+
+      const sitemapIndex = await readFile(
+        new URL("sitemap-index.xml", dir),
+        "utf8"
+      );
+      const childLocations = [
+        ...sitemapIndex.matchAll(/<loc>([^<]+)<\/loc>/g),
+      ].map((match) => match[1]);
+      const expectedChild = new URL("/sitemap-0.xml", site).href;
+
+      if (childLocations.length !== 1 || childLocations[0] !== expectedChild) {
+        throw new Error(
+          "The direct sitemap requires exactly one generated sitemap child."
+        );
+      }
+
+      await copyFile(
+        new URL("sitemap-0.xml", dir),
+        new URL("sitemap.xml", dir)
+      );
     },
   },
 };
@@ -66,10 +106,26 @@ export default defineConfig({
   integrations: [
     requireDocsSite,
     react(),
+    sitemap({
+      serialize(item) {
+        return addDocsSitemapLastModified(item, sitemapLastModified);
+      },
+    }),
     starlight({
       title: "Astilba",
       description: "Documentation for Astilba infrastructure libraries.",
       favicon: "/favicon.svg",
+      head: site
+        ? [
+            {
+              tag: "link",
+              attrs: {
+                href: new URL("/sitemap.xml", site).href,
+                rel: "sitemap",
+              },
+            },
+          ]
+        : [],
       logo: {
         dark: "./src/assets/astilba-logomark-light.svg",
         light: "./src/assets/astilba-logomark-dark.svg",
@@ -128,5 +184,6 @@ export default defineConfig({
       routeMiddleware: "./src/docs/route-middleware.ts",
       sidebar: docsSidebar,
     }),
+    publishSingleSitemap,
   ],
 });

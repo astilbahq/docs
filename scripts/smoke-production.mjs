@@ -5,6 +5,9 @@ const HTML_PATH = "/cache/overview/";
 const MARKDOWN_PATH = "/cache/overview.md";
 const MCP_PATH = "/mcp";
 const MCP_PROTOCOL_VERSION = "2025-11-25";
+const ROBOTS_PATH = "/robots.txt";
+const SITEMAP_PATH = "/sitemap.xml";
+const SITEMAP_URL = `${CANONICAL_ORIGIN}${SITEMAP_PATH}`;
 const USER_AGENT = "astilba-docs-production-smoke/1.0";
 
 const readInteger = (name, fallback, maximum) => {
@@ -356,6 +359,59 @@ const checkDiscovery = async () => {
   await response.body?.cancel();
 };
 
+const checkSitemap = async () => {
+  const response = await request(SITEMAP_PATH);
+  requireStatus(response, "sitemap");
+  requireHeaderIncludes(response, "Content-Type", "application/xml", "sitemap");
+  requireGlobalSecurityHeaders(response, "sitemap");
+  const sitemap = await response.text();
+
+  if (
+    !sitemap.includes(
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+    ) ||
+    !sitemap.includes(`<loc>${CANONICAL_ORIGIN}/</loc>`) ||
+    !/<lastmod>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z<\/lastmod>/.test(
+      sitemap
+    )
+  ) {
+    throw new Error(
+      "[production-smoke] sitemap is missing its URL set, canonical root, or lastmod metadata."
+    );
+  }
+
+  const headResponse = await request(SITEMAP_PATH, { method: "HEAD" });
+  requireStatus(headResponse, "sitemap HEAD");
+  requireHeaderIncludes(
+    headResponse,
+    "Content-Type",
+    "application/xml",
+    "sitemap HEAD"
+  );
+  requireGlobalSecurityHeaders(headResponse, "sitemap HEAD");
+  await headResponse.body?.cancel();
+};
+
+const checkRobots = async () => {
+  const response = await request(ROBOTS_PATH);
+  requireStatus(response, "robots.txt");
+  requireHeaderIncludes(response, "Content-Type", "text/plain", "robots.txt");
+  requireGlobalSecurityHeaders(response, "robots.txt");
+  const sitemapDirectives = (await response.text())
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith("Sitemap:"));
+  const expectedDirective = `Sitemap: ${SITEMAP_URL}`;
+
+  if (
+    sitemapDirectives.length !== 1 ||
+    sitemapDirectives[0] !== expectedDirective
+  ) {
+    throw new Error(
+      `[production-smoke] robots.txt returned unexpected sitemap directives: ${JSON.stringify(sitemapDirectives)}.`
+    );
+  }
+};
+
 const checkFingerprintAsset = async (asset) => {
   // Probe the bare fingerprinted path: a cache-busting query could miss a stale
   // edge entry and make the deployed cache policy look healthier than it is.
@@ -512,6 +568,8 @@ const runChecks = async () => {
     checkDirectMarkdown(),
     checkMissingMarkdown(),
     checkDiscovery(),
+    checkSitemap(),
+    checkRobots(),
     checkFingerprintAsset(asset),
     checkMcp(),
   ]);
@@ -528,7 +586,7 @@ for (let attempt = 1; attempt <= attempts; attempt += 1) {
   try {
     await runChecks();
     console.log(
-      `[production-smoke] HTML, Markdown, edge headers, immutable assets, and MCP passed for ${site.origin}.`
+      `[production-smoke] HTML, Markdown, discovery, sitemap, edge headers, immutable assets, and MCP passed for ${site.origin}.`
     );
     process.exitCode = 0;
     lastError = undefined;
