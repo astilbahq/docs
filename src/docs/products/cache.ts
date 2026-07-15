@@ -2,7 +2,7 @@ import type { DocsProduct } from "../types.ts";
 
 const cacheSections = [
   {
-    label: "Start",
+    label: "Get started",
     items: [
       {
         key: "overview",
@@ -12,10 +12,15 @@ const cacheSections = [
       },
       {
         key: "quickstart",
-        label: "Local source quickstart",
+        label: "Local quickstart",
         slug: "quickstart",
         icon: "rocket",
       },
+    ],
+  },
+  {
+    label: "Integrations",
+    items: [
       {
         key: "cloudflare-workers",
         label: "Cloudflare Workers",
@@ -28,12 +33,6 @@ const cacheSections = [
         slug: "react-and-server-apps",
         icon: "rocket",
       },
-      {
-        key: "core-concepts",
-        label: "Core concepts",
-        slug: "core-concepts",
-        icon: "open-book",
-      },
     ],
   },
   {
@@ -41,32 +40,21 @@ const cacheSections = [
     items: [
       {
         key: "reading-and-filling",
-        label: "Reading and filling",
+        label: "Read and cache values",
         slug: "reading-and-filling",
         icon: "database",
       },
       {
         key: "tags-and-invalidation",
-        label: "Invalidating data",
+        label: "Invalidate cached data",
         slug: "tags-and-invalidation",
         icon: "link",
       },
       {
         key: "scopes-and-privacy",
-        label: "Scopes and privacy",
+        label: "Control cache sharing",
         slug: "scopes-and-privacy",
         icon: "padlock",
-      },
-    ],
-  },
-  {
-    label: "Concepts",
-    items: [
-      {
-        key: "how-it-works",
-        label: "How Cache works",
-        slug: "how-it-works",
-        icon: "code-branch",
       },
       {
         key: "consistency-and-resilience",
@@ -77,19 +65,25 @@ const cacheSections = [
     ],
   },
   {
-    label: "Advanced",
+    label: "Concepts",
     items: [
+      {
+        key: "core-concepts",
+        label: "Cache fundamentals",
+        slug: "core-concepts",
+        icon: "open-book",
+      },
+      {
+        key: "how-it-works",
+        label: "How Cache works",
+        slug: "how-it-works",
+        icon: "code-branch",
+      },
       {
         key: "architecture",
         label: "Runtime architecture",
         slug: "architecture",
         icon: "code-branch",
-      },
-      {
-        key: "drivers-and-status",
-        label: "Drivers and status",
-        slug: "drivers-and-status",
-        icon: "server",
       },
     ],
   },
@@ -103,8 +97,14 @@ const cacheSections = [
         icon: "open-book",
       },
       {
+        key: "drivers-and-status",
+        label: "Driver implementations",
+        slug: "drivers-and-status",
+        icon: "server",
+      },
+      {
         key: "api-status",
-        label: "API status",
+        label: "Implementation status",
         slug: "api-status",
         icon: "approve-check-circle",
       },

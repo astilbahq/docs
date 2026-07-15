@@ -106,7 +106,7 @@ test("serves the public documentation corpus over MCP", async ({ baseURL }) => {
       results: Array<Record<string, unknown>>;
     };
     expect(searchOutput.results[0]).toMatchObject({
-      title: "Invalidating data",
+      title: "Invalidate cached data",
       uri: `${docsOrigin}/cache/tags-and-invalidation.md`,
     });
     expect(overview.contents[0]).toMatchObject({
@@ -370,6 +370,14 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   });
   expect(canonicalRedirect.status()).toBe(307);
   expect(canonicalRedirect.headers().location).toBe("/cache/overview/");
+
+  for (const productRoot of ["/cache", "/cache/"]) {
+    const productRootRedirect = await request.get(productRoot, {
+      maxRedirects: 0,
+    });
+    expect(productRootRedirect.status()).toBe(307);
+    expect(productRootRedirect.headers().location).toBe("/cache/overview/");
+  }
 
   const htmlResponse = await request.get("/cache/overview/", {
     headers: { Accept: "text/html, text/markdown;q=0" },
@@ -707,7 +715,7 @@ test("registers a read-only WebMCP tool when the API is available", async ({
 
     return window.__webMcpTools?.[0]?.execute({ offset: 0 });
   });
-  expect(nextPageChunk).toContain("# Local source quickstart");
+  expect(nextPageChunk).toContain("# Local quickstart");
   expect(markdownRequests).toEqual([
     "/cache/overview.md",
     "/cache/quickstart.md",
@@ -805,17 +813,20 @@ test("persists desktop sidebar disclosure state across navigation", async ({
 }) => {
   await page.goto("/cache/overview/");
 
-  const start = page.getByRole("button", { name: "Start", exact: true });
-  await start.click();
-  await expect(start).toHaveAttribute("aria-expanded", "false");
+  const getStarted = page.getByRole("button", {
+    name: "Get started",
+    exact: true,
+  });
+  await getStarted.click();
+  await expect(getStarted).toHaveAttribute("aria-expanded", "false");
 
   await page
     .locator("#starlight__sidebar")
-    .getByRole("link", { name: "Invalidating data" })
+    .getByRole("link", { name: "Invalidate cached data" })
     .click();
   await expect(page).toHaveURL(/\/cache\/tags-and-invalidation\/$/);
   await expect(
-    page.getByRole("button", { name: "Start", exact: true })
+    page.getByRole("button", { name: "Get started", exact: true })
   ).toHaveAttribute("aria-expanded", "false");
 });
 
@@ -842,7 +853,7 @@ test("switches themes and opens mobile navigation", async ({ page }) => {
   await expect(menuButton).toHaveAttribute("aria-expanded", "true");
   await expect(page.locator("#starlight__sidebar")).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Invalidating data" })
+    page.getByRole("link", { name: "Invalidate cached data" })
   ).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(menuButton).toHaveAttribute("aria-expanded", "false");

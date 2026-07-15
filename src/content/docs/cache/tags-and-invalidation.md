@@ -1,13 +1,11 @@
 ---
-title: Invalidating data
+title: Invalidate cached data
 description: Mark dependent values stale, make them unreadable, or invalidate one contextless public key.
-sidebar:
-  label: Tags and invalidation
 ---
 
 In Astilba Cache, tags describe what a value depends on. Invalidation advances tag watermarks, so readers can reject matching entries without scanning or deleting every stored value.
 
-The application changes its source of truth; Cache only changes whether stored representations may be served. See [Core concepts](/cache/core-concepts/) for keys, tags, Registry, and Bus.
+The application changes its source of truth; Cache only changes whether stored representations may be served. See [Cache fundamentals](/cache/core-concepts/) for keys, tags, Registry, and Bus.
 
 ## Choose soft or hard invalidation
 
@@ -93,4 +91,4 @@ The source Workers factory wires the Coordinator Registry, redialing Durable Obj
 
 - [How Cache works](/cache/how-it-works/) follows invalidation through live delivery and recovery.
 - [Consistency and resilience](/cache/consistency-and-resilience/) explains how reads treat stale or unknown knowledge.
-- [API status](/cache/api-status/) records the current purge-result and selector limitations.
+- [Implementation status](/cache/api-status/) records the current purge-result and selector limitations.

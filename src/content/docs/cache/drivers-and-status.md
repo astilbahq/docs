@@ -1,13 +1,11 @@
 ---
-title: Drivers and runtime status
+title: Driver implementations
 description: See which Cache drivers and runtime adapters exist in current source and which production boundaries remain open.
-sidebar:
-  label: Drivers and status
 ---
 
 Astilba Cache keeps its semantics behind small contracts, then implements platform I/O at adapter boundaries. This page separates an implemented source driver from a released, supported integration.
 
-Application developers can begin with [Core concepts](/cache/core-concepts/). Runtime authors and production-readiness reviewers should use this page together with [API status](/cache/api-status/).
+Application developers can begin with [Cache fundamentals](/cache/core-concepts/). Runtime authors and production-readiness reviewers should use this page together with [Implementation status](/cache/api-status/).
 
 ## Understand the driver model
 
@@ -98,4 +96,4 @@ The integration Worker and React Router fixture prove runtime wiring and build c
 - [Cloudflare Workers](/cache/cloudflare-workers/) provides the current factory and binding walkthrough.
 - [React Router](/cache/react-and-server-apps/) explains request context and poll ticks.
 - [API reference](/cache/api-reference/) lists the root and adapter exports.
-- [API status](/cache/api-status/) lists kernel-level limitations independent of a driver.
+- [Implementation status](/cache/api-status/) lists kernel-level limitations independent of a driver.

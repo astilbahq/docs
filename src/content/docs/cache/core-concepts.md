@@ -1,5 +1,5 @@
 ---
-title: Core concepts
+title: Cache fundamentals
 description: Learn the Astilba Cache vocabulary from a basic read through distributed invalidation.
 ---
 
@@ -85,4 +85,4 @@ Clock and Rng exist for portability and deterministic tests. They are constructi
 - **Singleflight** lets compatible callers in one instance share one foreground factory execution.
 - **Fencing** prevents a result produced across a conflicting hard invalidation from being accepted as current. The current fill path can re-mint its birth epoch and refetch within a bounded three-attempt budget when verified knowledge advances.
 
-Continue with the [local source quickstart](/cache/quickstart/) for a concrete read, [Cloudflare Workers](/cache/cloudflare-workers/) for the composed runtime, [How Cache works](/cache/how-it-works/) for the complete sequence, or [runtime architecture](/cache/architecture/) for the capability contracts.
+Continue with the [local quickstart](/cache/quickstart/) for a concrete read, [Cloudflare Workers](/cache/cloudflare-workers/) for the composed runtime, [How Cache works](/cache/how-it-works/) for the complete sequence, or [runtime architecture](/cache/architecture/) for the capability contracts.

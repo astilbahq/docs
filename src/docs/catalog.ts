@@ -1,6 +1,7 @@
 import type { StarlightUserConfig } from "@astrojs/starlight/types";
 
 import { cacheProduct } from "./products/cache.ts";
+import { siteDocsPages } from "./site-pages.ts";
 import {
   docsIcons,
   type DocsContext,
@@ -22,9 +23,14 @@ const assertUnique = (
   values.add(value);
 };
 
-const validateDocsProducts = (products: DocsProduct[]): void => {
+const normalizePath = (path: string): string => path.replace(/^\/+|\/+$/g, "");
+
+export const validateDocsProducts = (products: DocsProduct[]): void => {
   const productIds = new Set<string>();
   const basePaths = new Set<string>();
+  const globalRoutes = new Set(
+    siteDocsPages.map(({ canonicalPath }) => normalizePath(canonicalPath))
+  );
   const routes = new Set<string>();
 
   for (const product of products) {
@@ -43,6 +49,18 @@ const validateDocsProducts = (products: DocsProduct[]): void => {
         version.id,
         `${product.label} documentation version id`
       );
+      if (routes.has(version.basePath)) {
+        throw new Error(
+          `Documentation base path collides with a page route: "${version.basePath}".`
+        );
+      }
+
+      if (globalRoutes.has(version.basePath)) {
+        throw new Error(
+          `Documentation base path collides with a global page: "${version.basePath}".`
+        );
+      }
+
       assertUnique(basePaths, version.basePath, "documentation base path");
 
       if (version.id === product.defaultVersion) {
@@ -54,6 +72,20 @@ const validateDocsProducts = (products: DocsProduct[]): void => {
       let hasDefaultPage = false;
 
       for (const page of version.sections.flatMap(({ items }) => items)) {
+        const route = `${version.basePath}/${page.slug}`;
+
+        if (basePaths.has(route)) {
+          throw new Error(
+            `Documentation page route collides with a version root: "${route}".`
+          );
+        }
+
+        if (globalRoutes.has(route)) {
+          throw new Error(
+            `Documentation page route collides with a global page: "${route}".`
+          );
+        }
+
         assertUnique(
           pageKeys,
           page.key,
@@ -64,11 +96,7 @@ const validateDocsProducts = (products: DocsProduct[]): void => {
           page.slug,
           `${product.label} ${version.label} page slug`
         );
-        assertUnique(
-          routes,
-          `${version.basePath}/${page.slug}`,
-          "documentation route"
-        );
+        assertUnique(routes, route, "documentation route");
 
         if (page.key === product.defaultPage) {
           hasDefaultPage = true;
@@ -120,8 +148,6 @@ export const docsSidebar: NonNullable<StarlightUserConfig["sidebar"]> =
   }));
 
 const docsIconNames = new Set<string>(docsIcons);
-
-const normalizePath = (path: string): string => path.replace(/^\/+|\/+$/g, "");
 
 export const getPageHref = (version: DocsVersion, page: DocsPage): string =>
   `/${version.basePath}/${page.slug}/`;

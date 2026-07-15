@@ -1,5 +1,5 @@
 ---
-title: API status
+title: Implementation status
 description: Check which Astilba Cache methods, helpers, drivers, and adapters work in the current unreleased source build.
 ---
 
@@ -103,8 +103,8 @@ The repository's <code>v0.1</code> tag records the sealed correctness-kernel mil
 
 ## Related
 
-- [Local source quickstart](/cache/quickstart/) demonstrates the smallest runnable source configuration.
+- [Local quickstart](/cache/quickstart/) demonstrates the smallest runnable source configuration.
 - [Cloudflare Workers](/cache/cloudflare-workers/) documents the current runtime factory and bindings.
 - [API reference](/cache/api-reference/) documents every root and adapter export.
 - [Runtime architecture](/cache/architecture/) maps configuration requirements to capability contracts.
-- [Drivers and runtime status](/cache/drivers-and-status/) gives component-level implementation detail.
+- [Driver implementations](/cache/drivers-and-status/) gives component-level implementation detail.

@@ -46,7 +46,7 @@ const createCorpusValue = () => ({
             const content = isOverview
               ? "A😀B Cache overview and storage boundaries."
               : isInvalidation
-                ? "# Invalidating data\n\nTag invalidation supports related values."
+                ? "# Invalidate cached data\n\nTag invalidation supports related values."
                 : `# ${page.label}\n\nPublic Cache documentation for ${page.label}.`;
 
             return {
@@ -279,7 +279,7 @@ describe("generated MCP corpus", () => {
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({
       productId: "cache",
-      title: "Invalidating data",
+      title: "Invalidate cached data",
       uri: `${docsOrigin}/cache/tags-and-invalidation.md`,
       versionId: "unreleased",
     });
@@ -288,7 +288,7 @@ describe("generated MCP corpus", () => {
     ).toEqual([]);
     expect(
       searchDocs(corpus, { query: "related cached values" })[0]
-    ).toMatchObject({ title: "Invalidating data" });
+    ).toMatchObject({ title: "Invalidate cached data" });
   });
 
   it("reads only allowlisted resources and avoids splitting surrogate pairs", () => {
@@ -446,7 +446,7 @@ describe("documentation MCP transport", () => {
     };
 
     expect(searchBody.result.structuredContent.results[0]).toMatchObject({
-      title: "Invalidating data",
+      title: "Invalidate cached data",
       uri: `${docsOrigin}/cache/tags-and-invalidation.md`,
     });
     expect(readBody.result.structuredContent).toMatchObject({

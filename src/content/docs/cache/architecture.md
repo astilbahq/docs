@@ -5,7 +5,7 @@ description: See how the portable Astilba Cache kernel composes storage, coordin
 
 Astilba Cache keeps cache semantics in a portable kernel and receives runtime capabilities through typed contracts. The kernel owns keys, scopes, tier order, decode safety, fill coordination, and invalidation decisions. A runtime supplies storage, coordination, time, randomness, scheduling, and any custom encoding.
 
-This is an advanced integration page. For application-level definitions and a smaller starting point, begin with [Core concepts](/cache/core-concepts/) or the [local source quickstart](/cache/quickstart/).
+This page explains the runtime capability model. For application-level definitions and a smaller starting point, begin with [Cache fundamentals](/cache/core-concepts/) or the [local quickstart](/cache/quickstart/).
 
 ## Capabilities at the boundary
 
@@ -30,7 +30,7 @@ These contracts keep the correctness rules independent of a storage vendor. They
 4. On a miss, compatible callers share one in-isolate factory execution.
 5. Before write-back, Cache checks for a conflicting hard invalidation, then writes only to tiers allowed by the resolved scope.
 
-See [Reading and filling](/cache/reading-and-filling/) for return metadata, singleflight compatibility, codec changes, and fill failures. See [How Cache works](/cache/how-it-works/) for the invalidation and recovery path around the same operation.
+See [Read and cache values](/cache/reading-and-filling/) for return metadata, singleflight compatibility, codec changes, and fill failures. See [How Cache works](/cache/how-it-works/) for the invalidation and recovery path around the same operation.
 
 ## Compose the current source preview
 
@@ -61,6 +61,6 @@ These combinations describe current main-branch source behavior. <code>@astilba/
 
 ## Related
 
-- [Drivers and runtime status](/cache/drivers-and-status/) lists each contract and integration boundary.
+- [Driver implementations](/cache/drivers-and-status/) lists each contract and integration boundary.
 - [Consistency and resilience](/cache/consistency-and-resilience/) explains live checks, unknown knowledge, and stale-on-error policy.
-- [API status](/cache/api-status/) records incomplete and provisional surfaces.
+- [Implementation status](/cache/api-status/) records incomplete and provisional surfaces.

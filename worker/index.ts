@@ -1,5 +1,5 @@
 import { API_CATALOG_LINK_VALUE } from "../src/docs/agent-discovery";
-import { docsProducts, getPageHref } from "../src/docs/catalog";
+import { docsProducts, getDefaultPage, getPageHref } from "../src/docs/catalog";
 import {
   CONTENT_SECURITY_POLICY_ASSET_PATH,
   CONTENT_SECURITY_POLICY_HEADER,
@@ -30,6 +30,18 @@ const PAGE_MARKDOWN_ENTRIES = [
   ),
 ];
 const PAGE_MARKDOWN_PATHS = new Map(PAGE_MARKDOWN_ENTRIES);
+const VERSION_ROOT_REDIRECTS = new Map<string, string>(
+  docsProducts.flatMap((product) =>
+    product.versions.flatMap((version) => {
+      const target = getPageHref(version, getDefaultPage(product, version));
+
+      return [
+        [`/${version.basePath}`, target] as const,
+        [`/${version.basePath}/`, target] as const,
+      ];
+    })
+  )
+);
 
 if (PAGE_MARKDOWN_PATHS.size !== PAGE_MARKDOWN_ENTRIES.length) {
   throw new Error("Documentation pages must have unique canonical paths.");
@@ -472,6 +484,15 @@ const routeRequest = async (
 
   if (request.method !== "GET" && request.method !== "HEAD") {
     return assets.fetch(request);
+  }
+
+  const versionRootTarget = VERSION_ROOT_REDIRECTS.get(url.pathname);
+
+  if (versionRootTarget) {
+    return new Response(null, {
+      headers: { Location: `${versionRootTarget}${url.search}` },
+      status: 307,
+    });
   }
 
   if (url.pathname.endsWith(".md")) {

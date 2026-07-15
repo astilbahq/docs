@@ -9,6 +9,7 @@ import {
   getPageHref,
   getVersionMeta,
   getVersionPageHref,
+  validateDocsProducts,
 } from "../../src/docs/catalog";
 
 describe("documentation catalog", () => {
@@ -25,6 +26,51 @@ describe("documentation catalog", () => {
     expect(getPageHref(version, page)).toBe("/cache/overview/");
   });
 
+  it("organizes Cache pages by reader intent", () => {
+    const version = getDefaultVersion(cache);
+
+    expect(
+      version.sections.map(({ items, label }) => ({
+        label,
+        pages: items.map((page) => page.label),
+      }))
+    ).toEqual([
+      {
+        label: "Get started",
+        pages: ["Overview", "Local quickstart"],
+      },
+      {
+        label: "Integrations",
+        pages: ["Cloudflare Workers", "React Router"],
+      },
+      {
+        label: "Guides",
+        pages: [
+          "Read and cache values",
+          "Invalidate cached data",
+          "Control cache sharing",
+          "Consistency and resilience",
+        ],
+      },
+      {
+        label: "Concepts",
+        pages: [
+          "Cache fundamentals",
+          "How Cache works",
+          "Runtime architecture",
+        ],
+      },
+      {
+        label: "Reference",
+        pages: [
+          "API reference",
+          "Driver implementations",
+          "Implementation status",
+        ],
+      },
+    ]);
+  });
+
   it("finds a page with or without surrounding slashes", () => {
     const withSlashes = findDocsContext("/cache/quickstart/");
     const withoutSlashes = findDocsContext("cache/quickstart");
@@ -32,6 +78,50 @@ describe("documentation catalog", () => {
     expect(withSlashes?.page.key).toBe("quickstart");
     expect(withoutSlashes).toEqual(withSlashes);
     expect(findDocsContext("/not-a-doc/")).toBeUndefined();
+  });
+
+  it("keeps version roots distinct from page routes", () => {
+    const version = getDefaultVersion(cache);
+    const conflictingProduct = {
+      ...cache,
+      defaultVersion: "collision",
+      id: "collision",
+      label: "Collision",
+      versions: [
+        {
+          ...version,
+          basePath: "cache/overview",
+          id: "collision",
+          label: "Collision",
+        },
+      ],
+    };
+
+    expect(() => validateDocsProducts([cache, conflictingProduct])).toThrow(
+      'Documentation base path collides with a page route: "cache/overview".'
+    );
+  });
+
+  it("keeps product routes distinct from global documentation", () => {
+    const version = getDefaultVersion(cache);
+    const conflictingProduct = {
+      ...cache,
+      defaultVersion: "collision",
+      id: "collision",
+      label: "Collision",
+      versions: [
+        {
+          ...version,
+          basePath: "agents/mcp",
+          id: "collision",
+          label: "Collision",
+        },
+      ],
+    };
+
+    expect(() => validateDocsProducts([cache, conflictingProduct])).toThrow(
+      'Documentation base path collides with a global page: "agents/mcp".'
+    );
   });
 
   it("preserves a page key when available and falls back safely", () => {

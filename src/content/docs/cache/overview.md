@@ -42,7 +42,7 @@ const product = await cache.getOrSet({
 
 On a miss, Cache runs <code>loadProduct()</code>, stores its result, and returns it. On a usable hit, it returns the stored value without running the factory.
 
-The portable constructor makes you supply storage, a clock, and a random source. The [local source quickstart](/cache/quickstart/) shows that explicit wiring. On Workers, <code>createWorkersCache()</code> supplies those platform capabilities and composes the current Cloudflare drivers for you.
+The portable constructor makes you supply storage, a clock, and a random source. The [local quickstart](/cache/quickstart/) shows that explicit wiring. On Workers, <code>createWorkersCache()</code> supplies those platform capabilities and composes the current Cloudflare drivers for you.
 
 ## Add only what you need
 
@@ -83,12 +83,13 @@ Cache does not update your source of truth. Change the database or upstream serv
 | React Router path | Public source preview | <code>./react-router</code> exports server middleware, typed request context access, and request-piggyback recovery ticks. |
 | Public package | Not released | npm has no <code>@astilba/cache</code> package, so there is no supported installation or production deployment path. |
 
-## Learn in layers
+## Choose a path
 
-1. [Local source quickstart](/cache/quickstart/) traces the smallest runnable source configuration.
-2. [Cloudflare Workers](/cache/cloudflare-workers/) shows the current runtime factory and deployment bindings.
-3. [React Router](/cache/react-and-server-apps/) shows how server middleware exposes Cache and request identity.
-4. [Core concepts](/cache/core-concepts/) defines keys, stores, L1, L2, Registry, Bus, Clock, and the other building blocks.
-5. The guides cover [reading and filling](/cache/reading-and-filling/), [invalidation](/cache/tags-and-invalidation/), and [privacy](/cache/scopes-and-privacy/).
-6. Advanced pages explain the [runtime architecture](/cache/architecture/) and [driver status](/cache/drivers-and-status/).
-7. [API reference](/cache/api-reference/) documents the complete public source surface; [API status](/cache/api-status/) records what is incomplete.
+| You want to… | Start with | Continue with |
+| --- | --- | --- |
+| Decide whether the preview fits | This overview | [Implementation status](/cache/api-status/) |
+| Run the smallest current-source example | [Local quickstart](/cache/quickstart/) | [Read and cache values](/cache/reading-and-filling/) |
+| Evaluate the runtime adapters | [Cloudflare Workers](/cache/cloudflare-workers/) | [React Router](/cache/react-and-server-apps/) if it is your server framework |
+| Add application cache behavior | [Read and cache values](/cache/reading-and-filling/) | [Invalidate cached data](/cache/tags-and-invalidation/) and [Control cache sharing](/cache/scopes-and-privacy/) |
+| Understand the correctness model | [Cache fundamentals](/cache/core-concepts/) | [How Cache works](/cache/how-it-works/) and [Consistency and resilience](/cache/consistency-and-resilience/) |
+| Inspect capability and export details | [Runtime architecture](/cache/architecture/) | [Driver implementations](/cache/drivers-and-status/) and [API reference](/cache/api-reference/) |

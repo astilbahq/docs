@@ -3,7 +3,7 @@ title: How Cache works
 description: Follow one value through storage, invalidation, recovery, and a safe refill.
 ---
 
-Astilba Cache separates the path that stores values from the path that decides whether those values are still legal to serve. If L1, L2, Registry, or Bus are unfamiliar, read [Core concepts](/cache/core-concepts/) first.
+Astilba Cache separates the path that stores values from the path that decides whether those values are still legal to serve. If L1, L2, Registry, or Bus are unfamiliar, read [Cache fundamentals](/cache/core-concepts/) first.
 
 | Plane | Components | Responsibility |
 | --- | --- | --- |
@@ -59,6 +59,6 @@ The invalidation ordering above is active. Elapsed-time expiry is not: TTL, grac
 ## Related
 
 - [Runtime architecture](/cache/architecture/) maps these operations to the supplied capability contracts.
-- [Core concepts](/cache/core-concepts/) provides the plain-language vocabulary.
-- [Invalidating data](/cache/tags-and-invalidation/) explains soft and hard mutations from the caller's side.
+- [Cache fundamentals](/cache/core-concepts/) provides the plain-language vocabulary.
+- [Invalidate cached data](/cache/tags-and-invalidation/) explains soft and hard mutations from the caller's side.
 - [Consistency and resilience](/cache/consistency-and-resilience/) covers live checks and stale-on-error behavior.

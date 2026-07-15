@@ -1,11 +1,11 @@
 ---
-title: Scopes and privacy
+title: Control cache sharing
 description: Keep identity-bearing values local while allowing deliberate public and tenant sharing.
 ---
 
 In Astilba Cache, scope answers a storage question: may this value leave the current isolate and enter a shared tier?
 
-L1 is local to one process or worker isolate; L2 is shared or durable. The Workers factory supplies a bounded <code>memory()</code> L1 automatically. See [Core concepts](/cache/core-concepts/) for the complete storage vocabulary.
+L1 is local to one process or worker isolate; L2 is shared or durable. The Workers factory supplies a bounded <code>memory()</code> L1 automatically. See [Cache fundamentals](/cache/core-concepts/) for the complete storage vocabulary.
 
 ## Follow the resolution rules
 
@@ -73,5 +73,5 @@ A plain telemetry sink receives events as emitted and may contain raw identifier
 
 - [Runtime architecture](/cache/architecture/) shows how L1 and L2 fit into a configured cache.
 - [React Router](/cache/react-and-server-apps/) shows how a server adapter carries authenticated identity into the request frame.
-- [Reading and filling](/cache/reading-and-filling/) explains durability metadata and tier selection.
-- [Invalidating data](/cache/tags-and-invalidation/) covers the limits of key and scope-qualified selectors.
+- [Read and cache values](/cache/reading-and-filling/) explains durability metadata and tier selection.
+- [Invalidate cached data](/cache/tags-and-invalidation/) covers the limits of key and scope-qualified selectors.
