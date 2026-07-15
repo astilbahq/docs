@@ -215,31 +215,6 @@
       content: "";
     }
 
-    body > .page > header site-search {
-      position: fixed;
-      z-index: var(--sl-z-index-menu);
-      inset-block-start: var(--sl-nav-height);
-      inset-inline-start: 0;
-      display: block;
-      inline-size: calc(var(--sl-sidebar-width) - 1px);
-    }
-
-    body > .page > header site-search > button[data-open-modal] {
-      inline-size: 100%;
-      max-inline-size: none;
-      block-size: 2.5rem;
-      border: 0;
-      background: var(--sl-color-bg-sidebar);
-    }
-
-    :root[data-theme="light"]
-      body
-      > .page
-      > header
-      site-search
-      > button[data-open-modal] {
-      background: transparent;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {

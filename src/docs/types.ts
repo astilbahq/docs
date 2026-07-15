@@ -56,6 +56,7 @@ export interface DocsProduct {
   icon: DocsIcon;
   id: string;
   label: string;
+  repositoryUrl: string;
   status?: DocsBadge;
   versions: DocsVersion[];
 }

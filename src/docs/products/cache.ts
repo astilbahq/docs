@@ -135,6 +135,7 @@ export const cacheProduct = {
   id: "cache",
   label: "Cache",
   icon: "database",
+  repositoryUrl: "https://github.com/astilbahq/cache",
   status: {
     text: "Preview",
     variant: "caution",
