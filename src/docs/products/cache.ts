@@ -11,15 +11,21 @@ const cacheSections = [
         icon: "open-book",
       },
       {
-        key: "react-and-server-apps",
-        label: "React and server apps",
-        slug: "react-and-server-apps",
+        key: "quickstart",
+        label: "Local source quickstart",
+        slug: "quickstart",
         icon: "rocket",
       },
       {
-        key: "quickstart",
-        label: "Preview walkthrough",
-        slug: "quickstart",
+        key: "cloudflare-workers",
+        label: "Cloudflare Workers",
+        slug: "cloudflare-workers",
+        icon: "server",
+      },
+      {
+        key: "react-and-server-apps",
+        label: "React Router",
+        slug: "react-and-server-apps",
         icon: "rocket",
       },
       {

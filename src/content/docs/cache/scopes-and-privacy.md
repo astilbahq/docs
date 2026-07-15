@@ -5,7 +5,7 @@ description: Keep identity-bearing values local while allowing deliberate public
 
 In Astilba Cache, scope answers a storage question: may this value leave the current isolate and enter a shared tier?
 
-L1 is local to one process or worker; L2 is shared or durable. See [Core concepts](/cache/core-concepts/) for the complete storage vocabulary.
+L1 is local to one process or worker isolate; L2 is shared or durable. The Workers factory supplies a bounded <code>memory()</code> L1 automatically. See [Core concepts](/cache/core-concepts/) for the complete storage vocabulary.
 
 ## Follow the resolution rules
 
@@ -16,7 +16,7 @@ L1 is local to one process or worker; L2 is shared or durable. See [Core concept
 | No declared scope and a visible principal | Hashed <code>usr:&lt;h&gt;</code> | L1-only and <code>durable: false</code>. |
 | No declared scope and no visible principal | <code>pub</code> | Eligible for shared L2. |
 
-The kernel currently derives a principal from primitive <code>request.userId</code> or <code>request.tenant</code> values, in that order. Other request fields do not affect automatic scope resolution.
+The kernel derives a principal from primitive <code>request.userId</code> or <code>request.tenant</code> values, in that order. Other request fields do not affect automatic scope resolution. The React Router adapter carries the application-derived request object through <code>currentRequest()</code>; the application remains responsible for authenticating it.
 
 ~~~ts title="profile.ts"
 const entry = await cache.getOrSetEntry({
@@ -30,7 +30,7 @@ entry.durable // false — principal-derived values never reach shared L2
 
 ## Retain private values with L1
 
-A principal-derived fill still needs L2 to run in the current kernel, but the result deliberately skips the L2 write. Configure an L1 <code>Store</code> if you want the private value retained for a later call on the same isolate. Without L1, the current call succeeds with <code>durable: false</code> and the next call fills again.
+A principal-derived fill still needs L2 to run in the current kernel, but the result deliberately skips the L2 write. Configure an L1 <code>Store</code> if you want the private value retained for a later call on the same isolate. Without L1, the current call succeeds with <code>durable: false</code> and the next call fills again. <code>createWorkersCache()</code> includes a bounded memory L1 for this reason.
 
 ## Treat public as a claim
 
@@ -47,7 +47,7 @@ const entry = await cache.getOrSetEntry({
 entry.durable // false in dev: the public factory read request data
 ~~~
 
-This guard is a development aid, not closure analysis. It cannot see identity captured outside <code>ctx.request</code>, and production mode does not install the demoting Proxy. You remain responsible for making every explicit public or tenant cache key cover the data it can expose.
+This guard is a development aid, not closure analysis. It cannot see identity captured outside <code>ctx.request</code>, and production mode does not install the demoting Proxy. You remain responsible for making every explicit public or tenant cache key cover all inputs that can change the returned value.
 
 ## Make tenant sharing deliberate
 
@@ -72,5 +72,6 @@ A plain telemetry sink receives events as emitted and may contain raw identifier
 ## Related
 
 - [Runtime architecture](/cache/architecture/) shows how L1 and L2 fit into a configured cache.
+- [React Router](/cache/react-and-server-apps/) shows how a server adapter carries authenticated identity into the request frame.
 - [Reading and filling](/cache/reading-and-filling/) explains durability metadata and tier selection.
 - [Invalidating data](/cache/tags-and-invalidation/) covers the limits of key and scope-qualified selectors.

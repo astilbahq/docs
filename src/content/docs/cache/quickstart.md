@@ -1,63 +1,33 @@
 ---
-title: Preview walkthrough
-description: Follow one Astilba Cache miss and hit with the smallest configuration the current source can run.
+title: Local source quickstart
+description: Run one Astilba Cache miss and hit with the implemented memory Store in the current source workspace.
 ---
 
-:::caution[Illustrative source walkthrough]
-<code>@astilba/cache</code> is not published and has no supported install path. This example can run only against the current repository source. Its in-memory <code>Store</code> demonstrates the API; it is not a production driver or deployment recipe.
+This walkthrough caches one product with the smallest configuration the current source can run. The first read calls the factory; the second reuses the stored result.
+
+:::caution[Source workspace only]
+<code>@astilba/cache</code> is not available from npm. This example runs from the Cache repository workspace or another setup that deliberately builds the current source. It is not a production installation recipe.
 :::
 
-This walkthrough caches one product. The first call loads it from the source; the second call reuses the stored result.
+## Understand the setup
 
-The current source makes the setup more explicit than a finished runtime integration should. It requires:
+The portable constructor requires explicit capabilities:
 
-| Part | Meaning in this example |
+| Part | Purpose here |
 | --- | --- |
-| <code>cache</code> | The object application code reads through. |
-| <code>DevelopmentStore</code> | A minimal key/value Store backed by a Map. It stands in for a real storage driver. |
-| L2 | The Store supplied as <code>l2</code>. L2 is the shared or durable tier in the Cache model, although this Map is neither shared nor durable. |
-| <code>Clock</code> | The source of time supplied to the portable kernel. |
-| <code>Rng</code> | The source of randomness supplied to the portable kernel. |
-| Factory | <code>loadProduct()</code>, which runs when Cache cannot reuse a stored value. |
+| <code>createCache()</code> | Creates the application-facing cache. |
+| <code>memory()</code> | Supplies a bounded, per-instance Store. This walkthrough uses it as a development L2 because a factory fill currently requires L2. |
+| <code>Clock</code> | Supplies logical time to the portable kernel. |
+| <code>Rng</code> | Supplies randomness without hard-coding a platform source into the kernel. |
+| Factory | Loads the product when no stored value is usable. |
 
-You do not need Registry, Bus, Lock, a custom Codec, or telemetry for this read-and-reuse path.
+No Registry or Bus is configured, so this example demonstrates read, fill, and reuse—not distributed invalidation.
 
 ## Read or fill one product
 
 ~~~ts title="cache.ts"
-import { compound, createCache } from "@astilba/cache"
-import type {
-  Clock,
-  Rng,
-  Store,
-  StoreValue,
-  StoreWriteOptions,
-} from "@astilba/cache"
-
-class DevelopmentStore implements Store {
-  readonly #values = new Map<string, StoreValue>()
-
-  async get(key: string): Promise<StoreValue | undefined> {
-    return this.#values.get(key)
-  }
-
-  async set(
-    key: string,
-    value: string,
-    options?: StoreWriteOptions,
-  ): Promise<void> {
-    this.#values.set(key, {
-      value,
-      ...(options?.metadata === undefined
-        ? {}
-        : { metadata: options.metadata }),
-    })
-  }
-
-  async delete(key: string): Promise<void> {
-    this.#values.delete(key)
-  }
-}
+import { createCache, memory, t } from "@astilba/cache"
+import type { Clock, Rng } from "@astilba/cache"
 
 interface Product {
   id: string
@@ -66,30 +36,39 @@ interface Product {
 
 const clock: Clock = { now: () => Date.now() }
 const rng: Rng = { next: () => Math.random() }
-const store = new DevelopmentStore()
+
+// memory() is normally an isolate-local L1. Using it as L2 here gives the
+// unreleased kernel the Store it requires without pretending this is durable.
+const developmentStore = memory({
+  clock,
+  maxEntries: 512,
+  maxBytes: 5_000_000,
+})
 
 const cache = createCache({
   namespace: "storefront",
   clock,
   rng,
-  l2: store,
+  l2: developmentStore,
 })
 
 const productId = "sku-123"
 let originLoads = 0
 
-const loadProduct = async (id: string): Promise<Product> => {
+async function loadProduct(
+  id: string,
+  signal: AbortSignal,
+): Promise<Product> {
+  if (signal.aborted) throw signal.reason
   originLoads += 1
   return { id, name: "Canvas backpack" }
 }
 
 const options = {
   key: `product:${productId}`,
-  tags: [compound("product", productId)],
-  factory: async ({ signal }: { signal: AbortSignal }) => {
-    if (signal.aborted) throw signal.reason
-    return loadProduct(productId)
-  },
+  tags: [t`product:${productId}`],
+  factory: ({ signal }: { signal: AbortSignal }) =>
+    loadProduct(productId, signal),
 }
 
 const first = await cache.getOrSet(options)
@@ -98,26 +77,34 @@ const second = await cache.getOrSet(options)
 console.log(first, second, originLoads) // same product, one origin load
 ~~~
 
-The first call misses, runs the factory, and writes the value to the supplied store. The second call resolves the same canonical key and reads that stored value. The compound tag records a stable dependency target for later invalidation.
+The first call misses, runs <code>loadProduct()</code>, encodes the result, and writes it to the supplied Store. The second call resolves the same canonical key and reads that stored value. The tag records a dependency you could later invalidate after adding a Registry.
 
-Read the application-facing part from <code>const options</code> downward: choose a key, optionally attach dependency tags, and provide the factory. Everything above it is preview-only runtime wiring that a supported adapter should eventually hide.
+The application-facing portion begins at <code>options</code>: choose a stable key, declare dependency tags, and provide the origin factory. A runtime adapter should own most of the construction above it.
 
-## What this example leaves out
+## Know what is and is not exercised
 
-- It has no L1, so all retained values live in the supplied store.
-- It has no Registry or Bus, so tag and key invalidation methods are not usable.
-- It deliberately omits TTL and grace because elapsed-time behavior is unfinished.
-- Its Store has no durability, replication, limits, or write classification.
+This example does exercise:
 
-For coordinated invalidation, add <code>registry</code> and <code>bus</code> together; do not add only one. Keep L2 for factory fills and durable delta replay. The tested Cloudflare implementations are still internal and cannot be imported from a supported package entry point.
+- the implemented <code>memory()</code> Store, including its entry and byte bounds;
+- the implemented <code>t</code> tag builder;
+- the root <code>createCache()</code> and <code>getOrSet()</code> paths;
+- the built-in JSON codec and one in-isolate singleflight identity.
 
-:::note[Why the setup is this long]
-There is no working public <code>memory()</code> helper or supported runtime preset yet. This is the smallest honest source example, not the intended final developer experience.
+It deliberately leaves out:
+
+- durability or sharing across isolates;
+- explicit invalidation, which requires a Registry;
+- live invalidation delivery and recovery, which require Registry, Bus, and L2 together;
+- elapsed TTL and grace behavior, which remains unfinished even though the options are typed;
+- request identity, cross-isolate locks, telemetry, and L3 response caching.
+
+:::note[Why <code>memory()</code> is passed as L2]
+The current kernel refuses a factory fill without an L2 Store. The same small <code>Store</code> contract is used by both tiers, so <code>memory()</code> is sufficient for a local demonstration. It does not become shared or durable simply because it occupies the <code>l2</code> configuration field.
 :::
 
-## Related
+## Move to a runtime integration
 
-- [Core concepts](/cache/core-concepts/) explains every term used in the setup.
-- [How Cache works](/cache/how-it-works/) follows the complete read, invalidation, and recovery path.
-- [Reading and filling](/cache/reading-and-filling/) explains return metadata and fill behavior.
-- [API status](/cache/api-status/) records why this is still a preview.
+- [Cloudflare Workers](/cache/cloudflare-workers/) replaces the manual clock, random source, and development Store with the current Workers factory and drivers.
+- [React Router](/cache/react-and-server-apps/) exposes that cache through server middleware and carries request identity to reads.
+- [Core concepts](/cache/core-concepts/) explains the storage and invalidation vocabulary.
+- [API status](/cache/api-status/) lists every incomplete or provisional surface.

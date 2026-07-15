@@ -724,7 +724,7 @@ test("registers a read-only WebMCP tool when the API is available", async ({
 
     return window.__webMcpTools?.[0]?.execute({ offset: 0 });
   });
-  expect(nextPageChunk).toContain("# Preview walkthrough");
+  expect(nextPageChunk).toContain("# Local source quickstart");
   expect(markdownRequests).toEqual([
     "/cache/overview.md",
     "/cache/quickstart.md",

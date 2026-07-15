@@ -3,7 +3,7 @@ title: Core concepts
 description: Learn the Astilba Cache vocabulary from a basic read through distributed invalidation.
 ---
 
-You can use Astilba Cache without becoming a distributed-systems specialist. Start with a key, a factory, and a Store. The remaining components solve specific problems as an application spreads across processes, machines, and shared caches.
+You can understand Astilba Cache without starting with its distributed machinery. Begin with a key, a factory, and a Store. Add the remaining components only when an application spreads across isolates, machines, and shared caches.
 
 ## Begin with the read path
 
@@ -28,7 +28,7 @@ The tier names describe where a value lives, not different value formats.
 | Tier | What it is | Typical use |
 | --- | --- | --- |
 | **L1** | An optional Store local to one process or worker isolate. Other instances cannot see it. | Fast repeat reads and retention of principal-derived values that must not enter shared storage. |
-| **L2** | A Store shared or durable across calls and, depending on the driver, across instances. | The main reusable server-side copy. The current kernel requires L2 whenever a factory must run. |
+| **L2** | A Store shared or durable across calls and, depending on the driver, across instances. | The main reusable server-side copy. The current kernel requires L2 whenever a factory must run. The local quickstart uses <code>memory()</code> in this slot only as a non-durable demonstration. |
 | **L3** | A shared HTTP or CDN response cache outside the value-store path. | Caching rendered responses and purging them by emitted cache tags. The integration is not implemented yet. |
 | **Origin** | The factory result before or while it is written to a Store. | The database or upstream request supplied by the application. |
 
@@ -42,21 +42,22 @@ Storage answers “do I have bytes for this key?” Invalidation answers “are 
 | --- | --- |
 | **Registry** | The authoritative record of soft and hard invalidation watermarks. Purge methods write to it; strong stored-entry reads check it live. |
 | **Bus** | The fast delivery path for ordered invalidation events to active cache instances. A reset or gap makes local knowledge suspect. |
-| **Replication mirror** | Durable L2 pointer and delta objects that let a suspect instance replay invalidation changes it missed on the Bus. |
-| **Reactive resync** | Replays a contiguous delta history during a suspect read. The documented snapshot has no periodic poller and does not bridge holes with snapshots. |
+| **Replication mirror** | Durable L2 pointer, delta, and snapshot objects that let a suspect instance recover invalidation changes it missed on the Bus. |
+| **Recovery reader** | Replays contiguous deltas first, then can use the pointer-blessed snapshot as a recovery floor when a persistent hole exhausts the delta retry budget. It remains fail closed if the chain cannot be established. |
+| **Replication poller** | Drives baseline mirror observation and bounded recovery retries outside the value read. The React Router adapter supplies request-piggyback ticks; other runtimes need an equivalent driver. |
 
-The Bus is not the authority. It transports updates; the Registry and verified local or mirror history establish what is known. Coordinated read validation is built when Registry and Bus are configured together. L2 separately provides durable replay data and is required when a factory runs.
+The Bus is not the authority. It transports updates; the Registry and verified local or mirror history establish what is known. Coordinated read validation is built only when Registry, Bus, and L2 are all available. <code>createCache()</code> rejects a Registry-plus-Bus configuration without L2 because that reader would have no safe recovery mirror.
 
 ## Know the injected capabilities
 
 | Capability | Why it exists | Do basic callers usually choose it? |
 | --- | --- | --- |
-| **Store** | Reads and writes encoded values or replication objects. | A supported runtime should provide one. |
+| **Store** | Reads and writes encoded values or replication objects. | Use <code>memory()</code> locally or receive a driver from a runtime integration. |
 | **Clock** | Supplies logical time without hard-coding a platform clock into the portable kernel. | The current API requires it; a runtime preset should normally provide it. |
 | **Rng** | Supplies randomness through an explicit, testable source. | The current API requires it; a runtime preset should normally provide it. |
 | **Codec** | Encodes values and identifies their wire format before decoding. | Only when the default JSON round trip is insufficient. |
 | **Lock** | Coordinates opted-in fills across instances and supplies a fencing token. | Only for cross-instance contention. |
-| **Cdn** | Accepts shared HTTP-cache purge work. | Only when L3 response caching is configured; not wired today. |
+| **Cdn** | Accepts shared HTTP-cache purge work. | Only when L3 response caching is configured; no implementation is wired today. |
 | **Telemetry sink** | Receives cache events; hosted mode pseudonymizes string fields with a project salt. | Only when operating or observing Cache. |
 
 Clock and Rng exist for portability and deterministic tests. They are construction details, not concepts application code should need on every read.
@@ -65,22 +66,23 @@ Clock and Rng exist for portability and deterministic tests. They are constructi
 
 | Configuration | What it gives you today |
 | --- | --- |
-| <code>clock</code> + <code>rng</code> + <code>l2</code> | Basic read, fill, and reuse without coordinated invalidation. |
+| <code>clock</code> + <code>rng</code> + <code>l2</code> | Basic read, fill, and reuse without coordinated invalidation. The local quickstart uses <code>memory()</code> for this preview-only shape. |
 | Add <code>l1</code> | Process-local reads and retention for values that cannot be shared. |
 | Add <code>registry</code> | Enables the purge methods, but does not create coordinated read validation by itself. |
-| Add <code>registry</code> + <code>bus</code> | Live invalidation delivery and coordinated validation. With the L2 already used for fills, suspect reads can replay contiguous mirror deltas. |
+| Add <code>registry</code> + <code>bus</code> alongside the existing <code>l2</code> | Live invalidation delivery, coordinated validation, snapshot-capable mirror recovery, and an attached replication poller. The embedding runtime or adapter must supply a tick driver for background recovery; reads still perform reactive recovery without one. |
 | Add <code>lock</code> | Lets individual calls opt into cross-instance fill exclusion. |
 | Add <code>cdn</code> and render collection | Declares the L3 response-cache boundary; the current implementation does not drive it. |
+| Use <code>createWorkersCache()</code> | Composes memory L1, KV L2, Coordinator Registry, and redialing Bus with Workers defaults. |
 
 ## Distinguish policy terms
 
-- **TTL** is how long a value should be fresh by elapsed time. The option exists, but elapsed TTL is not enforced yet.
+- **TTL** is how long a value should be fresh by elapsed time. Duration values and the <code>duration()</code> builder are implemented, but the cache does not enforce elapsed TTL yet.
 - **Grace** is the period in which an eligible stale value may be reused after a classified transient failure. Its duration is not enforced yet.
 - **Eventual consistency** uses verified local invalidation knowledge and fails closed when that knowledge is insufficient.
-- **Strong consistency** performs a live Registry check before serving a stored entry when coordinated invalidation is active. The documented snapshot does not add a separate pre-fill check on a miss.
+- **Strong consistency** performs a live Registry check before serving a stored entry and before running the factory for a strong miss when coordinated invalidation is active.
 - **Soft invalidation** makes an older value stale.
 - **Hard invalidation** makes an older value unreadable.
 - **Singleflight** lets compatible callers in one instance share one foreground factory execution.
-- **Fencing** prevents a result produced across a conflicting hard invalidation from being accepted as current.
+- **Fencing** prevents a result produced across a conflicting hard invalidation from being accepted as current. The current fill path can re-mint its birth epoch and refetch within a bounded three-attempt budget when verified knowledge advances.
 
-Continue with the [preview walkthrough](/cache/quickstart/) for a concrete read, [How Cache works](/cache/how-it-works/) for the complete sequence, or [runtime architecture](/cache/architecture/) for the capability contracts.
+Continue with the [local source quickstart](/cache/quickstart/) for a concrete read, [Cloudflare Workers](/cache/cloudflare-workers/) for the composed runtime, [How Cache works](/cache/how-it-works/) for the complete sequence, or [runtime architecture](/cache/architecture/) for the capability contracts.

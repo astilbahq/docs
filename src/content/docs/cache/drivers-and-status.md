@@ -1,29 +1,31 @@
 ---
 title: Drivers and runtime status
-description: See the portable contracts, the tested Cloudflare internals, and what is still missing from a deployable runtime path.
+description: See which Cache drivers and runtime adapters exist in current source and which production boundaries remain open.
 sidebar:
   label: Drivers and status
 ---
 
-The Astilba Cache kernel depends on small typed contracts. Runtime adapters can change without duplicating the cache semantics they host.
+Astilba Cache keeps its semantics behind small contracts, then implements platform I/O at adapter boundaries. This page separates an implemented source driver from a released, supported integration.
 
-This page is for runtime authors and readers evaluating production readiness. Application developers can start with [Core concepts](/cache/core-concepts/) and return here when choosing or implementing a backend.
+Application developers can begin with [Core concepts](/cache/core-concepts/). Runtime authors and production-readiness reviewers should use this page together with [API status](/cache/api-status/).
 
-## Driver model
+## Understand the driver model
 
 | Contract | Role |
 | --- | --- |
-| <code>Store</code> | Key/value I/O for local L1, shared L2, and replication-mirror objects. |
-| <code>Registry</code> | The authoritative record used for tag checks and soft or hard mutations. |
-| <code>Bus</code> | The live delivery path for ordered invalidation events, resets, and declared gaps. |
+| <code>Store</code> | Key/value I/O for local L1, shared L2, and replication-mirror objects. An optional <code>ReadKind</code> lets a driver choose different read-cache policy for a mutable pointer and immutable deltas or snapshots. |
+| <code>Registry</code> | The authoritative record used for live tag checks and soft or hard mutations. Its <code>regId</code> scopes recovery objects. |
+| <code>Bus</code> | Delivers ordered frames plus reset, hello, and gap signals. The kernel—not the transport—validates continuity. |
 | <code>Lock</code> | Optional cross-isolate exclusion with a monotone fence token. |
 | <code>Codec</code> | Value encoding plus a wire identity checked before decode. |
-| <code>Cdn</code> | Planned edge purge queue boundary; not wired today. |
-| <code>Clock</code>, <code>Rng</code> | Explicit time and randomness for portable, deterministic behavior. |
+| <code>Cdn</code> | Planned edge-purge queue boundary; not wired today. |
+| <code>Clock</code>, <code>Rng</code> | Explicit time and randomness for portable, deterministic kernel behavior. |
+
+The base Store shape is small:
 
 ~~~ts title="store.ts"
 interface Store {
-  get(key: string): Promise<StoreValue | undefined>
+  get(key: string, readKind?: ReadKind): Promise<StoreValue | undefined>
   set(
     key: string,
     value: string,
@@ -35,38 +37,65 @@ interface Store {
 
 Classified writes use the structural <code>StoreWriteError</code> shape. <code>throttled</code> and <code>unavailable</code> failures may leave a successful fill at <code>durable: false</code>; <code>too_large</code> is permanent and propagates rather than truncating the value.
 
-## Runtime implementation status
+## Check each implementation
 
-| Surface | Status | Detail |
+| Surface | Current source status | What is covered |
 | --- | --- | --- |
-| Portable contracts and kernel | Implemented in source | The public types, read/fill path, invalidation rules, codecs, scopes, singleflight, and write classification are exercised by deterministic tests. |
-| Cloudflare KV Store | Internal preview | The real KV-backed <code>Store</code> passes applicable conformance and workerd tests. It enforces the 25 MiB value limit and floors supplied write residency at 60 seconds. |
-| Coordinator Durable Object | Internal preview | The DO journals Registry commands, coalesces flush alarms, writes delta batches and snapshots, advances one terminal pointer, and serves live Registry RPC checks. |
-| DO Registry client | Internal preview | The thin RPC client passes the Registry contract against the Coordinator under workerd. |
-| Replication reader | Internal preview | A suspect read can replay a contiguous delta sequence and fails closed on missing, corrupt, or non-contiguous data. The documented reader does not bridge a gap with a snapshot. |
-| Replication poller | Not implemented | The documented snapshot has no periodic poller; resynchronization happens reactively on a suspect read. |
-| Durable Object Bus | Not implemented | The transport contract exists, but the Coordinator intentionally drops broadcast effects because there are no production subscribers yet. |
-| Memory, Redis, Lock, CDN, and framework adapters | Not implemented or unsupported | No supported package entry point or deployment guide exists for these paths. |
+| Portable kernel and contracts | Implemented | Deterministic invariant, scenario, unit, and conformance lanes cover the public read, fill, invalidation, scope, codec, recovery, and failure behavior. |
+| <code>memory()</code> | Implemented root export | Per-instance LRU Store with <code>maxEntries</code> and UTF-8 <code>maxBytes</code> limits. With an injected Clock it also honors Store-level <code>expirationTtl</code>. |
+| <code>cloudflareKV()</code> | Public source preview | KV-backed Store with metadata round trips, a 25 MiB value ceiling, write classification, 60-second minimum write residency, and intent-specific mirror read-cache hints. |
+| <code>Coordinator</code> | Public source preview | SQLite-backed Durable Object host for Registry RPC, a replayable command journal, coalesced flush alarms, mirror deltas and snapshots, and WebSocket fan-out. |
+| <code>doRegistry()</code> | Public source preview | Thin Registry RPC client scoped to the named Coordinator. It passes the Registry contract under workerd. |
+| <code>doBus()</code> | Public source preview | Mechanism-only WebSocket Bus client with wire validation, Registry identity checks, and close reporting. |
+| <code>redialingDoBus()</code> | Public source preview | Reconnects the DO Bus with injected jitter and exponential backoff capped at 300 seconds. |
+| Replication reader | Implemented kernel path | Replays contiguous deltas, escalates persistent holes to a pointer-blessed snapshot, replays the tail, and remains fail closed on corrupt or unfillable chains. |
+| Replication poller | Implemented internal seam | Runs baseline pointer observation, bounded recovery retries, snapshot escalation, and failure backoff from externally supplied ticks. |
+| <code>createWorkersCache()</code> | Public source preview | Composes the Workers Clock/Rng, memory L1, KV L2, named Coordinator Registry, and redialing Bus. |
+| React Router middleware | Public source preview | Supplies Cache through typed Router context, carries request identity with AsyncLocalStorage, fires request-piggyback poll ticks, and stamps private responses. |
+| Redis, production Lock, and CDN drivers | Not implemented | Contracts exist, but no package subpaths or production implementations are present. |
 
-## Cloudflare availability boundary
+“Public source preview” means the symbol is present in the package export map and publish configuration, not that consumers can install it. npm still has no <code>@astilba/cache</code> package.
 
-The Cloudflare files are exercised against workerd bindings, but they are not exported through a supported package subpath. The integration worker is a test host, not a deployment template. Do not import adapter source files directly.
+## Understand Cloudflare-specific behavior
 
-The Coordinator writes replication snapshots, but the documented reader does not consume them as a recovery bridge. The Coordinator also replays an append-only command journal and does not yet checkpoint and truncate it for long-lived production operation.
+The Cloudflare path uses one named Coordinator identity for the Durable Object address, Registry scope, and Cache namespace. The KV binding used by <code>createWorkersCache()</code> must expose the same namespace that the Coordinator receives as <code>REGISTRY_KV</code>; otherwise the reader and writer see different recovery mirrors.
 
-## Still required for a complete Workers path
+The KV Store uses different cache hints for recovery objects:
 
-- Production Bus delivery, reconnect, backpressure, and subscriber lifecycle
-- Supported Cloudflare package exports and deployment configuration
-- Periodic replication polling and a supported driver for its ticks
-- Coordinator journal checkpointing and truncation
-- Background refresh adoption, retry, and completion tracking
-- CDN purge queue and honest completion promises
-- Deployed measurements for platform consistency and caching assumptions
+- mutable pointer reads use the platform's 30-second minimum;
+- immutable deltas and snapshots use 24 hours;
+- ordinary value reads do not supply a hint and inherit the platform default.
+
+The Coordinator can refresh an idle pointer through <code>REGISTRY_HEARTBEAT_MS</code>. This is disabled unless the deployment sets the variable. The Workers factory independently defaults its reader heartbeat interval to 30 seconds, so matching the Coordinator value is an operator action, not an automatic handshake.
+
+See [Cloudflare Workers](/cache/cloudflare-workers/) for the binding and migration example.
+
+## Know the recovery scheduling model
+
+The kernel poller contains no timer. A runtime hands it ticks so portable code never reads ambient time or schedules work.
+
+The React Router adapter fires a tick at request start, at most once per second per Cache instance, and does not await it on the response path. The poller itself applies the longer baseline cadence and bounded retry schedule. Failed tick work is swallowed and can emit <code>poll_tick_failed</code> telemetry.
+
+A runtime that does not use the React Router adapter still has reactive recovery: a suspect read performs one bounded fast resync attempt. It does not receive proactive baseline polls unless another driver calls the internal tick seam.
+
+## Keep the release boundary visible
+
+The Workers path still needs work before a production release:
+
+- elapsed TTL, grace, age, and negative-entry expiry;
+- Coordinator journal checkpointing and truncation;
+- automatic render dependency collection and safe shared-response headers;
+- a CDN purge queue and completion promises that track real acceptance;
+- a production Lock driver and the deferred Redis/Valkey path;
+- the chaos demo and deployed consistency measurements;
+- an npm release, compatibility policy, deployment guide, and upgrade process.
+
+The integration Worker and React Router fixture prove runtime wiring and build compatibility; they are not application templates. Do not import deep adapter files. Use only the root, <code>./cloudflare</code>, and <code>./react-router</code> entry points documented here.
 
 ## Related
 
-- [Runtime architecture](/cache/architecture/) shows how these contracts compose around one cache instance.
-- [API reference](/cache/api-reference/) lists every public driver type.
-- [How Cache works](/cache/how-it-works/) follows storage, invalidation, and recovery through the kernel.
-- [API status](/cache/api-status/) lists kernel-level limitations independent of a runtime adapter.
+- [Runtime architecture](/cache/architecture/) shows how these capabilities compose around one Cache instance.
+- [Cloudflare Workers](/cache/cloudflare-workers/) provides the current factory and binding walkthrough.
+- [React Router](/cache/react-and-server-apps/) explains request context and poll ticks.
+- [API reference](/cache/api-reference/) lists the root and adapter exports.
+- [API status](/cache/api-status/) lists kernel-level limitations independent of a driver.

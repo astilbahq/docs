@@ -1,97 +1,128 @@
 ---
-title: React and server apps
-description: Decide where Astilba Cache belongs in a React application and what a basic setup should require.
+title: React Router
+description: Provide Astilba Cache to React Router v8 loaders and actions while carrying server request identity safely.
 ---
 
-Astilba Cache is for server-side work. It can eventually sit around a database query or upstream request used by a React framework, but it is not a browser cache, React state manager, or replacement for a client data-fetching library.
+The current source exposes server middleware at <code>@astilba/cache/react-router</code>. It puts a Cache instance into React Router's typed request context, carries an application-derived identity frame, drives background recovery ticks, and marks generated responses private by default.
 
-:::caution[Not a supported setup guide yet]
-The package and framework adapters are not released, and elapsed TTL is unfinished. This page explains the intended application boundary so you can evaluate the design; it does not describe a production-ready React integration.
+:::caution[Server adapter, source preview]
+This is a React Router v8 server integration. It is not a browser cache, a client data-fetching library, or a released package. The source adapter has unit and real Vite build coverage, but the npm package and production support policy do not exist yet.
 :::
 
 ## Put Cache on the server
 
 | Code location | Use Astilba Cache? | Why |
 | --- | --- | --- |
-| Server Component | Intended, once a supported runtime exists | The factory can cache database or API work without shipping Cache to the browser. |
-| Route loader or server-side data function | Intended | The cache can live around the origin operation used to build the response. |
-| Server action or mutation handler | Intended for invalidation | Update the source of truth, then expire or delete the affected tags. |
-| API route or backend service | Intended | It is ordinary server-side TypeScript. |
-| Client Component or browser-only SPA | No | Browser request state, refetching, and component lifecycles need a client data library. |
+| Server loader or action | Yes, through the middleware | The factory and invalidation call stay on the server. |
+| Server Component or another server framework | Use the portable Cache API | The current framework adapter is specifically for React Router v8. |
+| API route or backend service | Yes, through a runtime-owned Cache instance | Cache is ordinary server-side TypeScript. |
+| Client Component or browser-only SPA | No | Browser request state and component lifecycles need a client data library. |
 
-The current kernel receives server capabilities through injected contracts and expects application-supplied storage. Do not import it into a client bundle.
+Build the Cache instance once for the server runtime. On Cloudflare, use <code>createWorkersCache()</code> as shown in [Cloudflare Workers](/cache/cloudflare-workers/).
 
-## Picture the basic use
+## Register the root middleware
 
-Once a runtime has created a <code>cache</code> instance, application code should stay small:
+React Router v8 middleware is always available; there is no v7 future flag to enable. Register <code>cacheMiddleware()</code> in the root route module:
 
-~~~ts title="load-product.ts"
-import { compound } from "@astilba/cache"
-import type { Cache } from "@astilba/cache"
+~~~tsx title="root.tsx"
+import { waitUntil } from "cloudflare:workers"
+import type { MiddlewareFunction } from "react-router"
 
-export async function getProduct<T>(
-  cache: Cache,
-  productId: string,
-  loadProduct: (productId: string, signal: AbortSignal) => Promise<T>,
-): Promise<T> {
-  return cache.getOrSet({
+import { cacheMiddleware } from "@astilba/cache/react-router"
+
+import { authMiddleware, authenticatedUserContext } from "./auth.server"
+import { cache } from "./cache.server"
+
+export const middleware: MiddlewareFunction[] = [
+  authMiddleware,
+  cacheMiddleware({
+    cache,
+    waitUntil,
+    request: ({ context }) => {
+      const user = context.get(authenticatedUserContext)
+      return { userId: user.id, tenant: user.tenantId }
+    },
+  }),
+]
+~~~
+
+The <code>request</code> mapper is synchronous. Derive identity from a session or typed context that earlier trusted server middleware has already validated; do not treat an arbitrary client header as an authenticated principal.
+
+If a request is intentionally anonymous, return <code>{}</code> or omit the mapper. With no visible principal and no explicit scope, the kernel resolves the call to the public storage class.
+
+## Read in a loader
+
+Use <code>cacheContext</code> to obtain the request's Cache instance. Pass <code>currentRequest()</code> into each read so the kernel can derive its privacy scope:
+
+~~~tsx title="routes/product.tsx"
+import type { Route } from "./+types/product"
+import { t } from "@astilba/cache"
+import {
+  cacheContext,
+  currentRequest,
+} from "@astilba/cache/react-router"
+
+export async function loader({ context, params }: Route.LoaderArgs) {
+  const cache = context.get(cacheContext)
+  const productId = params.productId
+
+  const product = await cache.getOrSet({
     key: `product:${productId}`,
-    tags: [compound("product", productId)],
+    tags: [t`product:${productId}`],
+    request: currentRequest(),
     factory: ({ signal }) => loadProduct(productId, signal),
   })
+
+  return { product }
 }
 ~~~
 
-The application chooses the key, dependencies, and factory. The runtime should supply storage and the other platform capabilities.
+<code>currentRequest()</code> returns the frame opened by the root middleware. Outside that frame it returns <code>undefined</code>. Calling <code>context.get(cacheContext)</code> without installing the middleware throws instead of silently constructing another cache.
 
-After a mutation, change the source first and then invalidate the dependency:
+After a mutation, change the source of truth first and invalidate through the same request Cache:
 
-~~~ts title="update-product.ts"
-import { compound } from "@astilba/cache"
-import type { Cache } from "@astilba/cache"
+~~~ts title="routes/product-update.ts"
+export async function action({ context, params, request }: Route.ActionArgs) {
+  const cache = context.get(cacheContext)
+  const productId = params.productId
+  const input = await parseProductUpdate(request)
 
-export async function updateProduct<TInput>(
-  cache: Cache,
-  productId: string,
-  input: TInput,
-  saveProduct: (productId: string, input: TInput) => Promise<void>,
-): Promise<void> {
   await saveProduct(productId, input)
-  await cache.delete({ tag: compound("product", productId) })
+  await cache.delete({ tag: t`product:${productId}` })
+
+  return { ok: true }
 }
 ~~~
 
-That invalidation call currently requires a Registry. Supported framework packages should configure it rather than making every application construct coordination drivers by hand.
+## Enable AsyncLocalStorage on Workers
 
-## What a basic setup needs
+The adapter uses <code>AsyncLocalStorage</code> to make <code>currentRequest()</code> available throughout the request's async call tree. On Cloudflare Workers, enable the narrow compatibility flag:
 
-At the application level, the eventual basic path should ask for only:
+~~~jsonc title="wrangler.jsonc (merge into your existing config)"
+{
+  "compatibility_flags": ["nodejs_als"]
+}
+~~~
 
-- a stable namespace for the application or data domain;
-- one supported storage preset;
-- a key and factory for each cached operation;
-- optional tags when the application needs explicit invalidation.
+You do not need the broader <code>nodejs_compat</code> flag for this adapter.
 
-The current source API is lower-level. <code>createCache()</code> requires a <code>Clock</code> and <code>Rng</code>, and a factory fill currently requires an L2 <code>Store</code>. There is no working public <code>memory()</code> helper or supported Node, React, or Cloudflare package entry point. See the [preview walkthrough](/cache/quickstart/) for the exact source wiring.
+## Keep recovery work off the response path
 
-## What most apps can initially ignore
+At request start, the middleware asks the cache's replication poller whether a tick is due. It does not await that work before running loaders. Passing Cloudflare's <code>waitUntil</code> function allows an in-flight tick to continue after the response returns; Cloudflare documents that lifecycle in its [Context API guide](https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil).
 
-| Feature | Add it when… |
-| --- | --- |
-| L1 | You want fast process-local reuse or need to retain principal-derived values locally. |
-| Registry | You need <code>expire()</code>, <code>delete()</code>, or <code>clear()</code>. |
-| Bus | Several active instances need warm invalidation delivery. It forms a coordinated read path when Registry is also configured; L2 is separately required for fills and enables mirror replay. |
-| Strong consistency | A stored entry must pass a live authoritative invalidation check before it is served. |
-| Grace and stale-on-error | A transient origin outage may reuse a previously good value. |
-| Lock | Several servers may fill the same key and cross-instance exclusion is worth its cost. |
-| Custom Codec | The built-in JSON round trip cannot represent your values or wire-migration needs. |
-| CDN and L3 collection | You also cache rendered responses in a shared HTTP cache. |
-| Telemetry | You need cache-specific operational events. |
+The adapter limits ticks to at most one per second per Cache instance. The poller's longer baseline, retry, and backoff schedules still decide whether a tick performs I/O. A failed tick is swallowed so it cannot fail the user's response; provide a <code>telemetry</code> sink if you need to observe <code>poll_tick_failed</code> events.
 
-These features remain part of the product and are documented explicitly. They do not need to appear in the first successful application example.
+Without <code>waitUntil</code>, the tick is still started but is only best effort after the response lifecycle ends. Recovery does not become unsafe—the read path remains fail closed—but future requests may pay more live-check or refill work.
 
-## Current answer for a React developer
+## Understand the response-cache posture
 
-If you need a production cache in a React application today, Astilba Cache is not ready for that job. The path becomes supportable when the package, elapsed-time behavior, a simple Store, and at least one framework or runtime adapter are released together.
+The current middleware sets <code>Cache-Control: private</code> on a returned <code>Response</code>. That is intentionally conservative: it does not yet prove that a rendered response contains only public data.
 
-Until then, use these docs to review the API and guarantees, not as a dependency setup guide. Continue with [core concepts](/cache/core-concepts/) for the vocabulary or [API status](/cache/api-status/) for the exact gaps.
+It does not currently:
+
+- emit <code>s-maxage</code> or <code>Cache-Tag</code> headers;
+- attach <code>cache.collect()</code> to request rendering;
+- add cache-hit dependencies to a render collector automatically;
+- purge a CDN or other L3 response cache.
+
+Treat the adapter as server value-cache wiring, not shared HTML caching. See [Scopes and privacy](/cache/scopes-and-privacy/) for value storage, [Consistency and resilience](/cache/consistency-and-resilience/) for recovery behavior, and [API status](/cache/api-status/) for current gaps.

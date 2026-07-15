@@ -20,7 +20,7 @@ The structure borrows TanStack's useful multi-library context and Better Auth's 
 ## Current scope
 
 - One documented product: Cache.
-- Thirteen progressively disclosed preview pages backed only by the public repository surface.
+- Fourteen progressively disclosed Cache preview pages backed by public exports, public behavior, tagged releases, and approved public copy.
 - Base UI context switching and animated, session-persisted sidebar sections.
 - Starlight table of contents, theme control, code presentation, and Pagefind search.
 - Visible release-status language wherever a surface is not yet shipped.
@@ -62,7 +62,7 @@ Repository automation also runs Actionlint, Zizmor, CodeQL analysis for the appl
 
 The production site is configured for [Cloudflare Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/) at `docs.astilba.com`. Astro generates every HTML and Markdown representation at build time. A small Worker entry point handles content negotiation by serving those existing Markdown assets when a canonical page receives an explicit `Accept: text/markdown`; it does not convert content at request time.
 
-Selective Worker-first routing covers the root, canonical trailing-slash page URLs, direct `.md` assets, and the exact `/mcp` protocol endpoint. The Markdown route verifies the static response before attaching its UTF-8 media type, so an unknown `.md` URL keeps the HTML 404 response. Pagefind, JavaScript, CSS, fonts, images, and non-Markdown well-known artifacts remain on the free static-asset path; the explicit `!/_astro/*` exclusion keeps fingerprinted assets out of the Worker path. Canonical page, direct Markdown, and MCP requests count toward the Workers request allowance, and Cloudflare does not fall back to static delivery after that allowance is exhausted. Monitor Worker invocations. If the account plan exposes per-product usage notifications, configure a Workers request threshold that alerts the team well before the Free plan's 100,000-request daily limit. Otherwise use external monitoring, or move the project to Workers Paid before traffic can approach that limit. If neither is acceptable, remove or redesign Worker-first Markdown handling rather than accepting `429 Too Many Requests` responses across those routes.
+Selective Worker-first routing covers the root, canonical trailing-slash page URLs, direct `.md` assets, and the exact `/mcp` protocol endpoint. The Markdown route verifies the static response before attaching its UTF-8 media type, so an unknown `.md` URL keeps the HTML 404 response. Pagefind, JavaScript, CSS, fonts, images, and non-Markdown well-known artifacts remain on the free static-asset path; the explicit `!/_astro/*` exclusion keeps fingerprinted assets out of the Worker path. Canonical page, direct Markdown, and MCP requests count toward the Workers request allowance, and Cloudflare does not fall back to static delivery after that allowance is exhausted. Monitor Worker invocations. If the account plan exposes per-product usage notifications, configure a Workers request threshold that alerts the team well before the Free plan's 100,000-request daily limit. Otherwise use external monitoring, or move the project to Workers Paid before traffic can approach that limit. If neither is acceptable, remove or redesign Worker-first Markdown handling rather than accepting Cloudflare Error 1027 responses across those routes.
 
 Validate the generated assets and Wrangler configuration without uploading anything:
 
