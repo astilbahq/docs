@@ -11,5 +11,6 @@
 <!--
 CI enforces the Conventional Commit PR title, Astro and TypeScript checks,
 unit and browser tests, accessibility checks, unused-code analysis, the
-production build, agent-readable artifacts, and a Wrangler deployment dry run.
+production build, agent-readable artifacts, CodeQL analysis, and a Wrangler
+deployment dry run.
 -->

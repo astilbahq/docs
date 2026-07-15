@@ -1,8 +1,13 @@
-import { access, readFile, readdir } from "node:fs/promises";
+import { access, readFile, readdir, writeFile } from "node:fs/promises";
 import { join, relative, resolve } from "node:path";
+import {
+  createContentSecurityPolicy,
+  getInlineScriptHashes,
+} from "./security-headers.mjs";
 
 const dist = resolve(process.cwd(), "dist");
 const headersPath = resolve(dist, "_headers");
+const headersTemplatePath = resolve(process.cwd(), "public/_headers");
 const maxHeaderRules = 100;
 const siteValue = process.env.ASTILBA_DOCS_SITE;
 
@@ -39,8 +44,26 @@ const fileExists = async (path) => {
   }
 };
 
-const staticHeaders = (await readFile(headersPath, "utf8")).trimEnd();
+await access(headersPath);
+const staticHeaders = (
+  await readFile(headersTemplatePath, "utf8")
+).trimEnd();
 const files = await collectFiles(dist);
+const htmlDocuments = await Promise.all(
+  files
+    .filter((file) => file.endsWith(".html"))
+    .map((file) => readFile(file, "utf8"))
+);
+const inlineScriptHashes = getInlineScriptHashes(htmlDocuments);
+const contentSecurityPolicy = createContentSecurityPolicy(inlineScriptHashes);
+const contentSecurityPolicyHeader = `  Content-Security-Policy: ${contentSecurityPolicy}`;
+const maxHeaderLineLength = 2000;
+
+if (contentSecurityPolicyHeader.length > maxHeaderLineLength) {
+  throw new Error(
+    `[agent-headers] Generated Content-Security-Policy exceeds Cloudflare's ${maxHeaderLineLength}-character header-line limit.`
+  );
+}
 let markdownPageCount = 0;
 
 for (const file of files) {
@@ -113,6 +136,27 @@ if (staticRuleCount > maxHeaderRules) {
   );
 }
 
+if (/^\s+Content-Security-Policy:/im.test(staticHeaders)) {
+  throw new Error(
+    "[agent-headers] The source headers must not contain a static Content-Security-Policy; the build generates its inline-script hashes."
+  );
+}
+
+const rootRulePrefix = "/*\n";
+
+if (!staticHeaders.startsWith(rootRulePrefix)) {
+  throw new Error(
+    "[agent-headers] dist/_headers must begin with the global /* rule."
+  );
+}
+
+const generatedHeaders = staticHeaders.replace(
+  rootRulePrefix,
+  `${rootRulePrefix}${contentSecurityPolicyHeader}\n`
+);
+
+await writeFile(headersPath, `${generatedHeaders}\n`, "utf8");
+
 console.log(
-  `[agent-headers] Validated ${markdownPageCount} Worker-managed Markdown alternates (${staticRuleCount}/${maxHeaderRules} static header rules).`
+  `[agent-headers] Validated ${markdownPageCount} Worker-managed Markdown alternates and ${inlineScriptHashes.length} CSP script hashes (${staticRuleCount}/${maxHeaderRules} static header rules).`
 );

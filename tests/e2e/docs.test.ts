@@ -16,6 +16,10 @@ interface WebMcpToolProbe {
 
 declare global {
   interface Window {
+    __cspViolations?: Array<{
+      blockedUri: string;
+      effectiveDirective: string;
+    }>;
     __webMcpRegistrationMethods?: string[];
     __webMcpTools?: WebMcpToolProbe[];
   }
@@ -540,6 +544,44 @@ test("searches the production Pagefind index", async ({ page }) => {
   await expect(
     dialog.getByRole("link", { name: /Documentation MCP/i }).first()
   ).toBeVisible();
+});
+
+test("enforces CSP without blocking the interactive shell", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    window.__cspViolations = [];
+    document.addEventListener("securitypolicyviolation", (event) => {
+      window.__cspViolations?.push({
+        blockedUri: event.blockedURI,
+        effectiveDirective: event.effectiveDirective,
+      });
+    });
+  });
+
+  const response = await page.goto("/cache/overview/");
+  const policy = response?.headers()["content-security-policy"] ?? "";
+
+  expect(policy).toContain("default-src 'none'");
+  expect(policy).toContain("script-src 'self' 'wasm-unsafe-eval'");
+  expect(policy).not.toContain("'unsafe-eval'");
+  expect(policy).not.toMatch(
+    /(?:^|;)\s*script-src(?:-elem)?\b[^;]*'unsafe-inline'/
+  );
+  expect(policy).toContain("script-src-attr 'none'");
+  expect(policy).toContain("frame-ancestors 'none'");
+
+  await page.getByRole("button", { name: "Switch to dark theme" }).click();
+  await page.locator("site-search > button[data-open-modal]").click();
+  const search = page.getByRole("dialog", { name: "Search" });
+  await search.getByRole("textbox", { name: "Search" }).fill(
+    "Runtime architecture"
+  );
+  await expect(
+    search.getByRole("link", { name: /Runtime architecture/i }).first()
+  ).toBeVisible();
+
+  expect(await page.evaluate(() => window.__cspViolations)).toEqual([]);
 });
 
 test("registers a read-only WebMCP tool when the API is available", async ({

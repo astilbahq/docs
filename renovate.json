@@ -62,14 +62,16 @@
       "automerge": true
     },
     {
-      "description": "Require review for Wrangler and actions that can change the production deployment path.",
+      "description": "Require review for security-sensitive build tooling and actions that can change production or publish analysis.",
       "matchPackageNames": [
+        "parse5",
         "wrangler",
         "actions/cache",
         "actions/checkout",
         "actions/download-artifact",
         "actions/setup-node",
         "actions/upload-artifact",
+        "github/codeql-action",
         "pnpm/action-setup"
       ],
       "automerge": false

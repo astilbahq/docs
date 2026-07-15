@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
-import { readFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { readFile, readdir } from "node:fs/promises";
+import { join, resolve } from "node:path";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 import {
@@ -15,6 +15,10 @@ import {
   MCP_SERVER_CARD_PATH,
 } from "../src/docs/agent-discovery.ts";
 import { parseDocsCorpus } from "../src/docs/mcp-corpus.ts";
+import {
+  createContentSecurityPolicy,
+  getInlineScriptHashes,
+} from "./security-headers.mjs";
 
 const siteValue = process.env.ASTILBA_DOCS_SITE;
 
@@ -26,6 +30,18 @@ if (!siteValue) {
 
 const site = new URL(siteValue);
 const dist = resolve(process.cwd(), "dist");
+
+const collectFiles = async (directory) => {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files = await Promise.all(
+    entries.map(async (entry) => {
+      const path = join(directory, entry.name);
+      return entry.isDirectory() ? collectFiles(path) : path;
+    })
+  );
+
+  return files.flat();
+};
 
 const readArtifact = async (relativePath) => {
   try {
@@ -265,6 +281,14 @@ if (!validateServerCard(serverCard)) {
 const contentSignal = "ai-train=yes, search=yes, ai-input=yes";
 const staticHeaders = artifacts.get("_headers");
 const headerRules = parseHeaderRules(staticHeaders);
+const htmlDocuments = await Promise.all(
+  (await collectFiles(dist))
+    .filter((file) => file.endsWith(".html"))
+    .map((file) => readFile(file, "utf8"))
+);
+const expectedContentSecurityPolicy = createContentSecurityPolicy(
+  getInlineScriptHashes(htmlDocuments)
+);
 const markdownHeaderPatterns = headerRules
   .filter((rule) =>
     (rule.headers.get("content-type") ?? []).some((value) =>
@@ -284,6 +308,9 @@ assertExact(
 assertHeaderValues(headerRules, "/*", "Content-Signal", [contentSignal]);
 assertHeaderValues(headerRules, "/*", "Strict-Transport-Security", [
   "max-age=31536000",
+]);
+assertHeaderValues(headerRules, "/*", "Content-Security-Policy", [
+  expectedContentSecurityPolicy,
 ]);
 assertHeaderValues(headerRules, "/_astro/*", "Cache-Control", [
   "public, max-age=31536000, immutable",
