@@ -392,8 +392,14 @@ export default function DocsSidebar({
               />
             </ScrollArea.Content>
           </ScrollArea.Viewport>
-          <ScrollArea.Scrollbar className={styles.navigationScrollbar}>
-            <ScrollArea.Thumb className={styles.navigationThumb} />
+          <ScrollArea.Scrollbar
+            className={styles.navigationScrollbar}
+            data-docs-sidebar-scrollbar=""
+          >
+            <ScrollArea.Thumb
+              className={styles.navigationThumb}
+              data-docs-sidebar-scroll-thumb=""
+            />
           </ScrollArea.Scrollbar>
         </ScrollArea.Root>
       )}

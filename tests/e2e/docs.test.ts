@@ -903,21 +903,22 @@ test("keeps sidebar controls in place while only navigation scrolls", async ({
   await expect(navigation).toHaveAttribute("data-overflow-y-end", "");
   await expect(navigation).not.toHaveAttribute("data-overflow-y-start");
 
-  const scrollThumb = navigation
-    .locator("..")
-    .locator('[data-orientation="vertical"] [data-orientation="vertical"]');
-  const scrollBar = navigation
-    .locator("..")
-    .locator(':scope > [data-orientation="vertical"]');
+  const scrollArea = page.locator("[data-docs-sidebar-scroll-root]");
+  const scrollThumb = scrollArea.locator("[data-docs-sidebar-scroll-thumb]");
+  const scrollBar = scrollArea.locator("[data-docs-sidebar-scrollbar]");
   await expect(scrollThumb).toHaveCount(1);
   await expect(scrollBar).toHaveCSS("opacity", "0");
+  await expect(scrollBar).toHaveCSS("pointer-events", "none");
   await navigation.hover();
   await expect(scrollBar).toHaveCSS("opacity", "1");
+  await expect(scrollBar).toHaveCSS("pointer-events", "auto");
   await page.locator("main").hover();
   await expect(scrollBar).toHaveCSS("opacity", "0");
+  await expect(scrollBar).toHaveCSS("pointer-events", "none");
   await page.emulateMedia({ forcedColors: "active" });
   await expect(navigation).toHaveCSS("mask-image", "none");
   await expect(scrollBar).toHaveCSS("opacity", "1");
+  await expect(scrollBar).toHaveCSS("pointer-events", "auto");
   await expect(scrollThumb).toHaveCSS("forced-color-adjust", "none");
   await expect(scrollThumb).not.toHaveCSS(
     "background-color",
@@ -926,6 +927,22 @@ test("keeps sidebar controls in place while only navigation scrolls", async ({
   await page.emulateMedia({ forcedColors: "none" });
   await expect(navigation).toHaveCSS("mask-image", /linear-gradient/);
   await expect(scrollBar).toHaveCSS("opacity", "0");
+  await expect(scrollBar).toHaveCSS("pointer-events", "none");
+
+  await navigation.evaluate((element) => {
+    element.dispatchEvent(
+      new WheelEvent("wheel", { bubbles: true, deltaY: 48 })
+    );
+    element.scrollTop += 48;
+  });
+  await expect(scrollBar).toHaveAttribute("data-scrolling", "");
+  await expect(scrollBar).toHaveCSS("opacity", "1");
+  await expect(scrollBar).toHaveCSS("pointer-events", "auto");
+  await expect(scrollBar).not.toHaveAttribute("data-scrolling", "", {
+    timeout: 1500,
+  });
+  await expect(scrollBar).toHaveCSS("opacity", "0");
+  await expect(scrollBar).toHaveCSS("pointer-events", "none");
 
   const searchBefore = await searchTrigger.boundingBox();
   const contextBefore = await context.boundingBox();
@@ -952,10 +969,15 @@ test("keeps sidebar controls in place while only navigation scrolls", async ({
   await expect(navigation).not.toHaveAttribute("data-overflow-y-end");
   await expect(navigation).toHaveAttribute("data-overflow-y-start", "");
 
-  await page.keyboard.press("Tab");
   await navigation.focus();
   await expect(navigation).toHaveCSS("outline-style", "none");
-  await expect(navigation.locator("..")).toHaveCSS("outline-style", "solid");
+  await expect(scrollArea).toHaveCSS("outline-style", "solid");
+  await expect(scrollBar).toHaveCSS("opacity", "1");
+  await expect(scrollBar).toHaveCSS("pointer-events", "auto");
+  await page.keyboard.press("Tab");
+  await expect(
+    navigation.getByRole("button", { name: "Get started", exact: true })
+  ).toBeFocused();
   await expect(scrollBar).toHaveCSS("opacity", "1");
 
   await searchTrigger.click();
