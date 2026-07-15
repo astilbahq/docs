@@ -376,7 +376,10 @@ export default function DocsSidebar({
     >
       <DocsContext context={context} />
       {entries.length > 0 && (
-        <ScrollArea.Root className={styles.navigation}>
+        <ScrollArea.Root
+          className={styles.navigation}
+          data-docs-sidebar-scroll-root=""
+        >
           <ScrollArea.Viewport
             className={styles.navigationViewport}
             data-docs-sidebar-scroll=""
@@ -389,8 +392,14 @@ export default function DocsSidebar({
               />
             </ScrollArea.Content>
           </ScrollArea.Viewport>
-          <ScrollArea.Scrollbar className={styles.navigationScrollbar}>
-            <ScrollArea.Thumb className={styles.navigationThumb} />
+          <ScrollArea.Scrollbar
+            className={styles.navigationScrollbar}
+            data-docs-sidebar-scrollbar=""
+          >
+            <ScrollArea.Thumb
+              className={styles.navigationThumb}
+              data-docs-sidebar-scroll-thumb=""
+            />
           </ScrollArea.Scrollbar>
         </ScrollArea.Root>
       )}

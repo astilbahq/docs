@@ -253,6 +253,23 @@ export const docsSidebarStyles = {
     inlineSize: "0.5rem",
     paddingBlock: "0.25rem",
     paddingInline: "0.1875rem",
+    opacity: 0,
+    pointerEvents: "none",
+    transitionProperty: "opacity",
+    transitionDuration: "fast",
+    transitionTimingFunction: "outExpo",
+    "&[data-hovering], &[data-scrolling], [data-docs-sidebar-scroll-root]:focus-within > &":
+      {
+        opacity: 1,
+        pointerEvents: "auto",
+      },
+    _reducedMotion: {
+      transitionDuration: "instant",
+    },
+    "@media (forced-colors: active)": {
+      opacity: 1,
+      pointerEvents: "auto",
+    },
   }),
   navigationThumb: css({
     inlineSize: "100%",
