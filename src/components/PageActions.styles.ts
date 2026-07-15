@@ -87,7 +87,7 @@ export const pageActionsStyles = {
         minBlockSize: "2.75rem",
         gap: "0.625rem",
         paddingBlock: "0.5rem",
-        paddingInline: "1rem",
+        paddingInline: "0.75rem",
         fontSize: "0.875rem",
         lineHeight: 1.35,
         desktop: {

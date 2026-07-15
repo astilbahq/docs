@@ -563,11 +563,18 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     )
   );
 
-  expect(menuItemMetrics).toEqual(sidebarItemMetrics);
+  expect(menuItemMetrics).toEqual({
+    ...sidebarItemMetrics,
+    paddingInlineEnd: "12px",
+    paddingInlineStart: "12px",
+  });
   await expect(copyMarkdownLink.locator("svg").first()).toHaveCSS(
     "inline-size",
     "14px"
   );
+  await expect(
+    page.getByRole("menuitem", { name: "GitHub" }).locator("svg").last()
+  ).toHaveCSS("inline-size", "12px");
 
   await copyMarkdownLink.click();
   await expect(page.getByRole("status")).toHaveText("Markdown link copied.");

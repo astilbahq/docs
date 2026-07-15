@@ -307,7 +307,7 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
                       {destination.label}
                     </span>
                     <span aria-hidden="true" className={styles.menuTrailing}>
-                      <ActionIcon icon={ExternalLink} size={14} />
+                      <ActionIcon icon={ExternalLink} size={12} />
                     </span>
                   </Menu.LinkItem>
                 );
