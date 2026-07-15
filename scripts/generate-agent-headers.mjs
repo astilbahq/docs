@@ -1,5 +1,12 @@
-import { access, readFile, readdir, writeFile } from "node:fs/promises";
-import { join, relative, resolve } from "node:path";
+import {
+  access,
+  mkdir,
+  readFile,
+  readdir,
+  writeFile,
+} from "node:fs/promises";
+import { dirname, join, relative, resolve } from "node:path";
+import { CONTENT_SECURITY_POLICY_ASSET_PATH } from "../src/docs/security.ts";
 import {
   createContentSecurityPolicy,
   getInlineScriptHashes,
@@ -8,6 +15,10 @@ import {
 const dist = resolve(process.cwd(), "dist");
 const headersPath = resolve(dist, "_headers");
 const headersTemplatePath = resolve(process.cwd(), "public/_headers");
+const contentSecurityPolicyAssetPath = resolve(
+  dist,
+  CONTENT_SECURITY_POLICY_ASSET_PATH.slice(1)
+);
 const maxHeaderRules = 100;
 const siteValue = process.env.ASTILBA_DOCS_SITE;
 
@@ -155,7 +166,15 @@ const generatedHeaders = staticHeaders.replace(
   `${rootRulePrefix}${contentSecurityPolicyHeader}\n`
 );
 
-await writeFile(headersPath, `${generatedHeaders}\n`, "utf8");
+await mkdir(dirname(contentSecurityPolicyAssetPath), { recursive: true });
+await Promise.all([
+  writeFile(headersPath, `${generatedHeaders}\n`, "utf8"),
+  writeFile(
+    contentSecurityPolicyAssetPath,
+    `${contentSecurityPolicy}\n`,
+    "utf8"
+  ),
+]);
 
 console.log(
   `[agent-headers] Validated ${markdownPageCount} Worker-managed Markdown alternates and ${inlineScriptHashes.length} CSP script hashes (${staticRuleCount}/${maxHeaderRules} static header rules).`

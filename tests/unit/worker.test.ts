@@ -4,14 +4,30 @@ import {
   getMarkdownPath,
   handleRequest,
 } from "../../worker/index";
+import { CONTENT_SECURITY_POLICY_ASSET_PATH } from "../../src/docs/security";
+
+const TEST_CONTENT_SECURITY_POLICY =
+  "default-src 'none'; script-src 'self'; style-src 'self'";
 
 const getExpectedPageDiscoveryLink = (markdownPath: string): string =>
   `<${markdownPath}>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`;
 
-const createAssets = () => {
+const createAssets = (
+  {
+    policyBody = `${TEST_CONTENT_SECURITY_POLICY}\n`,
+    policyStatus = 200,
+  }: { policyBody?: string; policyStatus?: number } = {}
+) => {
   const fetch = vi.fn<Fetcher["fetch"]>(async (input, init) => {
     const request = new Request(input, init);
     const path = new URL(request.url).pathname;
+
+    if (path === CONTENT_SECURITY_POLICY_ASSET_PATH) {
+      return new Response(policyBody, {
+        headers: { "Content-Type": "text/plain; charset=utf-8" },
+        status: policyStatus,
+      });
+    }
 
     if (
       path === "/index.md" ||
@@ -267,6 +283,9 @@ describe("Markdown negotiation", () => {
       expect(response.headers.get("Content-Type")).toBe(
         "text/html; charset=utf-8"
       );
+      expect(response.headers.get("Content-Security-Policy")).toBe(
+        TEST_CONTENT_SECURITY_POLICY
+      );
       expect(response.headers.get("X-Content-Type-Options")).toBeNull();
       expect(response.headers.get("Strict-Transport-Security")).toBe(
         "max-age=31536000"
@@ -308,6 +327,9 @@ describe("Markdown negotiation", () => {
       );
       expect(headResponse.status).toBe(200);
       expect(headResponse.headers.get("Link")).toBe(expectedLink);
+      expect(headResponse.headers.get("Content-Security-Policy")).toBe(
+        TEST_CONTENT_SECURITY_POLICY
+      );
 
       const revalidationResponse = await handleRequest(
         new Request(`https://docs.astilba.com${pagePath}`, {
@@ -320,7 +342,25 @@ describe("Markdown negotiation", () => {
       expect(revalidationResponse.headers.get("Vary")).toBe(
         "Accept-Encoding, Accept"
       );
-      expect(fetch).toHaveBeenCalledTimes(3);
+      expect(
+        revalidationResponse.headers.get("Content-Security-Policy")
+      ).toBe(TEST_CONTENT_SECURITY_POLICY);
+      expect(fetch).toHaveBeenCalledTimes(6);
+      const policyRequests = fetch.mock.calls
+        .map(([input, init]) => new Request(input, init))
+        .filter(
+          (assetRequest) =>
+            new URL(assetRequest.url).pathname ===
+            CONTENT_SECURITY_POLICY_ASSET_PATH
+        );
+      expect(policyRequests).toHaveLength(3);
+      expect(
+        policyRequests.every(
+          (policyRequest) =>
+            policyRequest.method === "GET" &&
+            policyRequest.redirect === "manual"
+        )
+      ).toBe(true);
     }
   );
 
@@ -340,6 +380,9 @@ describe("Markdown negotiation", () => {
         "text/html; charset=utf-8"
       );
       expect(response.headers.get("Link")).toBeNull();
+      expect(response.headers.get("Content-Security-Policy")).toBe(
+        TEST_CONTENT_SECURITY_POLICY
+      );
 
       const headResponse = await handleRequest(
         new Request(`https://docs.astilba.com${pagePath}`, {
@@ -349,7 +392,7 @@ describe("Markdown negotiation", () => {
       );
       expect(headResponse.status).toBe(404);
       expect(headResponse.headers.get("Link")).toBeNull();
-      expect(fetch).toHaveBeenCalledTimes(2);
+      expect(fetch).toHaveBeenCalledTimes(4);
     }
   );
 
@@ -361,7 +404,10 @@ describe("Markdown negotiation", () => {
     );
 
     expect(response.status).toBe(200);
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(response.headers.get("Content-Security-Policy")).toBe(
+      TEST_CONTENT_SECURITY_POLICY
+    );
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 
   it("adds HSTS to Worker-generated MCP failures", async () => {
@@ -376,4 +422,41 @@ describe("Markdown negotiation", () => {
       "max-age=31536000"
     );
   });
+
+  it.each([
+    { policyBody: "", policyStatus: 200 },
+    { policyBody: "missing", policyStatus: 404 },
+  ])(
+    "fails closed when the generated policy asset is unavailable: $policyStatus",
+    async ({ policyBody, policyStatus }) => {
+      const { assets } = createAssets({ policyBody, policyStatus });
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => undefined);
+
+      try {
+        const response = await handleRequest(
+          new Request("https://docs.astilba.com/cache/overview/"),
+          assets
+        );
+
+        expect(response.status).toBe(503);
+        expect(response.headers.get("Cache-Control")).toBe("no-store");
+        expect(response.headers.get("Content-Security-Policy")).toBeNull();
+        expect(response.headers.get("Strict-Transport-Security")).toBe(
+          "max-age=31536000"
+        );
+        expect(await response.text()).toBe(
+          "Documentation is temporarily unavailable."
+        );
+        expect(consoleError).toHaveBeenCalledWith(
+          expect.stringContaining(
+            "docs.content_security_policy_unavailable"
+          )
+        );
+      } finally {
+        consoleError.mockRestore();
+      }
+    }
+  );
 });

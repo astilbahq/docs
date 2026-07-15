@@ -19,6 +19,7 @@ import {
   createContentSecurityPolicy,
   getInlineScriptHashes,
 } from "./security-headers.mjs";
+import { CONTENT_SECURITY_POLICY_ASSET_PATH } from "../src/docs/security.ts";
 
 const siteValue = process.env.ASTILBA_DOCS_SITE;
 
@@ -201,6 +202,7 @@ const requiredArtifacts = [
   ".well-known/mcp/catalog.json",
   ".well-known/mcp/server-card.json",
   "_headers",
+  CONTENT_SECURITY_POLICY_ASSET_PATH.slice(1),
   "_llms-txt/astilba-cache.txt",
   "_mcp/docs.json",
   "agents/mcp.md",
@@ -289,6 +291,8 @@ const htmlDocuments = await Promise.all(
 const expectedContentSecurityPolicy = createContentSecurityPolicy(
   getInlineScriptHashes(htmlDocuments)
 );
+const contentSecurityPolicyArtifact =
+  CONTENT_SECURITY_POLICY_ASSET_PATH.slice(1);
 const markdownHeaderPatterns = headerRules
   .filter((rule) =>
     (rule.headers.get("content-type") ?? []).some((value) =>
@@ -312,6 +316,12 @@ assertHeaderValues(headerRules, "/*", "Strict-Transport-Security", [
 assertHeaderValues(headerRules, "/*", "Content-Security-Policy", [
   expectedContentSecurityPolicy,
 ]);
+assertExact(
+  contentSecurityPolicyArtifact,
+  "generated Worker Content-Security-Policy",
+  artifacts.get(contentSecurityPolicyArtifact),
+  `${expectedContentSecurityPolicy}\n`
+);
 assertHeaderValues(headerRules, "/_astro/*", "Cache-Control", [
   "public, max-age=31536000, immutable",
 ]);

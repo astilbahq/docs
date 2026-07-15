@@ -1,5 +1,9 @@
 import { API_CATALOG_LINK_VALUE } from "../src/docs/agent-discovery";
 import { docsProducts, getPageHref } from "../src/docs/catalog";
+import {
+  CONTENT_SECURITY_POLICY_ASSET_PATH,
+  CONTENT_SECURITY_POLICY_HEADER,
+} from "../src/docs/security";
 import { siteDocsPages } from "../src/docs/site-pages";
 import { DOCS_MCP_PATH, handleDocsMcpRequest } from "./docs-mcp";
 
@@ -384,6 +388,63 @@ const getAsset = (
   );
 };
 
+const getContentSecurityPolicy = async (
+  assets: Fetcher,
+  request: Request
+): Promise<string> => {
+  const policyUrl = new URL(request.url);
+  policyUrl.hash = "";
+  policyUrl.pathname = CONTENT_SECURITY_POLICY_ASSET_PATH;
+  policyUrl.search = "";
+  const policyResponse = await assets.fetch(
+    new Request(policyUrl, {
+      headers: { Accept: "text/plain" },
+      method: "GET",
+      redirect: "manual",
+    })
+  );
+
+  if (!policyResponse.ok) {
+    await policyResponse.body?.cancel();
+    throw new Error(
+      `The generated Content-Security-Policy asset returned HTTP ${policyResponse.status}.`
+    );
+  }
+
+  const policy = (await policyResponse.text()).trim();
+
+  if (!policy || policy.length > 2000 || /[\r\n]/.test(policy)) {
+    throw new Error("The generated Content-Security-Policy asset is invalid.");
+  }
+
+  return policy;
+};
+
+const addContentSecurityPolicy = async (
+  response: Response,
+  request: Request,
+  assets: Fetcher
+): Promise<Response> => {
+  const contentType = response.headers.get("Content-Type")?.toLowerCase();
+  const isHtml = contentType?.startsWith("text/html");
+
+  if (!isHtml) {
+    return response;
+  }
+
+  const headers = new Headers(response.headers);
+  headers.set(
+    CONTENT_SECURITY_POLICY_HEADER,
+    await getContentSecurityPolicy(assets, request)
+  );
+
+  return new Response(response.body, {
+    headers,
+    status: response.status,
+    statusText: response.statusText,
+  });
+};
+
 const routeRequest = async (
   request: Request,
   assets: Fetcher,
@@ -465,10 +526,39 @@ export const handleRequest = async (
   request: Request,
   assets: Fetcher,
   mcpRateLimiter?: RateLimit
-): Promise<Response> =>
-  addStrictTransportSecurity(
-    await routeRequest(request, assets, mcpRateLimiter)
-  );
+): Promise<Response> => {
+  const response = await routeRequest(request, assets, mcpRateLimiter);
+  let securedResponse: Response;
+
+  try {
+    securedResponse = await addContentSecurityPolicy(
+      response,
+      request,
+      assets
+    );
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : String(error),
+        event: "docs.content_security_policy_unavailable",
+      })
+    );
+    await response.body?.cancel();
+    securedResponse = new Response(
+      "Documentation is temporarily unavailable.",
+      {
+        headers: {
+          "Cache-Control": "no-store",
+          "Content-Type": "text/plain; charset=utf-8",
+          "X-Content-Type-Options": "nosniff",
+        },
+        status: 503,
+      }
+    );
+  }
+
+  return addStrictTransportSecurity(securedResponse);
+};
 
 export default {
   fetch(request, env) {
