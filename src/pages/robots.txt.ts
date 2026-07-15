@@ -3,7 +3,7 @@ import type { APIRoute } from "astro";
 export const prerender = true;
 
 export const GET: APIRoute = ({ site }) => {
-  const sitemapUrl = site ? new URL("/sitemap-index.xml", site) : undefined;
+  const sitemapUrl = site ? new URL("/sitemap.xml", site) : undefined;
   const body = [
     "User-agent: *",
     "Content-Signal: ai-train=yes, search=yes, ai-input=yes",

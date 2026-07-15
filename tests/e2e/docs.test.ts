@@ -122,6 +122,34 @@ test("serves the public documentation corpus over MCP", async ({ baseURL }) => {
   }
 });
 
+test("serves the direct sitemap as a static XML asset", async ({ request }) => {
+  const sitemapResponse = await request.get("/sitemap.xml", {
+    maxRedirects: 0,
+  });
+  expect(sitemapResponse.status()).toBe(200);
+  expect(sitemapResponse.headers()["content-type"]).toContain(
+    "application/xml"
+  );
+  expectGlobalSecurityHeaders(sitemapResponse.headers());
+  const sitemap = await sitemapResponse.text();
+  expect(sitemap).toContain(
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
+  );
+  expect(sitemap).toContain(`<loc>${docsOrigin}/</loc>`);
+  expect(sitemap).toMatch(
+    /<lastmod>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z<\/lastmod>/
+  );
+
+  const sitemapHeadResponse = await request.head("/sitemap.xml", {
+    maxRedirects: 0,
+  });
+  expect(sitemapHeadResponse.status()).toBe(200);
+  expect(sitemapHeadResponse.headers()["content-type"]).toContain(
+    "application/xml"
+  );
+  expectGlobalSecurityHeaders(sitemapHeadResponse.headers());
+});
+
 test("publishes MCP and RFC 9727 discovery metadata", async ({
   page,
   request,

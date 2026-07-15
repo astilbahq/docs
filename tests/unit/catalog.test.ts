@@ -124,6 +124,37 @@ describe("documentation catalog", () => {
     );
   });
 
+  it("keeps public pages mapped to distinct source files", () => {
+    const version = getDefaultVersion(cache);
+    const [firstSection, ...remainingSections] = version.sections;
+    const [firstPage, ...remainingPages] = firstSection.items;
+    const conflictingProduct = {
+      ...cache,
+      versions: [
+        {
+          ...version,
+          sections: [
+            {
+              ...firstSection,
+              items: [
+                {
+                  ...firstPage,
+                  sourcePath: "src/content/docs/index.md",
+                },
+                ...remainingPages,
+              ],
+            },
+            ...remainingSections,
+          ],
+        },
+      ],
+    };
+
+    expect(() => validateDocsProducts([conflictingProduct])).toThrow(
+      'Duplicate documentation source path: "src/content/docs/index.md".'
+    );
+  });
+
   it("preserves a page key when available and falls back safely", () => {
     const version = getDefaultVersion(cache);
 

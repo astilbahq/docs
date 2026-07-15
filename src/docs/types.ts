@@ -30,6 +30,7 @@ export interface DocsPage {
   key: string;
   label: string;
   slug: string;
+  sourcePath: string;
 }
 
 interface DocsSection {

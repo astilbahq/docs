@@ -21,6 +21,7 @@ import {
   CONTENT_SECURITY_POLICY_ASSET_PATH,
   GLOBAL_SECURITY_HEADERS,
 } from "../src/docs/security.ts";
+import { createDocsSitemapLastModified } from "../src/docs/sitemap.ts";
 import {
   createContentSecurityPolicy,
   getInlineScriptHashes,
@@ -224,6 +225,7 @@ const requiredArtifacts = [
   "robots.txt",
   "sitemap-0.xml",
   "sitemap-index.xml",
+  "sitemap.xml",
 ];
 
 const artifacts = new Map();
@@ -477,18 +479,50 @@ const mcpUrl = new URL("/mcp", site).href;
 const apiCatalogUrl = new URL(API_CATALOG_PATH, site).href;
 const mcpCatalogUrl = new URL(MCP_CATALOG_PATH, site).href;
 const mcpServerCardUrl = new URL(MCP_SERVER_CARD_PATH, site).href;
-const sitemapUrl = new URL("/sitemap-index.xml", site).href;
+const sitemapUrl = new URL("/sitemap.xml", site).href;
+const sitemap = artifacts.get("sitemap.xml");
+const expectedLastModified = createDocsSitemapLastModified();
+const sitemapEntries = [...sitemap.matchAll(/<url>([\s\S]*?)<\/url>/g)].map(
+  (match) => {
+    const entry = match[1];
+    const locations = [...entry.matchAll(/<loc>([^<]+)<\/loc>/g)];
+    const lastModified = [...entry.matchAll(/<lastmod>([^<]+)<\/lastmod>/g)];
 
-const sitemapPages = [
-  ...artifacts.get("sitemap-0.xml").matchAll(/<loc>([^<]+)<\/loc>/g),
-].map((match) => new URL(match[1]));
+    if (locations.length !== 1 || lastModified.length !== 1) {
+      throw new Error(
+        "[agent-artifacts] Every sitemap entry must contain exactly one loc and one lastmod."
+      );
+    }
+
+    return {
+      lastmod: lastModified[0][1],
+      page: new URL(locations[0][1]),
+    };
+  }
+);
+const sitemapPages = sitemapEntries.map(({ page }) => page);
+const sitemapLocations = new Set(sitemapPages.map(({ href }) => href));
 const pagePatterns = [];
 const mcpResources = [];
 
-for (const sitemapPage of sitemapPages) {
+if (sitemapLocations.size !== sitemapEntries.length) {
+  throw new Error("[agent-artifacts] Sitemap page locations must be unique.");
+}
+
+for (const { lastmod, page: sitemapPage } of sitemapEntries) {
   if (sitemapPage.origin !== site.origin) {
     throw new Error(
       `[agent-artifacts] Sitemap page ${sitemapPage.href} is outside ${site.origin}.`
+    );
+  }
+
+  const expectedPageLastModified = expectedLastModified.get(
+    sitemapPage.pathname
+  );
+
+  if (lastmod !== expectedPageLastModified) {
+    throw new Error(
+      `[agent-artifacts] Sitemap page ${sitemapPage.href} has unexpected lastmod ${JSON.stringify(lastmod)}; expected ${JSON.stringify(expectedPageLastModified)}.`
     );
   }
 
@@ -548,6 +582,7 @@ for (const sitemapPage of sitemapPages) {
 
   assertLink(pageHtml, "describedby", llmsUrl);
   assertLink(pageHtml, "api-catalog", apiCatalogUrl);
+  assertLink(pageHtml, "sitemap", sitemapUrl);
   pagePatterns.push(pagePattern);
   mcpResources.push({
     canonicalUrl,
@@ -590,6 +625,12 @@ for (const sitemapPage of sitemapPages) {
 if (pagePatterns.length === 0) {
   throw new Error(
     "[agent-artifacts] The sitemap does not contain any documentation pages."
+  );
+}
+
+if (sitemapEntries.length !== expectedLastModified.size) {
+  throw new Error(
+    `[agent-artifacts] The sitemap contains ${sitemapEntries.length} pages, but ${expectedLastModified.size} public sources are registered.`
   );
 }
 
@@ -721,7 +762,13 @@ assertIncludes(
   sitemapIndex,
   new URL("/sitemap-0.xml", site).href
 );
-assertIncludes("sitemap-0.xml", artifacts.get("sitemap-0.xml"), pageUrl);
+assertExact(
+  "sitemap.xml",
+  "single-file sitemap content",
+  sitemap,
+  artifacts.get("sitemap-0.xml")
+);
+assertIncludes("sitemap.xml", sitemap, pageUrl);
 
 console.log(
   `[agent-artifacts] Verified ${requiredArtifacts.length} production artifacts for ${site.origin}.`

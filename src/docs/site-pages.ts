@@ -2,6 +2,7 @@ export interface SiteDocsPage {
   canonicalPath: string;
   id: string;
   markdownPath: string;
+  sourcePath: string;
 }
 
 export const siteDocsPages = Object.freeze([
@@ -9,11 +10,13 @@ export const siteDocsPages = Object.freeze([
     canonicalPath: "/",
     id: "index",
     markdownPath: "/index.md",
+    sourcePath: "src/content/docs/index.md",
   },
   {
     canonicalPath: "/agents/mcp/",
     id: "agents/mcp",
     markdownPath: "/agents/mcp.md",
+    sourcePath: "src/content/docs/agents/mcp.md",
   },
 ] satisfies SiteDocsPage[]);
 
