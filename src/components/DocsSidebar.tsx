@@ -376,7 +376,10 @@ export default function DocsSidebar({
     >
       <DocsContext context={context} />
       {entries.length > 0 && (
-        <ScrollArea.Root className={styles.navigation}>
+        <ScrollArea.Root
+          className={styles.navigation}
+          data-docs-sidebar-scroll-root=""
+        >
           <ScrollArea.Viewport
             className={styles.navigationViewport}
             data-docs-sidebar-scroll=""

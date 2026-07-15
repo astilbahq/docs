@@ -906,9 +906,18 @@ test("keeps sidebar controls in place while only navigation scrolls", async ({
   const scrollThumb = navigation
     .locator("..")
     .locator('[data-orientation="vertical"] [data-orientation="vertical"]');
+  const scrollBar = navigation
+    .locator("..")
+    .locator(':scope > [data-orientation="vertical"]');
   await expect(scrollThumb).toHaveCount(1);
+  await expect(scrollBar).toHaveCSS("opacity", "0");
+  await navigation.hover();
+  await expect(scrollBar).toHaveCSS("opacity", "1");
+  await page.locator("main").hover();
+  await expect(scrollBar).toHaveCSS("opacity", "0");
   await page.emulateMedia({ forcedColors: "active" });
   await expect(navigation).toHaveCSS("mask-image", "none");
+  await expect(scrollBar).toHaveCSS("opacity", "1");
   await expect(scrollThumb).toHaveCSS("forced-color-adjust", "none");
   await expect(scrollThumb).not.toHaveCSS(
     "background-color",
@@ -916,6 +925,7 @@ test("keeps sidebar controls in place while only navigation scrolls", async ({
   );
   await page.emulateMedia({ forcedColors: "none" });
   await expect(navigation).toHaveCSS("mask-image", /linear-gradient/);
+  await expect(scrollBar).toHaveCSS("opacity", "0");
 
   const searchBefore = await searchTrigger.boundingBox();
   const contextBefore = await context.boundingBox();
@@ -946,6 +956,7 @@ test("keeps sidebar controls in place while only navigation scrolls", async ({
   await navigation.focus();
   await expect(navigation).toHaveCSS("outline-style", "none");
   await expect(navigation.locator("..")).toHaveCSS("outline-style", "solid");
+  await expect(scrollBar).toHaveCSS("opacity", "1");
 
   await searchTrigger.click();
   await expect(page.getByRole("dialog", { name: "Search" })).toBeVisible();
