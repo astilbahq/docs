@@ -1,10 +1,12 @@
 export const docsIcons = [
   "approve-check-circle",
+  "cloudflare-workers",
   "code-branch",
   "database",
   "link",
   "open-book",
   "padlock",
+  "react-router",
   "rocket",
   "server",
 ] as const;
