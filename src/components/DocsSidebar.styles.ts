@@ -3,9 +3,15 @@ import { menuStyles } from "./ui/Menu.styles";
 
 export const docsSidebarStyles = {
   root: css({
+    display: "flex",
+    flex: "1 1 auto",
+    minBlockSize: 0,
+    flexDirection: "column",
+    overflow: "hidden",
     color: "ink.default",
   }),
   context: css({
+    flex: "0 0 auto",
     borderBlockWidth: "1px",
     borderBlockStyle: "solid",
     borderBlockColor: "border.chrome",
@@ -147,6 +153,79 @@ export const docsSidebarStyles = {
     "[data-docs-nav-link] > &": {
       marginInlineStart: "auto",
     },
+  }),
+  searchTrigger: css({
+    display: { base: "none", desktop: "flex" },
+    flex: "0 0 auto",
+    inlineSize: "100%",
+    minBlockSize: "2.5rem",
+    alignItems: "center",
+    gap: "0.625rem",
+    border: 0,
+    borderRadius: 0,
+    paddingBlock: "0.5rem",
+    paddingInline: "1rem",
+    background: "transparent",
+    color: "ink.muted",
+    font: "inherit",
+    fontSize: "0.8125rem",
+    textAlign: "start",
+    cursor: "pointer",
+    "&:is(:hover, :focus-visible)": {
+      background: "surface.hover",
+      color: "ink.strong",
+    },
+    _active: {
+      background: "surface.pressed",
+    },
+    _disabled: {
+      cursor: "default",
+    },
+    _focusVisible: {
+      outlineColor: "signal",
+      outlineOffset: "-0.125rem",
+      outlineStyle: "solid",
+      outlineWidth: "0.125rem",
+    },
+  }),
+  searchIcon: css({
+    display: "grid",
+    flex: "0 0 1rem",
+    placeItems: "center",
+    color: "ink.muted",
+    "[data-sidebar-search-trigger]:is(:hover, :focus-visible) &": {
+      color: "currentColor",
+    },
+  }),
+  searchLabel: css({
+    minInlineSize: 0,
+  }),
+  searchShortcut: css({
+    display: "inline-flex",
+    marginInlineStart: "auto",
+    alignItems: "center",
+    gap: "0.125rem",
+    paddingBlock: "0.125rem",
+    paddingInline: "0.375rem",
+    background: "surface.kbd",
+    color: "ink.muted",
+    fontFamily: "var(--sl-font-mono), ui-monospace, monospace",
+    fontSize: "0.625rem",
+    lineHeight: 1.25,
+    "& > kbd": {
+      padding: 0,
+      background: "transparent",
+      color: "inherit",
+      font: "inherit",
+    },
+  }),
+  navigation: css({
+    flex: "1 1 auto",
+    minBlockSize: 0,
+    overflowBlock: "auto",
+    overflowInline: "hidden",
+    overscrollBehaviorBlock: "contain",
+    scrollbarGutter: "auto",
   }),
   tree: css({
     margin: 0,

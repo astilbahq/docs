@@ -6,6 +6,7 @@ import {
   getDocsSidebarHash,
 } from "../docs/sidebar-model";
 import DocsSidebar from "./DocsSidebar";
+import SidebarSearch from "./SidebarSearch.astro";
 
 const { sidebar } = Astro.locals.starlightRoute;
 const entries = createDocsSidebarEntries(sidebar);
@@ -88,19 +89,27 @@ const activeGroupIds = collectDocsSidebarGroupIds(
   })();
 </script>
 
+<SidebarSearch />
 <DocsSidebar {context} {entries} {sidebarHash} client:load />
 
 <script is:inline aria-hidden="true">
   (() => {
     const scroller = document.getElementById("starlight__sidebar");
+    const navigation = document.querySelector(
+      "#starlight__sidebar [data-docs-sidebar-scroll]"
+    );
     const storedScroll = scroller?.dataset.docsSidebarScrollRestore;
-    if (!scroller || storedScroll === undefined) {
+    if (
+      !scroller ||
+      !(navigation instanceof HTMLElement) ||
+      storedScroll === undefined
+    ) {
       return;
     }
 
     const scroll = Number(storedScroll);
     if (Number.isFinite(scroll)) {
-      scroller.scrollTop = scroll;
+      navigation.scrollTop = scroll;
     }
     delete scroller.dataset.docsSidebarScrollRestore;
   })();

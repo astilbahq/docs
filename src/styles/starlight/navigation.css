@@ -2,10 +2,13 @@
   /* Flat navigation rail with full-width, neutral active states. */
   #starlight__sidebar {
     border-color: var(--astilba-colors-border-chrome);
+    overflow-block: hidden;
   }
 
   #starlight__sidebar .sidebar-content {
     gap: 0;
+    min-block-size: 0;
+    overflow: hidden;
   }
 
   /* Better Auth-style restrained table of contents. */
@@ -98,7 +101,7 @@
     }
 
     #starlight__sidebar .sidebar-content {
-      padding-block: 2.5rem 0;
+      padding-block: 0;
       padding-inline: 0;
     }
   }

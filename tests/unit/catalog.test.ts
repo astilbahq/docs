@@ -23,6 +23,7 @@ describe("documentation catalog", () => {
 
     expect(version.id).toBe("unreleased");
     expect(page.key).toBe("overview");
+    expect(cache.repositoryUrl).toBe("https://github.com/astilbahq/cache");
     expect(getPageHref(version, page)).toBe("/cache/overview/");
   });
 

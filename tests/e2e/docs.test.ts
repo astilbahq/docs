@@ -550,7 +550,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
 test("searches the production Pagefind index", async ({ page }) => {
   await page.goto("/cache/overview/");
 
-  const searchButton = page.locator("site-search > button[data-open-modal]");
+  const searchButton = page.locator("[data-sidebar-search-trigger]");
   await expect(searchButton).toBeEnabled();
   await searchButton.click();
 
@@ -596,7 +596,7 @@ test("enforces CSP without blocking the interactive shell", async ({
   expect(policy).toContain("frame-ancestors 'none'");
 
   await page.getByRole("button", { name: "Switch to dark theme" }).click();
-  await page.locator("site-search > button[data-open-modal]").click();
+  await page.locator("[data-sidebar-search-trigger]").click();
   const search = page.getByRole("dialog", { name: "Search" });
   await search
     .getByRole("textbox", { name: "Search" })
@@ -858,6 +858,84 @@ test("persists desktop sidebar disclosure state across navigation", async ({
   ).toHaveAttribute("aria-expanded", "false");
 });
 
+test("targets the active product repository from the header", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(
+    page.getByRole("link", { name: "Astilba on GitHub", exact: true })
+  ).toHaveAttribute("href", "https://github.com/astilbahq");
+
+  await page.goto("/cache/overview/");
+  await expect(
+    page.getByRole("link", {
+      name: "Astilba Cache on GitHub",
+      exact: true,
+    })
+  ).toHaveAttribute("href", "https://github.com/astilbahq/cache");
+});
+
+test("keeps sidebar controls in place while only navigation scrolls", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1280, height: 480 });
+  await page.goto("/cache/overview/");
+
+  const sidebar = page.locator("#starlight__sidebar");
+  const searchTrigger = page.locator("[data-sidebar-search-trigger]");
+  const context = page.getByRole("group", {
+    name: "Documentation context",
+  });
+  const navigation = page.locator("[data-docs-sidebar-scroll]");
+
+  await expect(searchTrigger).toBeVisible();
+  await expect(searchTrigger).toHaveCSS("position", "static");
+  await expect(sidebar).toHaveCSS("overflow-y", "hidden");
+  await expect(navigation).toHaveCSS("overflow-y", "auto");
+  await expect
+    .poll(() =>
+      navigation.evaluate(
+        (element) => element.scrollHeight > element.clientHeight
+      )
+    )
+    .toBe(true);
+
+  const searchBefore = await searchTrigger.boundingBox();
+  const contextBefore = await context.boundingBox();
+  await navigation.evaluate((element) => {
+    element.scrollTop = 120;
+  });
+  await expect
+    .poll(() => navigation.evaluate((element) => element.scrollTop))
+    .toBeGreaterThan(0);
+  const searchAfter = await searchTrigger.boundingBox();
+  const contextAfter = await context.boundingBox();
+
+  if (!(searchBefore && contextBefore && searchAfter && contextAfter)) {
+    throw new Error("Sidebar controls must have measurable layout boxes.");
+  }
+
+  expect(searchAfter.y).toBeCloseTo(searchBefore.y, 1);
+  expect(contextAfter.y).toBeCloseTo(contextBefore.y, 1);
+
+  await searchTrigger.click();
+  await expect(page.getByRole("dialog", { name: "Search" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(searchTrigger).toBeFocused();
+});
+
+test("keeps native header search available without a sidebar", async ({
+  page,
+}) => {
+  const response = await page.goto("/missing/");
+  expect(response?.status()).toBe(404);
+
+  const searchTrigger = page.locator("site-search > button[data-open-modal]");
+  await expect(searchTrigger).toBeVisible();
+  await searchTrigger.click();
+  await expect(page.getByRole("dialog", { name: "Search" })).toBeVisible();
+});
+
 test("switches themes and opens mobile navigation", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/cache/quickstart/");
@@ -908,7 +986,7 @@ test("has no automatically detectable accessibility violations", async ({
   await expectNoAxeViolations(page);
   await page.keyboard.press("Escape");
 
-  const searchButton = page.locator("site-search > button[data-open-modal]");
+  const searchButton = page.locator("[data-sidebar-search-trigger]");
   await searchButton.click();
   const searchDialog = page.getByRole("dialog", { name: "Search" });
   await expect(searchDialog).toBeVisible();

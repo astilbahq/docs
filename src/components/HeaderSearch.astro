@@ -1,7 +1,7 @@
 ---
 import { Icon } from "@astrojs/starlight/components";
 import Search from "virtual:starlight/components/Search";
-import { css } from "../../styled-system/css";
+import { css, cx } from "../../styled-system/css";
 import Button from "./ui/Button.astro";
 
 const rootClass = css({ display: "contents" });
@@ -13,8 +13,16 @@ const nativeSearchClass = css({
     display: { base: "none", desktop: "flex" },
   },
 });
+const sidebarNativeSearchClass = css({
+  "& > button[data-open-modal]": {
+    desktop: {
+      display: "none",
+    },
+  },
+});
 
 const searchLabel = Astro.locals.t("search.label");
+const { hasSidebar } = Astro.locals.starlightRoute;
 ---
 
 <astilba-header-search class={rootClass}>
@@ -24,55 +32,70 @@ const searchLabel = Astro.locals.t("search.label");
     aria-label={searchLabel}
     class={mobileTriggerClass}
     data-mobile-search-trigger
+    data-search-trigger-proxy
     disabled
     iconOnly
     title={searchLabel}
   >
     <Icon name="magnifier" size="1rem" />
   </Button>
-  <Search class={nativeSearchClass} />
+  <Search
+    class={cx(nativeSearchClass, hasSidebar && sidebarNativeSearchClass)}
+  />
 </astilba-header-search>
 
 <script>
   const elementName = "astilba-header-search";
+  const proxySelector = "button[data-search-trigger-proxy]";
 
   class AstilbaHeaderSearch extends HTMLElement {
-    private mobileTrigger: HTMLButtonElement | null = null;
+    private activeProxy: HTMLButtonElement | null = null;
+    private dialog: HTMLDialogElement | null = null;
     private nativeTrigger: HTMLButtonElement | null = null;
+    private proxyTriggers: HTMLButtonElement[] = [];
 
     private readonly handleClick = (event: MouseEvent): void => {
       event.stopPropagation();
+      if (event.currentTarget instanceof HTMLButtonElement) {
+        this.activeProxy = event.currentTarget;
+      }
       this.nativeTrigger?.click();
     };
 
+    private readonly handleDialogClose = (): void => {
+      this.activeProxy?.focus();
+      this.activeProxy = null;
+    };
+
     connectedCallback(): void {
-      if (this.mobileTrigger) {
+      if (this.proxyTriggers.length > 0) {
         return;
       }
 
-      const mobileTrigger = this.querySelector(
-        "button[data-mobile-search-trigger]"
+      this.proxyTriggers = Array.from(
+        document.querySelectorAll<HTMLButtonElement>(proxySelector)
       );
-
-      if (!(mobileTrigger instanceof HTMLButtonElement)) {
-        return;
+      for (const trigger of this.proxyTriggers) {
+        trigger.addEventListener("click", this.handleClick);
       }
-
-      this.mobileTrigger = mobileTrigger;
-      this.mobileTrigger.addEventListener("click", this.handleClick);
       void this.connectNativeSearch();
     }
 
     disconnectedCallback(): void {
-      this.mobileTrigger?.removeEventListener("click", this.handleClick);
-      this.mobileTrigger = null;
+      for (const trigger of this.proxyTriggers) {
+        trigger.removeEventListener("click", this.handleClick);
+      }
+      this.dialog?.removeEventListener("close", this.handleDialogClose);
+      this.activeProxy = null;
+      this.dialog = null;
+      this.proxyTriggers = [];
       this.nativeTrigger = null;
     }
 
     private async connectNativeSearch(): Promise<void> {
       await customElements.whenDefined("site-search");
 
-      if (!this.isConnected || !this.mobileTrigger) {
+      if (!this.isConnected) {
         return;
       }
 
@@ -85,12 +108,25 @@ const searchLabel = Astro.locals.t("search.label");
       }
 
       this.nativeTrigger = nativeTrigger;
-      this.mobileTrigger.disabled = nativeTrigger.disabled;
-
+      this.dialog = this.querySelector<HTMLDialogElement>(
+        "site-search dialog"
+      );
+      this.dialog?.addEventListener("close", this.handleDialogClose);
       const keyShortcuts = nativeTrigger.getAttribute("aria-keyshortcuts");
 
-      if (keyShortcuts) {
-        this.mobileTrigger.setAttribute("aria-keyshortcuts", keyShortcuts);
+      for (const trigger of this.proxyTriggers) {
+        trigger.disabled = nativeTrigger.disabled;
+
+        if (keyShortcuts) {
+          trigger.setAttribute("aria-keyshortcuts", keyShortcuts);
+        }
+
+        const modifier = trigger.querySelector(
+          "[data-search-shortcut-modifier]"
+        );
+        if (modifier && keyShortcuts?.startsWith("Meta+")) {
+          modifier.textContent = "⌘";
+        }
       }
     }
   }

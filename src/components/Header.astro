@@ -74,8 +74,12 @@ const actionLabelClass = css({
   },
 });
 const githubHref =
+  docsContext?.product.repositoryUrl ??
   config.social?.find(({ icon }) => icon === "github")?.href ??
   "https://github.com/astilbahq";
+const githubLabel = docsContext
+  ? `Astilba ${docsContext.product.label} on GitHub`
+  : "Astilba on GitHub";
 const sponsorHref = "https://github.com/sponsors/astilbahq";
 ---
 
@@ -101,10 +105,10 @@ const sponsorHref = "https://github.com/sponsors/astilbahq";
   <div aria-label="Site actions" class:list={[actionsClass, "print:hidden"]} role="group">
     {shouldRenderSearch && <HeaderSearch />}
     <LinkButton
-      aria-label="Astilba on GitHub"
+      aria-label={githubLabel}
       href={githubHref}
-      rel="me"
-      title="Astilba on GitHub"
+      rel={docsContext ? undefined : "me"}
+      title={githubLabel}
     >
       <Icon
         class={actionIconClass}

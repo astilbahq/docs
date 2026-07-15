@@ -21,6 +21,7 @@ import { docsSidebarStyles as styles } from "./DocsSidebar.styles";
 
 const desktopMediaQuery = "(min-width: 50em)";
 const sidebarBootstrapStyleId = "astilba-docs-sidebar-bootstrap-style";
+const sidebarScrollSelector = "#starlight__sidebar [data-docs-sidebar-scroll]";
 const sidebarStorageKey = "astilba-docs-sidebar-state-v1";
 const useBrowserLayoutEffect =
   typeof window === "undefined" ? useEffect : useLayoutEffect;
@@ -65,6 +66,9 @@ const parseStoredState = (
 
   return undefined;
 };
+
+const getSidebarScroller = (): HTMLElement | null =>
+  document.querySelector<HTMLElement>(sidebarScrollSelector);
 
 const DocsBadge = ({ badge }: { badge: DocsBadgeModel }) => (
   <span className={styles.badge} data-variant={badge.variant}>
@@ -285,7 +289,7 @@ export default function DocsSidebar({
           ])
         );
 
-        const scroller = document.getElementById("starlight__sidebar");
+        const scroller = getSidebarScroller();
         if (scroller) {
           scroller.scrollTop = storedState.scroll;
         }
@@ -316,7 +320,7 @@ export default function DocsSidebar({
       }
 
       try {
-        const scroller = document.getElementById("starlight__sidebar");
+        const scroller = getSidebarScroller();
         const state: StoredSidebarState = {
           hash: sidebarHash,
           open: groups,
@@ -371,11 +375,13 @@ export default function DocsSidebar({
     >
       <DocsContext context={context} />
       {entries.length > 0 && (
-        <SidebarList
-          entries={entries}
-          onOpenChange={handleOpenChange}
-          openGroups={openGroups}
-        />
+        <div className={styles.navigation} data-docs-sidebar-scroll="">
+          <SidebarList
+            entries={entries}
+            onOpenChange={handleOpenChange}
+            openGroups={openGroups}
+          />
+        </div>
       )}
     </div>
   );
