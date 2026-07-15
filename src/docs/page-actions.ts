@@ -58,20 +58,12 @@ export const createPageActionDestinations = (
       label: "T3 Chat",
     },
     {
-      href: createPromptUrl(
-        "https://copilot.microsoft.com/",
-        "q",
-        prompt
-      ),
+      href: createPromptUrl("https://copilot.microsoft.com/", "q", prompt),
       id: "copilot",
       label: "Copilot",
     },
     {
-      href: createPromptUrl(
-        "https://cursor.com/link/prompt",
-        "text",
-        prompt
-      ),
+      href: createPromptUrl("https://cursor.com/link/prompt", "text", prompt),
       id: "cursor",
       label: "Cursor",
     },

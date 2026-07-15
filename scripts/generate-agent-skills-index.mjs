@@ -2,10 +2,7 @@ import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-const skillsDirectory = resolve(
-  process.cwd(),
-  "dist/.well-known/agent-skills"
-);
+const skillsDirectory = resolve(process.cwd(), "dist/.well-known/agent-skills");
 const indexPath = resolve(skillsDirectory, "index.json");
 const schema = "https://schemas.agentskills.io/discovery/0.2.0/schema.json";
 const skillNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -13,10 +10,7 @@ const skillNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const parseFrontmatterString = (frontmatter, field, artifact) => {
   const matches = [
     ...frontmatter.matchAll(
-      new RegExp(
-        `^${field}:\\s*("(?:[^"\\\\]|\\\\.)*")\\s*$`,
-        "gm"
-      )
+      new RegExp(`^${field}:\\s*("(?:[^"\\\\]|\\\\.)*")\\s*$`, "gm")
     ),
   ];
 

@@ -7,14 +7,15 @@ import {
   useMemo,
   useState,
 } from "react";
+
 import { cx } from "../../styled-system/css";
-import type { DocsBadge as DocsBadgeModel } from "../docs/types";
 import type {
   DocsContextRow,
   DocsSidebarContextModel,
   DocsSidebarEntryModel,
 } from "../docs/sidebar-model";
 import { collectDocsSidebarGroupIds } from "../docs/sidebar-model";
+import type { DocsBadge as DocsBadgeModel } from "../docs/types";
 import { DocsIcon } from "./DocsIcon";
 import { docsSidebarStyles as styles } from "./DocsSidebar.styles";
 
@@ -84,9 +85,9 @@ const ContextRowContent = ({ row }: { row: DocsContextRow }) => (
 
 const DocsContextMenu = ({ row }: { row: DocsContextRow }) => {
   const options = row.options ?? [];
-  const [inputModality, setInputModality] = useState<
-    "keyboard" | "pointer"
-  >("pointer");
+  const [inputModality, setInputModality] = useState<"keyboard" | "pointer">(
+    "pointer"
+  );
 
   return (
     <Menu.Root modal={false}>
@@ -252,8 +253,7 @@ export default function DocsSidebar({
   sidebarHash,
 }: DocsSidebarProps) {
   const activeGroupIds = useMemo(
-    () =>
-      collectDocsSidebarGroupIds(entries, (entry) => entry.containsCurrent),
+    () => collectDocsSidebarGroupIds(entries, (entry) => entry.containsCurrent),
     [entries]
   );
   const defaultOpenGroupIds = useMemo(
@@ -299,12 +299,7 @@ export default function DocsSidebar({
     });
 
     return () => window.cancelAnimationFrame(revealFrame);
-  }, [
-    activeGroupIds,
-    allGroupIds,
-    defaultOpenGroupIds,
-    sidebarHash,
-  ]);
+  }, [activeGroupIds, allGroupIds, defaultOpenGroupIds, sidebarHash]);
 
   useBrowserLayoutEffect(() => {
     if (!restored) {

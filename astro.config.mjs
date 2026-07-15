@@ -4,6 +4,7 @@ import starlight from "@astrojs/starlight";
 import { defineConfig } from "astro/config";
 import starlightLinksValidator from "starlight-links-validator";
 import starlightLlmsTxt from "starlight-llms-txt";
+
 import { docsProducts, docsSidebar } from "./src/docs/catalog.ts";
 import { siteDocsPages } from "./src/docs/site-pages.ts";
 

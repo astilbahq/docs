@@ -95,27 +95,36 @@ export const docsSidebarStyles = {
       transitionDuration: "instant",
     },
   }),
-  selectorPositioner: cx(menuStyles.positioner, css({
-    inlineSize: "calc(var(--anchor-width) - 1rem)",
-  })),
-  selectorMenu: cx(menuStyles.popup, css({
-    inlineSize: "100%",
-  })),
-  selectorOption: cx(menuStyles.item, css({
-    minBlockSize: "2.75rem",
-    fontSize: "0.875rem",
-    '&[aria-current="true"]': {
-      background: "surface.selected",
-      color: "ink.strong",
-      fontWeight: "medium",
-    },
-    '&[aria-current="true"]:is(:hover, [data-highlighted])': {
-      background: "surface.selected",
-    },
-    desktop: {
-      minBlockSize: "2.5rem",
-    },
-  })),
+  selectorPositioner: cx(
+    menuStyles.positioner,
+    css({
+      inlineSize: "calc(var(--anchor-width) - 1rem)",
+    })
+  ),
+  selectorMenu: cx(
+    menuStyles.popup,
+    css({
+      inlineSize: "100%",
+    })
+  ),
+  selectorOption: cx(
+    menuStyles.item,
+    css({
+      minBlockSize: "2.75rem",
+      fontSize: "0.875rem",
+      '&[aria-current="true"]': {
+        background: "surface.selected",
+        color: "ink.strong",
+        fontWeight: "medium",
+      },
+      '&[aria-current="true"]:is(:hover, [data-highlighted])': {
+        background: "surface.selected",
+      },
+      desktop: {
+        minBlockSize: "2.5rem",
+      },
+    })
+  ),
   selectorLabel: menuStyles.label,
   selectorTrailing: menuStyles.trailing,
   badge: css({
@@ -273,9 +282,10 @@ export const docsSidebarStyles = {
     flex: "0 0 1rem",
     placeItems: "center",
     color: "ink.muted",
-    '[data-docs-nav-link]:is(:hover, :focus-visible, [aria-current="page"]) &': {
-      color: "currentColor",
-    },
+    '[data-docs-nav-link]:is(:hover, :focus-visible, [aria-current="page"]) &':
+      {
+        color: "currentColor",
+      },
   }),
   navLabel: css({
     minInlineSize: 0,

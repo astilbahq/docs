@@ -5,10 +5,7 @@ import {
 
 type SidebarEntry = StarlightRouteData["sidebar"][number];
 type SidebarGroup = Extract<SidebarEntry, { type: "group" }>;
-type SidebarLink = Exclude<
-  StarlightRouteData["pagination"]["prev"],
-  undefined
->;
+type SidebarLink = Exclude<StarlightRouteData["pagination"]["prev"], undefined>;
 type PrevNextConfig = StarlightRouteData["entry"]["data"]["prev"];
 
 const isGroup = (entry: SidebarEntry): entry is SidebarGroup =>
@@ -77,16 +74,14 @@ const updatePagination = (route: StarlightRouteData): void => {
 
 export const onRequest = defineRouteMiddleware((context, next) => {
   const route = context.locals.starlightRoute;
-  const productGroup =
-    route.sidebar.find(
-      (entry): entry is SidebarGroup =>
-        isGroup(entry) && containsCurrentPage(entry)
-    );
-  const versionGroup =
-    productGroup?.entries.find(
-      (entry): entry is SidebarGroup =>
-        isGroup(entry) && containsCurrentPage(entry)
-    );
+  const productGroup = route.sidebar.find(
+    (entry): entry is SidebarGroup =>
+      isGroup(entry) && containsCurrentPage(entry)
+  );
+  const versionGroup = productGroup?.entries.find(
+    (entry): entry is SidebarGroup =>
+      isGroup(entry) && containsCurrentPage(entry)
+  );
 
   if (versionGroup) {
     route.sidebar = versionGroup.entries;

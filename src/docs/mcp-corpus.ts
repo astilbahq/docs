@@ -73,7 +73,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const requireString = (
   value: unknown,
   field: string,
-  { maxLength = 2048 }: { maxLength?: number } = {},
+  { maxLength = 2048 }: { maxLength?: number } = {}
 ): string => {
   if (
     typeof value !== "string" ||
@@ -81,7 +81,7 @@ const requireString = (
     value.length > maxLength
   ) {
     throw new Error(
-      `[docs-mcp] Corpus field ${field} must be a non-empty string of at most ${maxLength} characters.`,
+      `[docs-mcp] Corpus field ${field} must be a non-empty string of at most ${maxLength} characters.`
     );
   }
 
@@ -96,7 +96,7 @@ const optionalString = (value: unknown, field: string): string | undefined =>
 const parsePublicUrl = (
   value: unknown,
   field: string,
-  expectedPath?: string,
+  expectedPath?: string
 ): string => {
   const rawUrl = requireString(value, field);
   const url = new URL(rawUrl);
@@ -127,12 +127,12 @@ const assertCatalogMetadata = (page: DocsCorpusPage): void => {
 
   if (!expected) {
     const hasMetadata = Object.values(actual).some(
-      (value) => value !== undefined,
+      (value) => value !== undefined
     );
 
     if (!siteMarkdownPaths.has(page.markdownPath) || hasMetadata) {
       throw new Error(
-        `[docs-mcp] ${page.markdownPath} is not present in the public documentation catalog.`,
+        `[docs-mcp] ${page.markdownPath} is not present in the public documentation catalog.`
       );
     }
 
@@ -142,7 +142,7 @@ const assertCatalogMetadata = (page: DocsCorpusPage): void => {
   for (const [field, value] of Object.entries(expected)) {
     if (actual[field as keyof typeof actual] !== value) {
       throw new Error(
-        `[docs-mcp] ${page.markdownPath} has metadata that differs from the public documentation catalog.`,
+        `[docs-mcp] ${page.markdownPath} has metadata that differs from the public documentation catalog.`
       );
     }
   }
@@ -168,7 +168,7 @@ export const parseDocsCorpus = (value: unknown): DocsCorpus => {
 
     const markdownPath = requireString(
       rawPage.markdownPath,
-      `pages[${index}].markdownPath`,
+      `pages[${index}].markdownPath`
     );
 
     if (
@@ -178,7 +178,7 @@ export const parseDocsCorpus = (value: unknown): DocsCorpus => {
       markdownPath.includes("\\")
     ) {
       throw new Error(
-        `[docs-mcp] Corpus page ${index} has an invalid Markdown path.`,
+        `[docs-mcp] Corpus page ${index} has an invalid Markdown path.`
       );
     }
 
@@ -188,21 +188,21 @@ export const parseDocsCorpus = (value: unknown): DocsCorpus => {
     const page = {
       canonicalUrl: parsePublicUrl(
         rawPage.canonicalUrl,
-        `pages[${index}].canonicalUrl`,
+        `pages[${index}].canonicalUrl`
       ),
       content,
       description: requireString(
         rawPage.description,
         `pages[${index}].description`,
-        { maxLength: 1024 },
+        { maxLength: 1024 }
       ),
       docsVersion: optionalString(
         rawPage.docsVersion,
-        `pages[${index}].docsVersion`,
+        `pages[${index}].docsVersion`
       ),
       docsVersionId: optionalString(
         rawPage.docsVersionId,
-        `pages[${index}].docsVersionId`,
+        `pages[${index}].docsVersionId`
       ),
       lifecycle: optionalString(rawPage.lifecycle, `pages[${index}].lifecycle`),
       markdownPath,
@@ -220,7 +220,7 @@ export const parseDocsCorpus = (value: unknown): DocsCorpus => {
       resourceUris.has(page.uri)
     ) {
       throw new Error(
-        `[docs-mcp] Duplicate generated resource: ${page.markdownPath}.`,
+        `[docs-mcp] Duplicate generated resource: ${page.markdownPath}.`
       );
     }
 

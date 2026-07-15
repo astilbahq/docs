@@ -1,5 +1,6 @@
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
+
 import { parseDocsCorpus } from "../src/docs/mcp-corpus.ts";
 
 const maxCorpusBytes = 1_000_000;
@@ -11,7 +12,7 @@ const siteValue = process.env.ASTILBA_DOCS_SITE;
 
 if (!siteValue) {
   throw new Error(
-    "[mcp-corpus] ASTILBA_DOCS_SITE is required to generate canonical resource URIs.",
+    "[mcp-corpus] ASTILBA_DOCS_SITE is required to generate canonical resource URIs."
   );
 }
 
@@ -23,7 +24,7 @@ const collectFiles = async (directory) => {
     entries.map(async (entry) => {
       const path = join(directory, entry.name);
       return entry.isDirectory() ? collectFiles(path) : path;
-    }),
+    })
   );
 
   return files.flat();
@@ -36,7 +37,7 @@ const getMarkdownAlternate = (html, artifact, pageUrl) => {
   const matches = (html.match(/<link\b[^>]*>/g) ?? []).filter(
     (tag) =>
       getLinkAttribute(tag, "rel") === "alternate" &&
-      getLinkAttribute(tag, "type") === "text/markdown",
+      getLinkAttribute(tag, "type") === "text/markdown"
   );
 
   if (matches.length === 0) {
@@ -45,7 +46,7 @@ const getMarkdownAlternate = (html, artifact, pageUrl) => {
 
   if (matches.length !== 1) {
     throw new Error(
-      `[mcp-corpus] ${artifact} must advertise exactly one Markdown alternate, found ${matches.length}.`,
+      `[mcp-corpus] ${artifact} must advertise exactly one Markdown alternate, found ${matches.length}.`
     );
   }
 
@@ -53,7 +54,7 @@ const getMarkdownAlternate = (html, artifact, pageUrl) => {
 
   if (!href) {
     throw new Error(
-      `[mcp-corpus] ${artifact} has a Markdown alternate without an href.`,
+      `[mcp-corpus] ${artifact} has a Markdown alternate without an href.`
     );
   }
 
@@ -62,12 +63,12 @@ const getMarkdownAlternate = (html, artifact, pageUrl) => {
 
 const getFrontmatter = (markdown, artifact) => {
   const frontmatter = markdown.match(
-    /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/,
+    /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/
   )?.[1];
 
   if (!frontmatter) {
     throw new Error(
-      `[mcp-corpus] ${artifact} must begin with generated frontmatter.`,
+      `[mcp-corpus] ${artifact} must begin with generated frontmatter.`
     );
   }
 
@@ -78,11 +79,11 @@ const getFrontmatterString = (
   frontmatter,
   field,
   artifact,
-  { required = false } = {},
+  { required = false } = {}
 ) => {
   const matches = [
     ...frontmatter.matchAll(
-      new RegExp(`^${field}:\\s*("(?:[^"\\\\]|\\\\.)*")\\s*$`, "gm"),
+      new RegExp(`^${field}:\\s*("(?:[^"\\\\]|\\\\.)*")\\s*$`, "gm")
     ),
   ];
 
@@ -92,7 +93,7 @@ const getFrontmatterString = (
 
   if (matches.length !== 1) {
     throw new Error(
-      `[mcp-corpus] ${artifact} must define ${field} ${required ? "exactly once" : "at most once"} as a JSON string.`,
+      `[mcp-corpus] ${artifact} must define ${field} ${required ? "exactly once" : "at most once"} as a JSON string.`
     );
   }
 
@@ -126,7 +127,7 @@ for (const file of files) {
     !markdownUrl.pathname.endsWith(".md")
   ) {
     throw new Error(
-      `[mcp-corpus] ${htmlArtifact} advertises a non-canonical Markdown resource: ${markdownUrl.href}.`,
+      `[mcp-corpus] ${htmlArtifact} advertises a non-canonical Markdown resource: ${markdownUrl.href}.`
     );
   }
 
@@ -141,7 +142,7 @@ for (const file of files) {
     isAbsolute(relativeMarkdownFile)
   ) {
     throw new Error(
-      `[mcp-corpus] ${htmlArtifact} advertises a Markdown path outside dist: ${markdownPath}.`,
+      `[mcp-corpus] ${htmlArtifact} advertises a Markdown path outside dist: ${markdownPath}.`
     );
   }
 
@@ -149,7 +150,7 @@ for (const file of files) {
 
   if (bytes.byteLength > maxPageBytes) {
     throw new Error(
-      `[mcp-corpus] dist/${markdownArtifact} is ${bytes.byteLength} bytes; the per-page limit is ${maxPageBytes}.`,
+      `[mcp-corpus] dist/${markdownArtifact} is ${bytes.byteLength} bytes; the per-page limit is ${maxPageBytes}.`
     );
   }
 
@@ -159,7 +160,7 @@ for (const file of files) {
     frontmatter,
     "canonical",
     markdownArtifact,
-    { required: true },
+    { required: true }
   );
   const canonical = new URL(canonicalUrl);
 
@@ -170,7 +171,7 @@ for (const file of files) {
     !canonical.pathname.endsWith("/")
   ) {
     throw new Error(
-      `[mcp-corpus] dist/${markdownArtifact} has a non-canonical page URL: ${canonical.href}.`,
+      `[mcp-corpus] dist/${markdownArtifact} has a non-canonical page URL: ${canonical.href}.`
     );
   }
 
@@ -180,41 +181,41 @@ for (const file of files) {
     resourceUris.has(markdownUrl.href)
   ) {
     throw new Error(
-      `[mcp-corpus] Duplicate documentation resource: ${markdownUrl.href}.`,
+      `[mcp-corpus] Duplicate documentation resource: ${markdownUrl.href}.`
     );
   }
 
   const product = getFrontmatterString(
     frontmatter,
     "product",
-    markdownArtifact,
+    markdownArtifact
   );
   const productId = getFrontmatterString(
     frontmatter,
     "productId",
-    markdownArtifact,
+    markdownArtifact
   );
   const docsVersion = getFrontmatterString(
     frontmatter,
     "docsVersion",
-    markdownArtifact,
+    markdownArtifact
   );
   const docsVersionId = getFrontmatterString(
     frontmatter,
     "docsVersionId",
-    markdownArtifact,
+    markdownArtifact
   );
   const lifecycle = getFrontmatterString(
     frontmatter,
     "lifecycle",
-    markdownArtifact,
+    markdownArtifact
   );
   const metadata = [product, productId, docsVersion, docsVersionId, lifecycle];
   const metadataCount = metadata.filter((value) => value !== undefined).length;
 
   if (metadataCount !== 0 && metadataCount !== metadata.length) {
     throw new Error(
-      `[mcp-corpus] dist/${markdownArtifact} must provide the complete product/version metadata tuple or none of it.`,
+      `[mcp-corpus] dist/${markdownArtifact} must provide the complete product/version metadata tuple or none of it.`
     );
   }
 
@@ -228,7 +229,7 @@ for (const file of files) {
       frontmatter,
       "description",
       markdownArtifact,
-      { required: true },
+      { required: true }
     ),
     docsVersion,
     docsVersionId,
@@ -245,7 +246,7 @@ for (const file of files) {
 
 if (pages.length === 0) {
   throw new Error(
-    "[mcp-corpus] No public documentation pages with Markdown alternates were found.",
+    "[mcp-corpus] No public documentation pages with Markdown alternates were found."
   );
 }
 
@@ -255,7 +256,7 @@ const outputBytes = new TextEncoder().encode(output).byteLength;
 
 if (outputBytes > maxCorpusBytes) {
   throw new Error(
-    `[mcp-corpus] Generated corpus is ${outputBytes} bytes; the limit is ${maxCorpusBytes}.`,
+    `[mcp-corpus] Generated corpus is ${outputBytes} bytes; the limit is ${maxCorpusBytes}.`
   );
 }
 
@@ -263,5 +264,5 @@ await mkdir(outputDirectory, { recursive: true });
 await writeFile(outputPath, output, "utf8");
 
 console.log(
-  `[mcp-corpus] Generated ${pages.length} public resources (${outputBytes} bytes).`,
+  `[mcp-corpus] Generated ${pages.length} public resources (${outputBytes} bytes).`
 );

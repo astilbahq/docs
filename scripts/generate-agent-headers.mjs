@@ -1,11 +1,6 @@
-import {
-  access,
-  mkdir,
-  readFile,
-  readdir,
-  writeFile,
-} from "node:fs/promises";
+import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
+
 import { CONTENT_SECURITY_POLICY_ASSET_PATH } from "../src/docs/security.ts";
 import {
   createContentSecurityPolicy,
@@ -56,9 +51,7 @@ const fileExists = async (path) => {
 };
 
 await access(headersPath);
-const staticHeaders = (
-  await readFile(headersTemplatePath, "utf8")
-).trimEnd();
+const staticHeaders = (await readFile(headersTemplatePath, "utf8")).trimEnd();
 const files = await collectFiles(dist);
 const htmlDocuments = await Promise.all(
   files
@@ -85,8 +78,7 @@ for (const file of files) {
   const html = await readFile(file, "utf8");
   const markdownLinks = (html.match(/<link\b[^>]*>/g) ?? []).filter(
     (tag) =>
-      tag.includes('rel="alternate"') &&
-      tag.includes('type="text/markdown"')
+      tag.includes('rel="alternate"') && tag.includes('type="text/markdown"')
   );
 
   if (markdownLinks.length === 0) {

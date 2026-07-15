@@ -13,8 +13,7 @@ const TOKEN_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]+$/;
 const QUALITY_PATTERN = /^(?:0(?:\.\d{0,3})?|1(?:\.0{0,3})?)$/;
 const PAGE_MARKDOWN_ENTRIES = [
   ...siteDocsPages.map(
-    ({ canonicalPath, markdownPath }) =>
-      [canonicalPath, markdownPath] as const
+    ({ canonicalPath, markdownPath }) => [canonicalPath, markdownPath] as const
   ),
   ...docsProducts.flatMap((product) =>
     product.versions.flatMap((version) =>
@@ -245,11 +244,7 @@ const parseMediaRange = (value: string): MediaRange | undefined => {
 
     if (name === "q") {
       const rawQuality = rawParameter.slice(separator + 1).trim();
-      if (
-        sawQuality ||
-        separator < 0 ||
-        !QUALITY_PATTERN.test(rawQuality)
-      ) {
+      if (sawQuality || separator < 0 || !QUALITY_PATTERN.test(rawQuality)) {
         return undefined;
       }
 
@@ -261,11 +256,7 @@ const parseMediaRange = (value: string): MediaRange | undefined => {
     const parameterValue = parseParameterValue(
       rawParameter.slice(separator + 1)
     );
-    if (
-      separator < 0 ||
-      parameterValue === undefined ||
-      parameters.has(name)
-    ) {
+    if (separator < 0 || parameterValue === undefined || parameters.has(name)) {
       return undefined;
     }
 
@@ -519,9 +510,7 @@ const routeRequest = async (
   const response = await getAsset(assets, request);
 
   return addVaryAccept(
-    markdownPath
-      ? addCanonicalPageDiscovery(response, markdownPath)
-      : response
+    markdownPath ? addCanonicalPageDiscovery(response, markdownPath) : response
   );
 };
 
@@ -534,11 +523,7 @@ export const handleRequest = async (
   let securedResponse: Response;
 
   try {
-    securedResponse = await addContentSecurityPolicy(
-      response,
-      request,
-      assets
-    );
+    securedResponse = await addContentSecurityPolicy(response, request, assets);
   } catch (error) {
     console.error(
       JSON.stringify({

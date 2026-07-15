@@ -12,6 +12,7 @@ import {
   type LucideIcon,
   type LucideProps,
 } from "lucide-react";
+
 import type { DocsIcon as DocsIconName } from "../docs/types";
 
 type InterfaceIcon = "approve-check" | "down-caret";

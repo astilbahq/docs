@@ -1,14 +1,12 @@
 import { describe, expect, it } from "vitest";
+
 import { createPageActionDestinations } from "../../src/docs/page-actions";
 
 describe("page action destinations", () => {
   const markdownUrl = "https://docs.astilba.com/cache/overview.md";
   const sourceUrl =
     "https://github.com/astilbahq/docs/blob/main/src/content/docs/cache/overview.md";
-  const destinations = createPageActionDestinations(
-    markdownUrl,
-    sourceUrl
-  );
+  const destinations = createPageActionDestinations(markdownUrl, sourceUrl);
 
   it("keeps the public source as the GitHub destination", () => {
     expect(destinations[0]).toEqual({
@@ -28,8 +26,7 @@ describe("page action destinations", () => {
       "cursor",
     ]);
 
-    const expectedPrompt =
-      `Read ${markdownUrl}, I want to ask questions about it.`;
+    const expectedPrompt = `Read ${markdownUrl}, I want to ask questions about it.`;
 
     for (const destination of destinations.slice(1)) {
       const url = new URL(destination.href);

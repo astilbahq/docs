@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import {
   docsProducts,
   findDocsContext,
@@ -48,9 +49,7 @@ describe("documentation catalog", () => {
     const version = getDefaultVersion(cache);
 
     expect(getVersionMeta(version)).toBe("Current");
-    expect(getVersionMeta({ ...version, lifecycle: "latest" })).toBe(
-      "Latest"
-    );
+    expect(getVersionMeta({ ...version, lifecycle: "latest" })).toBe("Latest");
     expect(getVersionMeta({ ...version, lifecycle: "maintained" })).toBe(
       "Maintained"
     );

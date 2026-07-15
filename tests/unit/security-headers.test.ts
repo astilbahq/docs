@@ -1,5 +1,7 @@
 import { createHash } from "node:crypto";
+
 import { describe, expect, it } from "vitest";
+
 import {
   createContentSecurityPolicy,
   getInlineScriptHashes,
@@ -15,9 +17,7 @@ describe("security headers", () => {
         '<script>console.log("one")</script><script src="/app.js"></script>',
         '<script data-src="src=/external.js > still inline">console.log("two")</script><script>console.log("one")</script>',
       ])
-    ).toEqual(
-      [hash('console.log("one")'), hash('console.log("two")')].sort()
-    );
+    ).toEqual([hash('console.log("one")'), hash('console.log("two")')].sort());
   });
 
   it("creates a strict executable policy with narrow framework exceptions", () => {
