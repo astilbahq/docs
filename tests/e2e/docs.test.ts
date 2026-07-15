@@ -539,12 +539,88 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   });
 
   await page.getByRole("button", { name: "Open in" }).click();
-  await page.getByRole("menuitem", { name: "Copy Markdown link" }).click();
+  const openInMenu = page.getByRole("menu");
+  const copyMarkdownLink = page.getByRole("menuitem", {
+    name: "Copy Markdown link",
+  });
+  const sidebarSubItem = page.locator("[data-docs-nav-link]").first();
+
+  const [menuItemMetrics, sidebarItemMetrics] = await Promise.all(
+    [copyMarkdownLink, sidebarSubItem].map((item) =>
+      item.evaluate((element) => {
+        const styles = getComputedStyle(element);
+
+        return {
+          blockSize: styles.blockSize,
+          fontSize: styles.fontSize,
+          lineHeight: styles.lineHeight,
+          paddingBlockEnd: styles.paddingBlockEnd,
+          paddingBlockStart: styles.paddingBlockStart,
+          paddingInlineEnd: styles.paddingInlineEnd,
+          paddingInlineStart: styles.paddingInlineStart,
+        };
+      })
+    )
+  );
+
+  expect(menuItemMetrics).toEqual(sidebarItemMetrics);
+  await expect(copyMarkdownLink.locator("svg").first()).toHaveCSS(
+    "inline-size",
+    "14px"
+  );
+
+  await copyMarkdownLink.click();
   await expect(page.getByRole("status")).toHaveText("Markdown link copied.");
+  await expect(openInMenu).toBeVisible();
+  await expect(copyMarkdownLink).toHaveAttribute("data-copy-state", "copied");
+  await expect(copyMarkdownLink.locator('[data-copy-icon="copied"]')).toHaveCSS(
+    "opacity",
+    "1"
+  );
   await expect(copyMarkdown).toHaveAttribute("data-copy-state", "idle");
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
     .toMatch(/\/cache\/overview\.md$/);
+
+  await page.evaluate(() => {
+    const clipboard = navigator.clipboard;
+    const writeText = clipboard.writeText.bind(clipboard);
+    const state = { settled: 0, started: 0 };
+
+    Object.defineProperty(window, "__linkCopyWrites", {
+      configurable: true,
+      value: state,
+    });
+    Object.defineProperty(clipboard, "writeText", {
+      configurable: true,
+      value: async (value: string) => {
+        state.started += 1;
+        const delay = state.started === 1 ? 50 : 600;
+        await new Promise((resolve) => {
+          window.setTimeout(resolve, delay);
+        });
+        await writeText(value);
+        state.settled += 1;
+      },
+    });
+  });
+
+  await copyMarkdownLink.click();
+  await copyMarkdownLink.click();
+  await page.waitForFunction(
+    () =>
+      (
+        window as typeof window & {
+          __linkCopyWrites?: { settled: number };
+        }
+      ).__linkCopyWrites?.settled === 2
+  );
+  await expect(copyMarkdownLink).toHaveAttribute("data-copy-state", "copied");
+  await page.waitForTimeout(1600);
+  await expect(copyMarkdownLink).toHaveAttribute("data-copy-state", "copied");
+  await expect(copyMarkdownLink).toHaveAttribute("data-copy-state", "idle", {
+    timeout: 1000,
+  });
 });
 
 test("searches the production Pagefind index", async ({ page }) => {

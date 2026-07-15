@@ -83,6 +83,18 @@ export const pageActionsStyles = {
     menuStyles.popup,
     css({
       inlineSize: "100%",
+      "& [data-page-actions-item]": {
+        minBlockSize: "2.75rem",
+        gap: "0.625rem",
+        paddingBlock: "0.5rem",
+        paddingInline: "1rem",
+        fontSize: "0.875rem",
+        lineHeight: 1.35,
+        desktop: {
+          minBlockSize: "2rem",
+          paddingBlock: "0.35rem",
+        },
+      },
     })
   ),
   menuItem: cx(
