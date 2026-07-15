@@ -118,6 +118,101 @@ const requireHsts = (response, label) =>
     label
   );
 
+const parseContentSecurityPolicy = (value) => {
+  const directives = new Map();
+
+  for (const rawDirective of value.split(";")) {
+    const parts = rawDirective.trim().split(/\s+/);
+    const name = parts.shift()?.toLowerCase();
+
+    if (!name) {
+      continue;
+    }
+
+    if (directives.has(name)) {
+      throw new Error(
+        `[production-smoke] Content-Security-Policy repeats ${name}.`
+      );
+    }
+
+    directives.set(name, parts);
+  }
+
+  return directives;
+};
+
+const requireContentSecurityPolicy = (response, label) => {
+  const rawPolicy = response.headers.get("Content-Security-Policy");
+
+  if (!rawPolicy) {
+    throw new Error(
+      `[production-smoke] ${label} is missing Content-Security-Policy.`
+    );
+  }
+
+  const directives = parseContentSecurityPolicy(rawPolicy);
+  const expectedDirectives = new Map([
+    ["default-src", ["'none'"]],
+    ["base-uri", ["'none'"]],
+    ["connect-src", ["'self'"]],
+    ["font-src", ["'self'", "data:"]],
+    ["form-action", ["'none'"]],
+    ["frame-ancestors", ["'none'"]],
+    ["frame-src", ["'none'"]],
+    ["img-src", ["'self'", "data:"]],
+    ["manifest-src", ["'none'"]],
+    ["media-src", ["'none'"]],
+    ["object-src", ["'none'"]],
+    ["script-src-attr", ["'none'"]],
+    ["style-src", ["'self'", "'unsafe-inline'"]],
+    ["worker-src", ["'self'"]],
+  ]);
+  const knownDirectives = new Set([
+    ...expectedDirectives.keys(),
+    "script-src",
+  ]);
+
+  for (const name of directives.keys()) {
+    if (!knownDirectives.has(name)) {
+      throw new Error(
+        `[production-smoke] ${label} returned an unexpected CSP directive: ${JSON.stringify(name)}.`
+      );
+    }
+  }
+
+  for (const [name, expectedSources] of expectedDirectives) {
+    const actualSources = directives.get(name);
+
+    if (
+      !actualSources ||
+      actualSources.length !== expectedSources.length ||
+      !expectedSources.every((source) => actualSources.includes(source))
+    ) {
+      throw new Error(
+        `[production-smoke] ${label} returned unexpected ${name}: ${JSON.stringify(actualSources)}.`
+      );
+    }
+  }
+
+  const scriptSources = directives.get("script-src") ?? [];
+  const scriptHashes = scriptSources.filter((source) =>
+    /^'sha256-[A-Za-z0-9+/]{43}='$/.test(source)
+  );
+
+  if (
+    !scriptSources.includes("'self'") ||
+    !scriptSources.includes("'wasm-unsafe-eval'") ||
+    scriptSources.includes("'unsafe-inline'") ||
+    scriptSources.includes("'unsafe-eval'") ||
+    scriptHashes.length === 0 ||
+    scriptSources.length !== scriptHashes.length + 2
+  ) {
+    throw new Error(
+      `[production-smoke] ${label} returned an unsafe or incomplete script-src.`
+    );
+  }
+};
+
 const getFingerprintAsset = (html) => {
   const assetPattern = /(?:src|href)="([^"]*\/_astro\/[^"?#]+(?:\?[^"#]*)?)"/g;
 
@@ -157,6 +252,7 @@ const checkHtml = async () => {
     "HTML page"
   );
   requireHsts(response, "HTML page");
+  requireContentSecurityPolicy(response, "HTML page");
   const html = await response.text();
 
   if (!(html.includes("<html") && html.includes("Astilba"))) {

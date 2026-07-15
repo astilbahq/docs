@@ -56,7 +56,7 @@ Development and type checks do not require a deployed origin. Production builds 
 
 The production build creates the Pagefind search index, validates internal links, and then verifies the deployed artifact set in `dist/`. Run `pnpm preview` to inspect that build locally.
 
-Repository automation also runs Actionlint, Zizmor, dependency review, a complete-lockfile OSV scan, and Conventional Commit PR-title validation. Renovate keeps exact package and immutable workflow pins current on a weekly cadence; major changes, lockfile maintenance, Wrangler, and production-path Actions always require manual review.
+Repository automation also runs Actionlint, Zizmor, CodeQL analysis for the application and Actions workflows, dependency review, a complete-lockfile OSV scan, and Conventional Commit PR-title validation. Renovate keeps exact package and immutable workflow pins current on a weekly cadence; major changes, lockfile maintenance, Wrangler, production-path Actions, and CodeQL always require manual review.
 
 ## Deployment
 
@@ -78,6 +78,8 @@ pnpm deploy
 
 `wrangler.jsonc` is the deployment source of truth. Its Custom Domain route lets Cloudflare own the `docs.astilba.com` DNS record and certificate rather than proxying an external origin.
 
+The production build also derives a Content Security Policy from the exact inline scripts Astro and Starlight emit. Arbitrary inline JavaScript and inline event handlers remain blocked; same-origin executable assets and the narrow WebAssembly evaluation capability required by Pagefind are allowed. Starlight and Expressive Code still require inline styles, so that exception is deliberately limited to `style-src`. Static-asset-first routes receive the policy from `_headers`; Worker-first HTML reads the same generated policy asset and attaches it directly, as required by Cloudflare's routing model. The artifact verifier, Worker tests, browser suite, and production smoke test all fail if the policy is missing or stops matching the built site.
+
 GitHub Actions automatically deploys after the verification job succeeds on `main`. Verification builds the production `dist/` once, validates it with Wrangler and the browser suite, and uploads it as an immutable GitHub artifact with a SHA-256 digest. The deployment job downloads that exact artifact by ID, requires successful digest verification, and runs Wrangler without rebuilding Astro. Hidden generated paths such as `.well-known/` are deliberately included.
 
 Immediately before Wrangler runs, the deployment job checks that its verified revision is still the current `origin/main`; rerunning an older workflow cannot replace a newer deployment. A bounded production smoke test then checks canonical HTML, negotiated UTF-8 Markdown, a fingerprinted asset's immutable cache policy, and an MCP initialize/search exchange. The same read-only smoke test runs hourly and on demand through the **Production smoke** workflow, or locally with:
@@ -86,7 +88,7 @@ Immediately before Wrangler runs, the deployment job checks that its verified re
 pnpm smoke:production
 ```
 
-The `production` environment scopes `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`; pull requests can validate Wrangler but cannot access those credentials or deploy. Main-branch protections require the complete verification matrix for administrators as well as other contributors, while CODEOWNERS routes production-path changes to the responsible maintainer. An independent human-approval gate still requires a second eligible repository reviewer and must not be enabled in a way that deadlocks deployments. Cloudflare recommends a custom API token restricted to Workers editing for the Astilba account.
+The `production` environment scopes `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`; pull requests can validate Wrangler but cannot access those credentials or deploy. Actions receive read-only repository access by default and cannot approve pull requests. Main-branch protections require the complete verification matrix for administrators as well as other contributors, while CODEOWNERS routes production-path changes to the responsible maintainer. An independent human-approval gate still requires a second eligible repository reviewer and must not be enabled in a way that deadlocks deployments. Cloudflare recommends a custom API token restricted to Workers editing for the Astilba account.
 
 ### Roll back production
 
