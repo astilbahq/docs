@@ -40,8 +40,12 @@ describe("documentation catalog", () => {
         pages: ["Overview", "Local quickstart"],
       },
       {
-        label: "Integrations",
-        pages: ["Cloudflare Workers", "React Router"],
+        label: "Platforms",
+        pages: ["Cloudflare Workers"],
+      },
+      {
+        label: "Frameworks",
+        pages: ["React Router"],
       },
       {
         label: "Guides",

@@ -21,7 +21,8 @@ Start with the [overview](/cache/overview/), run the [local quickstart](/cache/q
 ## How to read these docs
 
 - **Get started** explains who a product is for and provides the shortest honest path through its current release state.
-- **Integrations** show how a product connects to a runtime or framework.
+- **Platforms** show how a product runs on a particular runtime and uses its infrastructure.
+- **Frameworks** show how a product connects to an application's request lifecycle.
 - **Guides** help you complete one application task, such as reading or invalidating data.
 - **Concepts** explain the mental models and capability relationships behind those tasks.
 - **Reference** records exact public surfaces, available implementations, and current completeness. When another page and the implementation ledger appear to differ, follow the ledger.
