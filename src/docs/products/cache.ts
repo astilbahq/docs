@@ -21,7 +21,7 @@ const cacheSections = [
     ],
   },
   {
-    label: "Integrations",
+    label: "Platforms",
     items: [
       {
         key: "cloudflare-workers",
@@ -30,6 +30,11 @@ const cacheSections = [
         icon: "cloudflare-workers",
         sourcePath: "src/content/docs/cache/cloudflare-workers.md",
       },
+    ],
+  },
+  {
+    label: "Frameworks",
+    items: [
       {
         key: "react-and-server-apps",
         label: "React Router",
