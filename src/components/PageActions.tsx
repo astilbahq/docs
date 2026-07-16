@@ -16,6 +16,7 @@ import { PageActionBrandIcon } from "./PageActionBrandIcon";
 import { pageActionsStyles as styles } from "./PageActions.styles";
 
 type CopyState = "idle" | "copying" | "copied" | "error";
+type LinkCopyState = Exclude<CopyState, "copying">;
 type InputModality = "keyboard" | "pointer";
 
 interface PageActionsProps {
@@ -51,10 +52,13 @@ const ActionIcon = ({
 export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
   const [absoluteMarkdownUrl, setAbsoluteMarkdownUrl] = useState(markdownPath);
   const [copyState, setCopyState] = useState<CopyState>("idle");
+  const [linkCopyState, setLinkCopyState] = useState<LinkCopyState>("idle");
   const [isReady, setIsReady] = useState(false);
   const [inputModality, setInputModality] = useState<InputModality>("pointer");
   const [status, setStatus] = useState("");
   const copyResetTimer = useRef<number | undefined>(undefined);
+  const linkCopyRequestId = useRef(0);
+  const linkCopyResetTimer = useRef<number | undefined>(undefined);
   const statusResetTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
@@ -64,8 +68,14 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
 
   useEffect(
     () => () => {
+      linkCopyRequestId.current += 1;
+
       if (copyResetTimer.current !== undefined) {
         window.clearTimeout(copyResetTimer.current);
+      }
+
+      if (linkCopyResetTimer.current !== undefined) {
+        window.clearTimeout(linkCopyResetTimer.current);
       }
 
       if (statusResetTimer.current !== undefined) {
@@ -140,13 +150,36 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
 
   const copyMarkdownLink = async (): Promise<void> => {
     const markdownUrl = new URL(markdownPath, window.location.href).href;
+    const requestId = linkCopyRequestId.current + 1;
+    linkCopyRequestId.current = requestId;
+
+    if (linkCopyResetTimer.current !== undefined) {
+      window.clearTimeout(linkCopyResetTimer.current);
+      linkCopyResetTimer.current = undefined;
+    }
+
+    let feedback: LinkCopyState = "copied";
+    let message = "Markdown link copied.";
 
     try {
       await copyText(markdownUrl);
-      announceStatus("Markdown link copied.");
     } catch {
-      announceStatus("Markdown link could not be copied.");
+      feedback = "error";
+      message = "Markdown link could not be copied.";
     }
+
+    if (linkCopyRequestId.current !== requestId) {
+      return;
+    }
+
+    setLinkCopyState(feedback);
+    announceStatus(message);
+    linkCopyResetTimer.current = window.setTimeout(() => {
+      if (linkCopyRequestId.current === requestId) {
+        setLinkCopyState("idle");
+        linkCopyResetTimer.current = undefined;
+      }
+    }, 2000);
   };
 
   return (
@@ -223,13 +256,30 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
             >
               <Menu.Item
                 className={styles.menuItem}
+                closeOnClick={false}
+                data-copy-state={linkCopyState}
+                data-page-actions-item=""
                 label="Copy Markdown link"
                 onClick={() => {
                   void copyMarkdownLink();
                 }}
               >
                 <span className={styles.menuIcon}>
-                  <ActionIcon icon={Link} />
+                  <span
+                    aria-hidden="true"
+                    className={styles.iconSwap}
+                    data-state={linkCopyState}
+                  >
+                    <span data-copy-icon="idle">
+                      <ActionIcon icon={Link} size={14} />
+                    </span>
+                    <span data-copy-icon="copied">
+                      <ActionIcon icon={Check} size={14} />
+                    </span>
+                    <span data-copy-icon="error">
+                      <ActionIcon icon={CircleAlert} size={14} />
+                    </span>
+                  </span>
                 </span>
                 <span className={styles.menuLabel}>Copy Markdown link</span>
               </Menu.Item>
@@ -239,6 +289,7 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
                   <Menu.LinkItem
                     className={styles.menuItem}
                     closeOnClick
+                    data-page-actions-item=""
                     href={destination.href}
                     key={destination.id}
                     label={destination.label}
@@ -249,13 +300,14 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
                       <PageActionBrandIcon
                         className={styles.controlIcon}
                         destination={destination.id}
+                        size={14}
                       />
                     </span>
                     <span className={styles.menuLabel}>
                       {destination.label}
                     </span>
                     <span aria-hidden="true" className={styles.menuTrailing}>
-                      <ActionIcon icon={ExternalLink} size={14} />
+                      <ActionIcon icon={ExternalLink} size={12} />
                     </span>
                   </Menu.LinkItem>
                 );
