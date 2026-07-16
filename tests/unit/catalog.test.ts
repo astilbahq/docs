@@ -54,7 +54,9 @@ describe("documentation catalog", () => {
           "Read and cache values",
           "Invalidate cached data",
           "Control cache sharing",
+          "Cache HTTP responses",
           "Consistency and resilience",
+          "Inspect cache behavior",
         ],
       },
       {

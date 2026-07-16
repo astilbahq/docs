@@ -21,6 +21,8 @@ Choose strong mode with <code>consistency: "strong"</code> on the call. Although
 - Unknown or suspect knowledge never validates an entry as fresh or grace-servable by itself.
 - A hard invalidation observed during a fill can fence the result. When verified knowledge advanced, the kernel re-mints the birth epoch and may refetch within a three-attempt budget before surfacing <code>FencedError</code> or a miss entry.
 
+On a strong miss, the pre-factory live check establishes the current Registry epoch from the canonical key, namespace, and caller-declared tags. Tags discovered later through <code>FactoryCtx</code> join the final stored set and write-back fence. They were not available for individual pre-checking, but a delivered hard purge on one during the fill can still fence and retry the result.
+
 Strong mode may still use an eligible stale candidate when its foreground factory fails with a classified transient error and the call declared <code>grace</code>. It rechecks the candidate at serve time; a hard-dead or still-unknown value is not served.
 
 ## Decide what unknown means
@@ -74,9 +76,12 @@ The presence of <code>grace</code> currently opts a stale candidate into error f
 
 An eventual soft-stale read also awaits its refresh in the current implementation, then returns the stale value. Background adoption, queue retry, and refresh completion tracking are not yet present.
 
+Use <code>cache.explain(key)</code> to inspect the current local verdict and reader state without changing it. The method performs no live Registry check or resynchronization, so it is useful for diagnosis but never a substitute for a strong read. See [Inspect cache behavior](/cache/observability/).
+
 ## Related
 
 - [How Cache works](/cache/how-it-works/) explains the invalidation knowledge behind these read decisions.
 - [Cache fundamentals](/cache/core-concepts/) defines Registry, Bus, consistency, and grace in plain language.
 - [Read and cache values](/cache/reading-and-filling/) follows the foreground fill and stale return shapes.
+- [Inspect cache behavior](/cache/observability/) explains the point-in-time verdict and reader witness.
 - [Implementation status](/cache/api-status/) records unfinished timing and unavailable-policy behavior.

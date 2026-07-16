@@ -58,9 +58,10 @@ The portable constructor makes you supply storage, a clock, and a random source.
 | Reuse stale data during an outage | Grace plus a failure classifier | Origin failures should always surface. |
 | Coordinate fills across servers | A Lock driver and <code>lock: true</code> | In-process singleflight is enough. |
 | Change the wire format | A custom Codec | JSON-representable values are sufficient. |
-| Purge a shared HTTP or CDN cache | Planned render collection and CDN integration; this path is not wired yet | You only need application data caching. |
+| Tag a shared HTTP response safely | React Router render collection and scope-aware <code>Cache-Tag</code> emission | Your framework owns response dependencies another way. |
+| Purge a shared HTTP or CDN cache | A future CDN driver; response tags exist, but purge delivery is not wired yet | You only need application data caching. |
 
-Most application code should begin with <code>getOrSet()</code>. Registry, Bus, locks, codecs, replication, and L3 collection belong to progressively more advanced setups. The Workers factory hides most coordination wiring; the raw contracts remain available to adapter authors.
+Most application code should begin with <code>getOrSet()</code>. Registry, Bus, locks, codecs, replication, and HTTP response caching belong to progressively more advanced setups. The Workers factory hides most coordination wiring; the raw contracts remain available to adapter authors.
 
 ## Understand the guarantees
 
@@ -69,6 +70,7 @@ Most application code should begin with <code>getOrSet()</code>. Registry, Bus, 
 - **Identity affects storage.** Principal-derived values stay in local storage unless the application deliberately declares a shareable scope.
 - **Failures are classified.** A transient outage may reuse an eligible stale value; facts such as 403, 404, and 410 remain visible.
 - **Strong reads pay for authority.** With coordinated invalidation configured, they perform a live Registry check before serving a stored entry and before a strong miss is filled.
+- **A private dependency makes the rendered response private.** The React Router adapter emits response tags only when every managed dependency has readable public scope.
 
 Cache does not update your source of truth. Change the database or upstream service first, then invalidate its cached representations.
 
@@ -80,7 +82,7 @@ Cache does not update your source of truth. Change the database or upstream serv
 | Driver contracts | Implemented | Application and runtime integrations can implement the typed capability boundaries. |
 | Local memory Store | Implemented in source | <code>memory()</code> provides bounded, per-instance LRU storage and optional physical TTL when given a Clock. |
 | Cloudflare path | Public source preview | <code>./cloudflare</code> exports the Workers factory, KV, Coordinator, Registry, Bus, and redial helpers; workerd integration tests cover the primary path. |
-| React Router path | Public source preview | <code>./react-router</code> exports server middleware, typed request context access, and request-piggyback recovery ticks. |
+| React Router path | Public source preview | <code>./react-router</code> exports server middleware, typed request context access, request-piggyback recovery ticks, and scope-aware response-tag collection. |
 | Public package | Not released | npm has no <code>@astilba/cache</code> package, so there is no supported installation or production deployment path. |
 
 ## Choose a path
@@ -91,5 +93,7 @@ Cache does not update your source of truth. Change the database or upstream serv
 | Run the smallest current-source example | [Local quickstart](/cache/quickstart/) | [Read and cache values](/cache/reading-and-filling/) |
 | Evaluate the runtime adapters | [Cloudflare Workers](/cache/cloudflare-workers/) | [React Router](/cache/react-and-server-apps/) if it is your server framework |
 | Add application cache behavior | [Read and cache values](/cache/reading-and-filling/) | [Invalidate cached data](/cache/tags-and-invalidation/) and [Control cache sharing](/cache/scopes-and-privacy/) |
+| Tag rendered responses safely | [React Router](/cache/react-and-server-apps/) | [Cache HTTP responses](/cache/response-caching/) |
+| Diagnose a value or event | [Inspect cache behavior](/cache/observability/) | [API reference](/cache/api-reference/) |
 | Understand the correctness model | [Cache fundamentals](/cache/core-concepts/) | [How Cache works](/cache/how-it-works/) and [Consistency and resilience](/cache/consistency-and-resilience/) |
 | Inspect capability and export details | [Runtime architecture](/cache/architecture/) | [Driver implementations](/cache/drivers-and-status/) and [API reference](/cache/api-reference/) |

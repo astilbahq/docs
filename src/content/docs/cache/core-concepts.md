@@ -29,7 +29,7 @@ The tier names describe where a value lives, not different value formats.
 | --- | --- | --- |
 | **L1** | An optional Store local to one process or worker isolate. Other instances cannot see it. | Fast repeat reads and retention of principal-derived values that must not enter shared storage. |
 | **L2** | A Store shared or durable across calls and, depending on the driver, across instances. | The main reusable server-side copy. The current kernel requires L2 whenever a factory must run. The local quickstart uses <code>memory()</code> in this slot only as a non-durable demonstration. |
-| **L3** | A shared HTTP or CDN response cache outside the value-store path. | Caching rendered responses and purging them by emitted cache tags. The integration is not implemented yet. |
+| **L3** | A shared HTTP or CDN response cache outside the value-store path. | Caching rendered responses. The React Router adapter can emit safe dependency tags; CDN purge delivery is not implemented. |
 | **Origin** | The factory result before or while it is written to a Store. | The database or upstream request supplied by the application. |
 
 Both L1 and L2 implement the same <code>Store</code> contract. A runtime decides whether that Store is an in-memory map, a platform KV service, Redis, or another backend.
@@ -57,7 +57,7 @@ The Bus is not the authority. It transports updates; the Registry and verified l
 | **Rng** | Supplies randomness through an explicit, testable source. | The current API requires it; a runtime preset should normally provide it. |
 | **Codec** | Encodes values and identifies their wire format before decoding. | Only when the default JSON round trip is insufficient. |
 | **Lock** | Coordinates opted-in fills across instances and supplies a fencing token. | Only for cross-instance contention. |
-| **Cdn** | Accepts shared HTTP-cache purge work. | Only when L3 response caching is configured; no implementation is wired today. |
+| **Cdn** | Accepts shared HTTP-cache purge work. | The contract exists, but no implementation is wired today. Response-tag emission does not call it. |
 | **Telemetry sink** | Receives cache events; hosted mode pseudonymizes string fields with a project salt. | Only when operating or observing Cache. |
 
 Clock and Rng exist for portability and deterministic tests. They are construction details, not concepts application code should need on every read.
@@ -71,7 +71,8 @@ Clock and Rng exist for portability and deterministic tests. They are constructi
 | Add <code>registry</code> | Enables the purge methods, but does not create coordinated read validation by itself. |
 | Add <code>registry</code> + <code>bus</code> alongside the existing <code>l2</code> | Live invalidation delivery, coordinated validation, snapshot-capable mirror recovery, and an attached replication poller. The embedding runtime or adapter must supply a tick driver for background recovery; reads still perform reactive recovery without one. |
 | Add <code>lock</code> | Lets individual calls opt into cross-instance fill exclusion. |
-| Add <code>cdn</code> and render collection | Declares the L3 response-cache boundary; the current implementation does not drive it. |
+| Use React Router render collection | Automatically records served Cache entries, rejects non-public response dependencies, and emits eligible user tags. |
+| Add <code>cdn</code> | Declares the L3 purge boundary; the current implementation does not drive it. |
 | Use <code>createWorkersCache()</code> | Composes memory L1, KV L2, Coordinator Registry, and redialing Bus with Workers defaults. |
 
 ## Distinguish policy terms
@@ -85,4 +86,4 @@ Clock and Rng exist for portability and deterministic tests. They are constructi
 - **Singleflight** lets compatible callers in one instance share one foreground factory execution.
 - **Fencing** prevents a result produced across a conflicting hard invalidation from being accepted as current. The current fill path can re-mint its birth epoch and refetch within a bounded three-attempt budget when verified knowledge advances.
 
-Continue with the [local quickstart](/cache/quickstart/) for a concrete read, [Cloudflare Workers](/cache/cloudflare-workers/) for the composed runtime, [How Cache works](/cache/how-it-works/) for the complete sequence, or [runtime architecture](/cache/architecture/) for the capability contracts.
+Continue with the [local quickstart](/cache/quickstart/) for a concrete read, [Cloudflare Workers](/cache/cloudflare-workers/) for the composed runtime, [Cache HTTP responses](/cache/response-caching/) for L3 collection, [How Cache works](/cache/how-it-works/) for the complete sequence, or [runtime architecture](/cache/architecture/) for the capability contracts.

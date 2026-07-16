@@ -18,8 +18,8 @@ The separation is deliberate. A fast storage hit is useful only if the reader ca
 2. **Read L1, then L2.** L1 is an optional isolate-local <code>Store</code>. L2 is the shared or durable <code>Store</code> and is currently required whenever a factory must run.
 3. **Check the codec before decoding.** Stored metadata carries a codec identity. A foreign or unsupported identity becomes a miss before its bytes reach the decoder.
 4. **Validate invalidation knowledge.** With coordinated invalidation configured, the entry's birth epoch is compared with the soft and hard watermarks for all of its tags.
-5. **Serve or fill.** A fresh entry is returned. A soft-stale eventual entry follows the refresh path. A dead or unknown entry is not served directly, so the factory runs or an error is surfaced. A strong coordinated miss performs an authoritative check before the factory starts.
-6. **Fence the result.** Before write-back, Cache checks whether a hard purge landed during the fill. If verified knowledge advanced, it can re-mint the birth epoch and refetch within a bounded three-attempt budget instead of publishing a born-dead value.
+5. **Serve or fill.** A fresh entry is returned. A soft-stale eventual entry follows the refresh path. A dead or unknown entry is not served directly, so the factory runs or an error is surfaced. A strong coordinated miss establishes the Registry's current epoch before the factory starts.
+6. **Close and fence the result.** The final stored tag set combines the call and factory declarations. Before write-back, Cache checks those tags for a hard purge delivered during the fill. If verified knowledge advanced, it can re-mint the birth epoch and refetch within a bounded three-attempt budget instead of publishing a born-dead value. If all attempts are fenced, the plain <code>getOrSet()</code> form fails closed with <code>FencedError</code>; <code>getOrSetEntry()</code> returns a non-durable miss.
 7. **Write by scope.** Shared public and tenant entries may reach L2. Principal-derived entries are L1-only. A successful fill also hydrates L1 when one is configured.
 
 Compatible foreground fills share one in-isolate promise. Cross-isolate exclusion is separate and opt-in through a <code>Lock</code> driver.
@@ -42,6 +42,17 @@ Recovery has two triggers:
 
 The React Router adapter supplies request-piggyback poll ticks. An idle isolate receives no ticks, but it also serves no reads; the next request observes the elapsed state and starts a tick. A different runtime embedding must provide its own tick driver or rely on reactive read-path recovery.
 
+## How a rendered response earns tags
+
+The React Router middleware binds one render collector to each request. When Cache serves a hit or completes a fill inside that frame, it records the entry's tags and scope evidence. After route work completes, the middleware commits the collector:
+
+1. Any tenant, principal, or unreadable scope makes the response private and removes response tags.
+2. A late or over-budget tag also makes the response private.
+3. An eligible public render receives a deduplicated <code>Cache-Tag</code> header containing user tags; reserved key and namespace tags stay internal.
+4. The middleware preserves an application-authored shared-cache policy only for an eligible public render and never creates one. The privacy and timing/budget gates above override any shared policy and force <code>Cache-Control: private</code>. Without an application policy, the middleware also defaults to private.
+
+This connects value dependencies to a shared-response purge vocabulary, but the current <code>Cdn</code> path does not send the purge. See [Cache HTTP responses](/cache/response-caching/).
+
 ## What “unknown” means
 
 Tag knowledge is effectively tri-state:
@@ -62,3 +73,4 @@ The invalidation ordering above is active. Elapsed-time expiry is not: TTL, grac
 - [Cache fundamentals](/cache/core-concepts/) provides the plain-language vocabulary.
 - [Invalidate cached data](/cache/tags-and-invalidation/) explains soft and hard mutations from the caller's side.
 - [Consistency and resilience](/cache/consistency-and-resilience/) covers live checks and stale-on-error behavior.
+- [Inspect cache behavior](/cache/observability/) shows the same entry and reader state as a point-in-time witness.

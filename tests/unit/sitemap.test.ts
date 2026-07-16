@@ -22,7 +22,7 @@ describe("documentation sitemap", () => {
     );
     const sourcePaths = docsSitemapSources.map(({ sourcePath }) => sourcePath);
 
-    expect(docsSitemapSources).toHaveLength(16);
+    expect(docsSitemapSources).toHaveLength(18);
     expect(new Set(canonicalPaths).size).toBe(canonicalPaths.length);
     expect(new Set(sourcePaths).size).toBe(sourcePaths.length);
 

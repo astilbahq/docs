@@ -67,7 +67,20 @@ Queue consumers, cron jobs, and other contextless code resolve to the public sto
 
 ## Telemetry follows the same posture
 
-A plain telemetry sink receives events as emitted and may contain raw identifiers. When <code>telemetry.hosted</code> is true and a project salt is supplied, the kernel HMAC-pseudonymizes every string field except the structural event type. A hosted configuration without a salt suppresses events rather than forwarding raw strings.
+A plain telemetry sink receives events as emitted and may contain raw identifiers. When <code>telemetry.hosted</code> is true and a project salt is supplied, the kernel HMAC-pseudonymizes every string field except the structural event type. A hosted configuration without a salt suppresses events rather than forwarding raw strings. Built-in delivery also swallows a sink that throws or rejects; configure <code>onSinkError</code> to observe that failure separately.
+
+The <code>memory()</code> Store can emit <code>private_evicted</code> when an LRU entry with <code>usr:</code> scope is removed under entry or byte pressure. Its payload carries only a count and byte size—never a key, scope hash, or tag. <code>createWorkersCache()</code> does not expose this internal L1 telemetry option; raw composition is required to enable it.
+
+## Apply scope to rendered responses
+
+Value scope also gates React Router response caching. The middleware records scope evidence for every served Cache entry and successful fill:
+
+- only readable <code>pub</code> dependencies remain eligible for <code>Cache-Tag</code> emission;
+- a tenant or principal dependency forces <code>Cache-Control: private</code> for the whole response;
+- missing or malformed stored scope also fails closed to private;
+- <code>l3: false</code> may suppress a tag, but it never suppresses the entry's scope evidence.
+
+A bare <code>RenderCollector.dependsOn()</code> is different: it is not backed by a managed entry, so it has no scope claim and cannot poison the response by itself. See [Cache HTTP responses](/cache/response-caching/) for the complete header algorithm.
 
 ## Related
 
@@ -75,3 +88,5 @@ A plain telemetry sink receives events as emitted and may contain raw identifier
 - [React Router](/cache/react-and-server-apps/) shows how a server adapter carries authenticated identity into the request frame.
 - [Read and cache values](/cache/reading-and-filling/) explains durability metadata and tier selection.
 - [Invalidate cached data](/cache/tags-and-invalidation/) covers the limits of key and scope-qualified selectors.
+- [Cache HTTP responses](/cache/response-caching/) explains how value scope controls shared-response eligibility.
+- [Inspect cache behavior](/cache/observability/) covers scope evidence in <code>explain()</code> and telemetry.

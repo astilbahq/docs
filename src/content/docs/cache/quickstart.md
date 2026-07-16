@@ -96,7 +96,7 @@ It deliberately leaves out:
 - explicit invalidation, which requires a Registry;
 - live invalidation delivery and recovery, which require Registry, Bus, and L2 together;
 - elapsed TTL and grace behavior, which remains unfinished even though the options are typed;
-- request identity, cross-isolate locks, telemetry, and L3 response caching.
+- request identity, cross-isolate locks, telemetry, and the React Router response-cache integration.
 
 :::note[Why <code>memory()</code> is passed as L2]
 The current kernel refuses a factory fill without an L2 Store. The same small <code>Store</code> contract is used by both tiers, so <code>memory()</code> is sufficient for a local demonstration. It does not become shared or durable simply because it occupies the <code>l2</code> configuration field.
@@ -107,4 +107,5 @@ The current kernel refuses a factory fill without an L2 Store. The same small <c
 - [Cloudflare Workers](/cache/cloudflare-workers/) replaces the manual clock, random source, and development Store with the current Workers factory and drivers.
 - [React Router](/cache/react-and-server-apps/) exposes that cache through server middleware and carries request identity to reads.
 - [Cache fundamentals](/cache/core-concepts/) explains the storage and invalidation vocabulary.
+- [Inspect cache behavior](/cache/observability/) shows how to inspect a cache value with <code>explain()</code> and configure event telemetry.
 - [Implementation status](/cache/api-status/) lists every incomplete or provisional surface.

@@ -20,7 +20,7 @@ The structure borrows TanStack's useful multi-library context and Better Auth's 
 ## Current scope
 
 - One documented product: Cache.
-- Fourteen progressively disclosed Cache preview pages backed by public exports, public behavior, tagged releases, and approved public copy.
+- Sixteen progressively disclosed Cache preview pages backed by public exports, public behavior, tagged releases, and approved public copy.
 - Base UI context switching and animated, session-persisted sidebar sections.
 - Starlight table of contents, theme control, code presentation, and Pagefind search.
 - Visible release-status language wherever a surface is not yet shipped.

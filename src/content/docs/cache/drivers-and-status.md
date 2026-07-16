@@ -49,7 +49,7 @@ Classified writes use the structural <code>StoreWriteError</code> shape. <code>t
 | Replication reader | Implemented kernel path | Replays contiguous deltas, escalates persistent holes to a pointer-blessed snapshot, replays the tail, and remains fail closed on corrupt or unfillable chains. |
 | Replication poller | Implemented internal seam | Runs baseline pointer observation, bounded recovery retries, snapshot escalation, and failure backoff from externally supplied ticks. |
 | <code>createWorkersCache()</code> | Public source preview | Composes the Workers Clock/Rng, memory L1, KV L2, named Coordinator Registry, and redialing Bus. |
-| React Router middleware | Public source preview | Supplies Cache through typed Router context, carries request identity with AsyncLocalStorage, fires request-piggyback poll ticks, and stamps private responses. |
+| React Router middleware | Public source preview | Supplies Cache through typed Router context, carries request identity, fires request-piggyback poll ticks, collects served dependencies, emits eligible <code>Cache-Tag</code> headers, and demotes unsafe responses. |
 | Redis, production Lock, and CDN drivers | Not implemented | Contracts exist, but no package subpaths or production implementations are present. |
 
 “Public source preview” means the symbol is present in the package export map and publish configuration, not that consumers can install it. npm still has no <code>@astilba/cache</code> package.
@@ -58,11 +58,15 @@ Classified writes use the structural <code>StoreWriteError</code> shape. <code>t
 
 The Cloudflare path uses one named Coordinator identity for the Durable Object address, Registry scope, and Cache namespace. The KV binding used by <code>createWorkersCache()</code> must expose the same namespace that the Coordinator receives as <code>REGISTRY_KV</code>; otherwise the reader and writer see different recovery mirrors.
 
-The KV Store uses different cache hints for recovery objects:
+The KV Store uses different **read-cache hints** for recovery objects:
 
-- mutable pointer reads use the platform's 30-second minimum;
+- mutable pointer reads use the platform's 30-second minimum, reduced from 60 seconds in January 2026;
 - immutable deltas and snapshots use 24 hours;
 - ordinary value reads do not supply a hint and inherit the platform default.
+
+These read hints are distinct from physical write residency. The Coordinator writes immutable delta batches with a 48-hour <code>expirationTtl</code>, snapshots with seven days, and its mutable pointer with no expiration. The KV driver floors any supplied write residency to Cloudflare's 60-second minimum.
+
+See Cloudflare's [reduced minimum cacheTtl announcement](https://developers.cloudflare.com/changelog/post/2026-01-30-kv-reduced-minimum-cachettl/) for the read-cache change and [KV write API](https://developers.cloudflare.com/kv/api/write-key-value-pairs/) for write residency, value size, and rate limits.
 
 The Coordinator can refresh an idle pointer through <code>REGISTRY_HEARTBEAT_MS</code>. This is disabled unless the deployment sets the variable. The Workers factory independently defaults its reader heartbeat interval to 30 seconds, so matching the Coordinator value is an operator action, not an automatic handshake.
 
@@ -82,8 +86,7 @@ The Workers path still needs work before a production release:
 
 - elapsed TTL, grace, age, and negative-entry expiry;
 - Coordinator journal checkpointing and truncation;
-- automatic render dependency collection and safe shared-response headers;
-- a CDN purge queue and completion promises that track real acceptance;
+- a CDN purge queue and completion promises that track real acceptance—the response adapter now emits safe tags, but does not deliver purges;
 - a production Lock driver and the deferred Redis/Valkey path;
 - the chaos demo and deployed consistency measurements;
 - an npm release, compatibility policy, deployment guide, and upgrade process.
@@ -95,5 +98,7 @@ The integration Worker and React Router fixture prove runtime wiring and build c
 - [Runtime architecture](/cache/architecture/) shows how these capabilities compose around one Cache instance.
 - [Cloudflare Workers](/cache/cloudflare-workers/) provides the current factory and binding walkthrough.
 - [React Router](/cache/react-and-server-apps/) explains request context and poll ticks.
+- [Cache HTTP responses](/cache/response-caching/) explains automatic render collection and header behavior.
+- [Inspect cache behavior](/cache/observability/) covers driver and adapter telemetry.
 - [API reference](/cache/api-reference/) lists the root and adapter exports.
 - [Implementation status](/cache/api-status/) lists kernel-level limitations independent of a driver.
