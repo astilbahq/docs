@@ -33,7 +33,9 @@ That opt-in remains subject to the middleware's safety gate. If the render later
 
 Register <code>cacheMiddleware()</code> at the React Router root, then use the request Cache from <code>cacheContext</code>. The middleware opens one render collector before loaders run and commits it after <code>next()</code> returns.
 
-~~~tsx title="root.tsx"
+This setup targets Cloudflare Workers. In another runtime, omit <code>waitUntil</code> or pass that runtime's equivalent lifecycle hook.
+
+~~~tsx title="root.tsx (Cloudflare Workers)"
 import { waitUntil } from "cloudflare:workers"
 import { cacheMiddleware } from "@astilba/cache/react-router"
 import {
