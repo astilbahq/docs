@@ -3,7 +3,7 @@ title: React Router
 description: Provide Astilba Cache to React Router v8 loaders and actions while carrying server request identity safely.
 ---
 
-The current source exposes server middleware at <code>@astilba/cache/react-router</code>. It puts a Cache instance into React Router's typed request context, carries an application-derived identity frame, drives background recovery ticks, and marks generated responses private by default.
+The current source exposes server middleware at <code>@astilba/cache/react-router</code>. It puts a Cache instance into React Router's typed request context, carries an application-derived identity frame, drives background recovery ticks, and turns value-cache dependencies into scope-safe response tags.
 
 :::caution[Server adapter, source preview]
 This is a React Router v8 server integration. It is not a browser cache, a client data-fetching library, or a released package. The source adapter has unit and real Vite build coverage, but the npm package and production support policy do not exist yet.
@@ -22,7 +22,7 @@ Build the Cache instance once for the server runtime. On Cloudflare, use <code>c
 
 ## Register the root middleware
 
-React Router v8 middleware is always available; there is no v7 future flag to enable. Register <code>cacheMiddleware()</code> in the root route module:
+React Router v8 enables middleware by default and removes the flag. A React Router v7 application must first enable <code>future.v8_middleware</code> as described in the [v7 upgrade guide](https://reactrouter.com/upgrading/v7#futurev8_middleware). This adapter targets v8; register <code>cacheMiddleware()</code> in the root route module as described by the current [middleware guide](https://reactrouter.com/how-to/middleware):
 
 ~~~tsx title="root.tsx"
 import { waitUntil } from "cloudflare:workers"
@@ -77,7 +77,7 @@ export async function loader({ context, params }: Route.LoaderArgs) {
 }
 ~~~
 
-<code>currentRequest()</code> returns the frame opened by the root middleware. Outside that frame it returns <code>undefined</code>. Calling <code>context.get(cacheContext)</code> without installing the middleware throws instead of silently constructing another cache.
+<code>currentRequest()</code> returns the frame opened by the root middleware. Outside that frame it returns <code>undefined</code>. Calling <code>context.get(cacheContext)</code> without installing the middleware throws instead of silently constructing another cache; <code>cacheContext</code> follows React Router's [no-default <code>createContext()</code> behavior](https://reactrouter.com/api/utils/createContext).
 
 After a mutation, change the source of truth first and invalidate through the same request Cache:
 
@@ -110,19 +110,28 @@ You do not need the broader <code>nodejs_compat</code> flag for this adapter.
 
 At request start, the middleware asks the cache's replication poller whether a tick is due. It does not await that work before running loaders. Passing Cloudflare's <code>waitUntil</code> function allows an in-flight tick to continue after the response returns; Cloudflare documents that lifecycle in its [Context API guide](https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil).
 
-The adapter limits ticks to at most one per second per Cache instance. The poller's longer baseline, retry, and backoff schedules still decide whether a tick performs I/O. A failed tick is swallowed so it cannot fail the user's response; provide a <code>telemetry</code> sink if you need to observe <code>poll_tick_failed</code> events.
+The adapter limits ticks to at most one per second per Cache instance. The poller's longer baseline, retry, and backoff schedules still decide whether a tick performs I/O. A failed tick is swallowed so it cannot fail the user's response; provide a <code>telemetry</code> sink if you need to observe <code>poll_tick_failed</code> events. <code>onSinkError</code> observes a telemetry sink that throws or rejects without allowing that failure to escape either.
 
 Without <code>waitUntil</code>, the tick is still started but is only best effort after the response lifecycle ends. Recovery does not become unsafe—the read path remains fail closed—but future requests may pay more live-check or refill work.
 
 ## Understand the response-cache posture
 
-The current middleware sets <code>Cache-Control: private</code> on a returned <code>Response</code>. That is intentionally conservative: it does not yet prove that a rendered response contains only public data.
+The middleware opens a request-scoped render collector around <code>next()</code>. Cache hits and successful fills automatically contribute their complete stored tag set and scope evidence. After the render, the middleware commits that collector against <code>L3_BUDGET_DEFAULT</code>—16 KB and 1,000 tag occurrences unless <code>l3Budget</code> overrides it.
 
-It does not currently:
+The application still decides whether to opt into shared caching. The middleware never writes <code>public</code> or <code>s-maxage</code>:
 
-- emit <code>s-maxage</code> or <code>Cache-Tag</code> headers;
-- attach <code>cache.collect()</code> to request rendering;
-- add cache-hit dependencies to a render collector automatically;
-- purge a CDN or other L3 response cache.
+| Render result | Header behavior |
+| --- | --- |
+| No managed Cache dependency | Preserve existing cache headers; add <code>Cache-Control: private</code> only when the application supplied no policy. |
+| Eligible public dependencies | Preserve the application's cache policy and replace <code>Cache-Tag</code> with deduplicated user tags. If no policy exists, default to <code>private</code>. |
+| Private, unreadable, late, or over-budget dependency | Force <code>Cache-Control: private</code>, remove <code>Cache-Tag</code>, and emit one <code>l3_ineligible</code> event. |
 
-Treat the adapter as server value-cache wiring, not shared HTML caching. See [Control cache sharing](/cache/scopes-and-privacy/) for value storage, [Consistency and resilience](/cache/consistency-and-resilience/) for recovery behavior, and [Implementation status](/cache/api-status/) for current gaps.
+Reserved per-key and per-namespace tags never reach the response header. One tenant- or principal-scoped dependency makes the whole response private, even if its tag was marked droppable. Responses with immutable header guards are rebuilt so redirects and fetch-derived responses do not turn into middleware errors.
+
+:::caution[Pass the request frame to reads]
+Automatic render collection does not remove the need for <code>request: currentRequest()</code>. That option lets the kernel resolve principal and tenant scope. Omitting it from identity-bearing reads can make the value appear contextless and public.
+:::
+
+The adapter exports <code>L3_BUDGET_DEFAULT</code> and <code>L3_INELIGIBLE</code> alongside the poll constants. <code>CacheMiddlewareOptions</code> accepts <code>l3Budget</code>, <code>telemetry</code>, and <code>onSinkError</code> in addition to <code>cache</code>, identity mapping, and <code>waitUntil</code>.
+
+The response-tag path does not purge a CDN. See [Cache HTTP responses](/cache/response-caching/) for the complete safety and budget model, [Control cache sharing](/cache/scopes-and-privacy/) for value storage, [Consistency and resilience](/cache/consistency-and-resilience/) for recovery behavior, and [Implementation status](/cache/api-status/) for current gaps.

@@ -41,7 +41,7 @@ The raw constructor requires <code>namespace</code>, <code>clock</code>, and <co
 | <code>lock</code> | <code>Lock</code> | Optional cross-instance fill lock. A read opts in with <code>lock: true</code>. |
 | <code>codec</code> | <code>Codec</code> | Value encoder and wire identity. Defaults to the built-in JSON round trip. |
 | <code>defaults</code> | <code>CacheDefaults</code> | Instance policy defaults. Several timing and unavailable-policy fields remain partial. |
-| <code>telemetry</code> | <code>TelemetrySink \| TelemetryConfig</code> | Receives operational events. Hosted mode pseudonymizes string fields when a salt is present. |
+| <code>telemetry</code> | <code>TelemetrySink \| TelemetryConfig</code> | Receives operational events. Hosted mode pseudonymizes string fields when a salt is present; configured delivery isolates sink failures and can call <code>onSinkError</code>. |
 | <code>takedownSensitive</code> | <code>boolean</code> | Selects the provisional unknown-as-error posture unless explicitly overridden. It currently continues as a miss rather than throwing. |
 | <code>dev</code> | <code>boolean</code> | Makes incompatible same-key singleflight calls fail loudly and guards request reads inside explicitly public factories. |
 
@@ -74,8 +74,8 @@ The raw constructor requires <code>namespace</code>, <code>clock</code>, and <co
 | <code>clear()</code> | <code>Promise&lt;PurgeResult&gt;</code> | Bumps the local namespace version and hard-invalidates the reserved namespace tag. |
 | <code>expireAll(guard)</code> | <code>Promise&lt;PurgeResult&gt;</code> | Declared with an explicit origin-load acknowledgement; currently throws <code>NotImplementedError</code>. |
 | <code>deleteAll(guard)</code> | <code>Promise&lt;PurgeResult&gt;</code> | Declared with an explicit origin-load acknowledgement; currently throws <code>NotImplementedError</code>. |
-| <code>collect()</code> | <code>RenderCollector</code> | Creates an L3 tag collector. The budget decision works, but Cache hits and framework header commit are not integrated. |
-| <code>explain(key)</code> | <code>Promise&lt;Explanation&gt;</code> | Intended to report dependencies and applied replication positions; currently throws <code>NotImplementedError</code>. |
+| <code>collect()</code> | <code>RenderCollector</code> | Creates a scope-aware L3 dependency collector. React Router binds one per request so hits and fills contribute automatically. |
+| <code>explain(key)</code> | <code>Promise&lt;Explanation&gt;</code> | Witnesses the default-public key in L1 then L2, its stored identity, current local verdict and reader state, and any request-scoped attribution. A missing entry is a reportable result. |
 
 ### Read option types
 
@@ -104,10 +104,12 @@ The exported option types are <code>GetOptions</code>, <code>GetOrSetOptions</co
 | <code>graced</code> | Optional <code>GracedInfo</code> describing a stale candidate. It is not populated today. |
 | <code>request</code> | The adapter request object. Under <code>dev: true</code> and explicit public scope, property reads can demote the fill to L1-only. |
 | <code>fail(err?)</code> | Throws a factory failure without pretending it is a returned <code>T</code>. |
-| <code>dependsOn(tag, options?)</code> | Declared factory-time dependency contribution, including optional <code>l3: false</code>; currently a no-op on main. |
-| <code>setTags(tags)</code> | Declared factory-time replacement of tags; currently a no-op. |
-| <code>setTtl(ttl)</code> | Declared factory-time TTL override; currently a no-op. |
+| <code>dependsOn(tag, options?)</code> | Adds a membership to the final stored tag set and the active render collector. <code>{ l3: false }</code> currently throws <code>NotImplementedError</code>. |
+| <code>setTags(tags)</code> | Authors a replacement for the call-level tag base. <code>dependsOn()</code> memberships remain unioned independently. |
+| <code>setTtl(ttl)</code> | Declared factory-time TTL override; currently throws <code>NotImplementedError</code>. |
 | <code>reuseGraced()</code> | Intended typed reuse of the graced value after provenance checks; currently throws <code>NotImplementedError</code>. |
+
+The final settle-time union may contain at most 126 distinct user tags. Invalid, reserved, or excessive tags fail before storage. Calling <code>dependsOn()</code> or <code>setTags()</code> after the factory promise settles throws <code>FactorySettledError</code>.
 
 <code>EntryFactoryCtx&lt;T&gt;</code> adds <code>skip(): never</code>. Calling it produces a skipped entry and stores nothing. The plain <code>FactoryCtx&lt;T&gt;</code> deliberately has no <code>skip()</code>.
 
@@ -199,8 +201,8 @@ interface Store {
 | <code>StoreWriteOptions</code> | Optional physical <code>expirationTtl</code> in seconds and metadata. |
 | <code>StoreWriteError</code> | Structural write rejection with code <code>throttled</code>, <code>too_large</code>, or <code>unavailable</code>, plus retryability and optional cause. |
 | <code>isStoreWriteError(value)</code> | Implemented shape-based type guard for <code>StoreWriteError</code>. |
-| <code>MemoryOptions</code> | Optional <code>clock</code>, <code>maxEntries</code>, and UTF-8 <code>maxBytes</code> for the local Store. |
-| <code>memory(options?)</code> | Implemented per-instance LRU Store. It evicts to both configured bounds, rejects a single oversize value as <code>too_large</code>, and honors Store-level <code>expirationTtl</code> when a Clock is supplied. |
+| <code>MemoryOptions</code> | Optional <code>clock</code>, <code>maxEntries</code>, UTF-8 <code>maxBytes</code>, <code>telemetry</code>, and <code>onSinkError</code> for the local Store. |
+| <code>memory(options?)</code> | Implemented per-instance LRU Store. It evicts to both configured bounds, rejects a single oversize value as <code>too_large</code>, honors Store-level <code>expirationTtl</code> with a Clock, and can report pressure eviction of principal-scoped entries without identifiers. |
 
 Calling <code>Store.set()</code> with <code>expirationTtl</code> on a clockless memory Store fails loudly instead of silently ignoring residency. The Cache kernel does not currently pass value TTL through as Store residency, so this behavior matters primarily to direct Store users and replication objects.
 
@@ -290,12 +292,19 @@ See [Driver implementations](/cache/drivers-and-status/) for available implement
 | <code>RenderCollector</code> | Records dependency tags and makes an eligibility decision at header commit. |
 | <code>L3Budget</code> | Optional <code>maxBytes</code> and <code>maxTags</code> limits. |
 | <code>L3Emission</code> | Eligibility, emitted cache tags, and optional ineligibility reason. |
-| <code>L3Ineligibility</code> | <code>late-tag</code> or <code>budget</code>. |
-| <code>Explanation</code> | Intended output of <code>explain()</code>: key, tags, applied epoch and batch, and dependencies. |
+| <code>L3Ineligibility</code> | <code>late-tag</code>, <code>budget</code>, <code>scope</code>, or <code>scope-unreadable</code>. |
+| <code>Explanation</code> | Discriminated present or absent witness returned by <code>explain()</code>. |
+| <code>ExplainIdentity</code> | Stored tags, scope evidence, birth epoch, TTL evidence, and entry kind. |
+| <code>ExplainVerdict</code> | Current local validity plus the soft and hard epochs behind it. |
+| <code>ExplainReaderState</code> | Applied epoch, suspicion state, and terminal recovery state. |
+| <code>ExplainScope</code>, <code>ExplainTtl</code> | Readable-versus-unreadable scope and stored-versus-not-stored TTL evidence. |
+| <code>ExplainedDependency</code>, <code>ExplainDependencyScope</code> | Request-scoped render attribution and its scope evidence. |
 
-The standalone collector decision exists. Cache-hit contribution, supported header integration, <code>explain()</code>, and the CDN path are incomplete.
+The collector and React Router header integration are implemented. The CDN purge path remains incomplete.
 
-<code>RenderCollector.dependsOn(tag, { l3? })</code> records a dependency; setting <code>l3: false</code> makes it droppable from shared-cache emission. <code>commitHeaders({ maxBytes?, maxTags? })</code> returns an <code>L3Emission</code> with <code>eligible</code>, <code>cacheTags</code>, and an optional <code>ineligibleReason</code>. <code>Explanation</code> declares <code>key</code>, <code>tags</code>, <code>appliedEpoch</code>, <code>appliedBatch</code>, and <code>dependencies</code>.
+<code>RenderCollector.dependsOn(tag, { l3? })</code> records a render-only dependency with no managed scope claim. Setting <code>l3: false</code> excludes its tag from emission, timing, and budget checks. <code>commitHeaders({ maxBytes?, maxTags? })</code> returns an <code>L3Emission</code>. Automatically recorded hits and fills carry scope evidence; any non-public or unreadable scope makes the emission ineligible and empty.
+
+<code>explain(key)</code> probes L1 then L2 without hydrating L1, live-checking the Registry, or resynchronizing the reader. It addresses the default public canonical key because the signature has no scope input. The present arm contains <code>identity</code> and <code>verdict</code>; both arms contain <code>key</code>, <code>tier</code>, <code>reader</code>, and optional request-scoped <code>requestDependencies</code>. Current entries report TTL as <code>{ kind: "not-stored" }</code>.
 
 ## HTTP failures and errors
 
@@ -312,6 +321,7 @@ The standalone collector decision exists. Cache-hit contribution, supported head
 | <code>FencedError</code> | A plain-value fill was fenced by a conflicting hard invalidation, leaving no value to return. |
 | <code>InvalidTagError</code> | Caller supplied a malformed or reserved tag at the cache boundary. |
 | <code>InvalidDurationError</code> | <code>duration()</code> received a non-positive, non-finite, fractional-millisecond, or unsafe computed duration. |
+| <code>FactorySettledError</code> | A retained factory context declared tags after its factory promise settled. Carries the offending key. |
 | <code>NotImplementedError</code> | A declared preview surface was called before implementation. |
 | <code>RegistryUnavailableError</code> | Intended strong-read Registry failure. Exported but not emitted by the current path. |
 
@@ -321,9 +331,12 @@ The standalone collector decision exists. Cache-hit contribution, supported head
 | --- | --- |
 | <code>TelemetryEvent</code> | Event name in <code>type</code> plus event-specific fields. |
 | <code>TelemetrySink</code> | Function receiving each emitted event. |
-| <code>TelemetryConfig</code> | Sink plus optional <code>hosted</code> flag and project <code>salt</code>. |
+| <code>TelemetryEventName</code> | Union of all values in the event catalog. |
+| <code>TELEMETRY_EVENTS</code> | Public event-name catalog for kernel, memory, React Router, and Cloudflare events, including reserved names. |
+| <code>SinkErrorHook</code> | Optional observer for a sink failure that built-in delivery swallowed. |
+| <code>TelemetryConfig</code> | Sink plus optional <code>hosted</code> flag, project <code>salt</code>, and <code>onSinkError</code>. |
 
-A plain sink may receive raw identifiers. Hosted mode with a salt HMAC-pseudonymizes emitted string fields except the structural event type. Hosted mode without a salt suppresses events rather than forwarding raw strings.
+A plain sink may receive raw identifiers. Hosted mode with a salt HMAC-pseudonymizes emitted string fields except the structural event type. Hosted mode without a salt suppresses events rather than forwarding raw strings. Built-in delivery swallows synchronous throws and asynchronous rejections from the sink; it also guards the optional error hook.
 
 ## Cloudflare adapter exports
 
@@ -353,15 +366,17 @@ Import these names from <code>@astilba/cache/react-router</code>. React and Reac
 
 | Export | Purpose and current boundary |
 | --- | --- |
-| <code>cacheMiddleware(options)</code> | Creates React Router v8 server middleware that provides Cache, opens the request frame, triggers poll ticks, and stamps private responses. |
-| <code>CacheMiddlewareOptions</code> | Requires <code>cache</code>; accepts synchronous request identity derivation, <code>waitUntil</code>, and poll-tick telemetry. |
+| <code>cacheMiddleware(options)</code> | Creates React Router v8 server middleware that provides Cache, opens request and render frames, triggers poll ticks, and commits scope-safe response headers. |
+| <code>CacheMiddlewareOptions</code> | Requires <code>cache</code>; accepts synchronous request identity derivation, <code>waitUntil</code>, telemetry, <code>onSinkError</code>, and an L3 budget override. |
 | <code>CacheMiddlewareArgs</code> | The argument object React Router passes to server middleware, re-exported for identity mappers. |
 | <code>cacheContext</code> | Typed Router context key. Loaders and actions read the request's Cache with <code>context.get(cacheContext)</code>. |
 | <code>currentRequest()</code> | Returns the current AsyncLocalStorage-backed <code>RequestContext</code>, or <code>undefined</code> outside the middleware frame. |
 | <code>POLL_TICK_FAILED</code> | The <code>"poll_tick_failed"</code> telemetry event name emitted when out-of-band recovery work rejects. |
 | <code>TICK_MIN_INTERVAL_MS</code> | One-second minimum between request-piggyback ticks for the same Cache instance. |
+| <code>L3_INELIGIBLE</code> | The <code>"l3_ineligible"</code> event name emitted once for a demoted managed response. |
+| <code>L3_BUDGET_DEFAULT</code> | Default 16 KB and 1,000-occurrence response-tag budget. |
 
-The adapter requires <code>nodejs_als</code> on Cloudflare Workers and currently enforces a private shared-response posture. See [React Router](/cache/react-and-server-apps/).
+The adapter requires <code>nodejs_als</code> on Cloudflare Workers. It preserves an application-authored cache policy for eligible public renders, emits deduplicated user tags, and forces private posture for unsafe renders. It never writes <code>public</code> or <code>s-maxage</code>. See [React Router](/cache/react-and-server-apps/).
 
 ## Export boundary
 

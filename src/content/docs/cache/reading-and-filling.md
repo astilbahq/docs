@@ -55,13 +55,38 @@ On a newly filled origin result, <code>durable: false</code> does not mean the f
 
 1. **Read configured tiers.** Cache tries L1 before L2. It checks the stored codec identity before decoding, then validates the reconstructed entry.
 2. **Join compatible work.** Concurrent compatible calls share one in-isolate foreground factory execution.
-3. **Run the factory.** The factory receives an <code>AbortSignal</code>, optional request context, and typed failure helpers. The current kernel creates a fresh signal but does not yet abort it on a cache deadline.
-4. **Fence the result.** A hard invalidation observed during the fill can reject write-back. When verified invalidation knowledge advanced, the kernel can re-mint the birth epoch and refetch within a bounded three-attempt budget.
-5. **Write by scope.** Shared scopes may reach L2; principal-derived values are L1-only. A successful fill hydrates L1 when one is configured.
+3. **Run the factory.** The factory receives an <code>AbortSignal</code>, optional request context, and typed failure and dependency helpers. The current kernel creates a fresh signal but does not yet abort it on a cache deadline.
+4. **Close the tag set.** When the factory settles, Cache uses the latest <code>setTags()</code> base—or the call-level tags when no replacement was authored—and unions every <code>dependsOn()</code> membership into one validated set.
+5. **Fence the result.** A hard invalidation observed during the fill can reject write-back. When verified invalidation knowledge advanced, the kernel can re-mint the birth epoch and refetch within a bounded three-attempt budget.
+6. **Write by scope.** Shared scopes may reach L2; principal-derived values are L1-only. A successful fill hydrates L1 when one is configured.
 
 When the bounded attempts still leave no servable value, <code>getOrSet()</code> throws <code>FencedError</code>. <code>getOrSetEntry()</code> reports a non-durable miss instead.
 
-A strong, coordinated miss also live-checks the tags known before the first factory attempt: the canonical key and namespace tags plus caller-declared tags. That makes the new value postdate every purge the check observed instead of fetching first and trying to bless the result afterward. Factory-discovered tags are not covered while <code>FactoryCtx.dependsOn()</code> and <code>setTags()</code> remain inert.
+A strong, coordinated miss live-checks the canonical key and namespace tags plus the caller-declared tags before the first factory attempt. That check anchors the fill at the Registry's current global epoch before origin work begins. Factory-discovered tags join the final stored set and the write-back fence; a hard purge delivered for one of them during the fill can fence and retry the result, even though that tag was not individually available to the pre-factory check.
+
+## Declare dependencies during the factory
+
+Use factory helpers when the origin result reveals dependencies that the caller could not know beforehand:
+
+~~~ts
+const article = await cache.getOrSet({
+  key: `article:${articleId}`,
+  tags: [t`articles`],
+  factory: async (ctx) => {
+    const article = await loadArticle(articleId, ctx.signal)
+
+    ctx.setTags([t`articles`, compound("article", article.id)])
+    ctx.dependsOn(compound("author", article.authorId))
+    return article
+  },
+})
+~~~
+
+<code>setTags()</code> replaces the call-level <code>tags</code> base; only its most recent call is the authored base. <code>dependsOn()</code> adds memberships independently, so calling it before or after <code>setTags()</code> produces the same union. Cache stores that final set, uses it for later invalidation, and contributes it to an active React Router render collector.
+
+The combined set may contain at most 126 distinct user tags. Invalid, reserved, or excessive factory tags fail the fill before storage. A stashed context cannot mutate a completed value: calling <code>dependsOn()</code> or <code>setTags()</code> after the factory promise settles throws <code>FactorySettledError</code>.
+
+<code>FactoryCtx.dependsOn(tag, { l3: false })</code> currently throws <code>NotImplementedError</code>; the stored format cannot retain that per-tag response-emission flag for later hits. <code>FactoryCtx.setTtl()</code> also throws <code>NotImplementedError</code> while elapsed TTL is deferred.
 
 ## Compatible concurrent calls
 
@@ -83,11 +108,13 @@ Per-call and default TTL and grace values do not currently expire entries by ela
 
 A soft-stale eventual read currently awaits a best-effort refresh, then still returns the stale value for that call. The planned background adoption and retry lifecycle is not implemented, so this path does not yet provide background stale-while-revalidate latency.
 
-<code>FactoryCtx.dependsOn()</code>, <code>setTags()</code>, and <code>setTtl()</code> are currently no-ops in main. <code>ctx.graced</code> is not populated and <code>reuseGraced()</code> throws <code>NotImplementedError</code>. Use call-level <code>tags</code> and the documented stale-on-error path instead.
+<code>ctx.graced</code> is not populated and <code>reuseGraced()</code> throws <code>NotImplementedError</code>. Use the documented stale-on-error path instead of factory-directed grace reuse.
 
 ## Related
 
 - [Local quickstart](/cache/quickstart/) shows both value reads against the implemented memory Store used as a development-only L2.
 - [Cache fundamentals](/cache/core-concepts/) explains the storage tiers and read vocabulary.
 - [Consistency and resilience](/cache/consistency-and-resilience/) explains when stale values may be reused.
+- [Cache HTTP responses](/cache/response-caching/) explains how served and factory-declared tags reach a response collector.
+- [Inspect cache behavior](/cache/observability/) shows how to witness the stored final tag set.
 - [Implementation status](/cache/api-status/) lists provisional metadata and unimplemented helpers.

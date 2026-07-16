@@ -17,7 +17,8 @@ This page explains the runtime capability model. For application-level definitio
 | <code>Bus</code> | The live delivery path for ordered invalidation events. | Participates in coordinated read validation when Registry and L2 are also configured. The Cloudflare subpath includes a Durable Object Bus and reconnecting wrapper. |
 | <code>Codec</code> | Value encoding and a wire identity checked before decode. | Optional when the built-in JSON round trip is sufficient. |
 | <code>Lock</code> | Cross-isolate exclusion and write arbitration. | Optional and only used when a driver is supplied and the call opts in. |
-| <code>Cdn</code> | A future edge-purge boundary. | Declared but not wired in the current kernel. |
+| Render collector | Records value dependencies and decides whether a response may carry their user tags. | The React Router middleware binds and commits it automatically. |
+| <code>Cdn</code> | A future edge-purge boundary. | Declared but not wired in the current kernel; response-tag emission does not invoke it. |
 | Poll tick driver | Calls the kernel's attached recovery poller outside the read path. | React Router provides request-piggyback ticks. Other embeddings need an equivalent scheduler if they want proactive recovery. |
 
 These contracts keep the correctness rules independent of a storage vendor. They do not make every driver combination equivalent: coordinated invalidation needs a complete coordination path.
@@ -28,7 +29,8 @@ These contracts keep the correctness rules independent of a storage vendor. They
 2. It checks L1 before L2, verifies the stored codec identity, and reconstructs the entry.
 3. When coordinated invalidation is configured, it decides whether its tag knowledge is sufficient for the requested consistency level. A strong miss performs a live check before its factory.
 4. On a miss, compatible callers share one in-isolate factory execution.
-5. Before write-back, Cache checks for a conflicting hard invalidation, then writes only to tiers allowed by the resolved scope.
+5. When the factory settles, Cache validates the union of call-level and factory-declared tags.
+6. Before write-back, Cache checks the final tag set for a conflicting hard invalidation, then writes only to tiers allowed by the resolved scope.
 
 See [Read and cache values](/cache/reading-and-filling/) for return metadata, singleflight compatibility, codec changes, and fill failures. See [How Cache works](/cache/how-it-works/) for the invalidation and recovery path around the same operation.
 
@@ -42,6 +44,7 @@ See [Read and cache values](/cache/reading-and-filling/) for return metadata, si
 | Add <code>registry</code> + <code>bus</code> alongside <code>l2</code> | Enables coordinated validation, live delivery, delta-and-snapshot recovery, and construction of the internal replication poller. A Registry-plus-Bus configuration without L2 is rejected. |
 | Add <code>lock</code> | Allows opted-in calls to coordinate work across isolates. No production Lock driver is exported. |
 | Add a custom <code>codec</code> | Changes the wire format and identity. Accepted older identities must still be decodable by that codec. |
+| Run through <code>cacheMiddleware()</code> | Binds a request-scoped render collector, records served entries with scope evidence, emits eligible response tags, and demotes unsafe responses. |
 | Use <code>createWorkersCache()</code> | Supplies Clock, Rng, bounded memory L1, KV L2, Coordinator Registry, and a redialing Durable Object Bus with safe source defaults. |
 
 Supplying Bus without Registry does not build the invalidation reader. Registry without Bus can still accept purge commands, but it is not a coordinated read configuration. Supplying Registry and Bus without L2 throws at construction because the reader would have no recovery mirror.
@@ -51,7 +54,7 @@ Supplying Bus without Registry does not build the invalidation reader. Registry 
 The source repository now exposes two publish-shaped adapter entry points:
 
 - <code>@astilba/cache/cloudflare</code> contains the Workers factory plus its KV, Coordinator, Registry, Bus, and reconnecting transport pieces.
-- <code>@astilba/cache/react-router</code> contains React Router v8 server middleware, typed Cache context, request-frame access, and the observable poll-tick constants.
+- <code>@astilba/cache/react-router</code> contains React Router v8 server middleware, typed Cache context, request-frame access, request-piggyback recovery, and scope-aware response-tag collection.
 
 Both are part of the package export map and covered by source tests. Neither is installable from npm yet, and the repository's integration worker and React Router fixture remain test hosts rather than application templates.
 
@@ -63,4 +66,5 @@ These combinations describe current main-branch source behavior. <code>@astilba/
 
 - [Driver implementations](/cache/drivers-and-status/) lists each contract and integration boundary.
 - [Consistency and resilience](/cache/consistency-and-resilience/) explains live checks, unknown knowledge, and stale-on-error policy.
+- [Cache HTTP responses](/cache/response-caching/) explains the render collector and response-header gate.
 - [Implementation status](/cache/api-status/) records incomplete and provisional surfaces.

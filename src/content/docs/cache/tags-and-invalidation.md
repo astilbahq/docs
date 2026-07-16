@@ -51,6 +51,25 @@ The current source encodes <code>%</code>, <code>:</code>, and <code>|</code> bu
 
 Caller-supplied tags on <code>getOrSet()</code> and <code>getOrSetEntry()</code> are rejected when they begin with <code>__</code>. The kernel reserves that prefix for its per-key and per-namespace tags. The <code>Tag</code> brand prevents ordinary raw-string selectors; do not bypass it with a type assertion.
 
+## Add dependencies discovered by the factory
+
+Call-level <code>tags</code> are the initial dependency set. A running factory can refine that set:
+
+~~~ts
+factory: async (ctx) => {
+  const product = await loadProduct(productId, ctx.signal)
+  ctx.setTags([compound("product", product.id)])
+  ctx.dependsOn(compound("category", product.categoryId))
+  return product
+}
+~~~
+
+<code>setTags()</code> authors a replacement for the call-level base. <code>dependsOn()</code> adds membership independently and is never erased by a later <code>setTags()</code>. At factory settlement, Cache deduplicates and validates the combined set, stores it with the entry, and uses it for invalidation and write-back fencing.
+
+The final entry may carry at most 126 distinct user tags, whether they came from the call or factory. Reserved tags that Cache adds internally do not consume that user allowance. Invalid, reserved, or excessive factory tags fail the fill before anything is stored.
+
+Dependency declaration closes when the factory promise settles. A later <code>dependsOn()</code> or <code>setTags()</code> call through a retained context throws <code>FactorySettledError</code>. <code>FactoryCtx.dependsOn(tag, { l3: false })</code> is also not implemented and throws; use the render collector's <code>l3: false</code> option only for render-only dependencies.
+
 ## Invalidate by key carefully
 
 The key selector maps a user key to Cache's reserved per-key tag:
@@ -87,8 +106,12 @@ The purge verbs require a <code>Registry</code>. For reads to observe coordinate
 
 The source Workers factory wires the Coordinator Registry, redialing Durable Object Bus, and KV mirror. The CDN path and real purge-completion promises are still not implemented.
 
+When React Router render collection is active, a served entry's stored user tags can also become a <code>Cache-Tag</code> response header. Scope and budget checks run before emission, and reserved tags are filtered. This response tagging does not make the CDN purge path operational; see [Cache HTTP responses](/cache/response-caching/).
+
 ## Related
 
 - [How Cache works](/cache/how-it-works/) follows invalidation through live delivery and recovery.
 - [Consistency and resilience](/cache/consistency-and-resilience/) explains how reads treat stale or unknown knowledge.
+- [Read and cache values](/cache/reading-and-filling/) explains the complete factory lifecycle.
+- [Cache HTTP responses](/cache/response-caching/) distinguishes stored dependencies from response emission.
 - [Implementation status](/cache/api-status/) records the current purge-result and selector limitations.
