@@ -11,9 +11,10 @@ const sitePage = findSiteDocsPage(entry.id);
 const productHomeId = sitePage?.presentation === "product-home"
   ? sitePage.productId
   : undefined;
+const copyCodeLabel = Astro.locals.t("expressiveCode.copyButtonTooltip");
 ---
 
-<div class="sl-markdown-content">
+<div class="sl-markdown-content" data-copy-code-label={copyCodeLabel}>
   {
     isHome
       ? <HomePage />
@@ -37,7 +38,13 @@ const productHomeId = sitePage?.presentation === "product-home"
         continue;
       }
 
-      const label = "Copy code";
+      const content = button.closest<HTMLElement>(".sl-markdown-content");
+      const label = content?.dataset.copyCodeLabel;
+
+      if (!label) {
+        continue;
+      }
+
       copy.dataset.copyTooltip = label;
       button.setAttribute("aria-label", label);
       button.removeAttribute("title");

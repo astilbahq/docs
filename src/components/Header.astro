@@ -15,6 +15,8 @@ const productContext = findDocsProductContext(Astro.url.pathname);
 const productHref = productContext
   ? getProductHomeHref(productContext.product)
   : undefined;
+const normalizePathname = (pathname: string): string =>
+  pathname.replace(/\/+$/, "") || "/";
 
 const headerClass = css({
   display: "flex",
@@ -83,7 +85,10 @@ const sponsorHref = "https://github.com/sponsors/astilbahq";
       productContext && productHref && (
         <a
           aria-current={
-            Astro.url.pathname === productHref ? "page" : undefined
+            normalizePathname(Astro.url.pathname) ===
+            normalizePathname(productHref)
+              ? "page"
+              : undefined
           }
           class={productLinkClass}
           href={productHref}
