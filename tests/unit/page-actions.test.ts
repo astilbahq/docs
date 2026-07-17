@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import { createPageActionDestinations } from "../../src/docs/page-actions";
 
 describe("page action destinations", () => {
-  const markdownUrl = "https://docs.astilba.com/cache/overview.md";
+  const markdownUrl = "https://astilba.com/docs/cache/overview.md";
   const sourceUrl =
     "https://github.com/astilbahq/docs/blob/main/src/content/docs/cache/overview.md";
   const destinations = createPageActionDestinations(markdownUrl, sourceUrl);

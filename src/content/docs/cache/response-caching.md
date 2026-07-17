@@ -85,7 +85,7 @@ export async function loader({ context, params }: Route.LoaderArgs) {
 }
 ~~~
 
-An explicit public scope is a claim that identity cannot change the value. The development request guard helps detect reads through <code>ctx.request</code>, but it cannot inspect values captured in closures. See [Control cache sharing](/cache/scopes-and-privacy/).
+An explicit public scope is a claim that identity cannot change the value. The development request guard helps detect reads through <code>ctx.request</code>, but it cannot inspect values captured in closures. See [Control cache sharing](/docs/cache/scopes-and-privacy/).
 
 ## Read the three response outcomes
 
@@ -142,4 +142,4 @@ Some platform responses have immutable header guards, including redirect and fet
 
 Safe dependency collection, scope demotion, budget enforcement, and <code>Cache-Tag</code> emission exist today. The configured <code>Cdn</code> capability, <code>delete({ cdn })</code>, and <code>PurgeResult.edgePurged()</code> do not yet drive or await a real CDN purge. Until that path exists, response tags are useful for inspection and future integration but are not end-to-end invalidation support.
 
-Continue with [React Router](/cache/react-and-server-apps/) for complete middleware setup, [Inspect cache behavior](/cache/observability/) for ineligibility telemetry, or [Implementation status](/cache/api-status/) for the preview ledger.
+Continue with [React Router](/docs/cache/react-and-server-apps/) for complete middleware setup, [Inspect cache behavior](/docs/cache/observability/) for ineligibility telemetry, or [Implementation status](/docs/cache/api-status/) for the preview ledger.

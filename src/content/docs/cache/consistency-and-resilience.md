@@ -5,7 +5,7 @@ description: Choose what a read must observe and which transient failures may re
 
 In Astilba Cache, consistency controls what a read must observe. Resilience controls which failures may reuse a previously good value. They are related, but they are not the same switch.
 
-The **Registry** is the authoritative invalidation record, the **Bus** delivers its updates to active instances, and **L2** is the shared Store used for values and recovery data. See [Cache fundamentals](/cache/core-concepts/) for the complete vocabulary.
+The **Registry** is the authoritative invalidation record, the **Bus** delivers its updates to active instances, and **L2** is the shared Store used for values and recovery data. See [Cache fundamentals](/docs/cache/core-concepts/) for the complete vocabulary.
 
 These consistency levels become meaningful when <code>Registry</code>, <code>Bus</code>, and <code>L2</code> are configured together. L2 holds values and the durable recovery mirror; <code>createCache()</code> refuses a Registry-plus-Bus reader without it. Without the coordinated invalidation path, the current kernel treats decoded entries as fresh and <code>consistency</code> does not create a live check.
 
@@ -76,12 +76,12 @@ The presence of <code>grace</code> currently opts a stale candidate into error f
 
 An eventual soft-stale read also awaits its refresh in the current implementation, then returns the stale value. Background adoption, queue retry, and refresh completion tracking are not yet present.
 
-Use <code>cache.explain(key)</code> to inspect the current local verdict and reader state without changing it. The method performs no live Registry check or resynchronization, so it is useful for diagnosis but never a substitute for a strong read. See [Inspect cache behavior](/cache/observability/).
+Use <code>cache.explain(key)</code> to inspect the current local verdict and reader state without changing it. The method performs no live Registry check or resynchronization, so it is useful for diagnosis but never a substitute for a strong read. See [Inspect cache behavior](/docs/cache/observability/).
 
 ## Related
 
-- [How Cache works](/cache/how-it-works/) explains the invalidation knowledge behind these read decisions.
-- [Cache fundamentals](/cache/core-concepts/) defines Registry, Bus, consistency, and grace in plain language.
-- [Read and cache values](/cache/reading-and-filling/) follows the foreground fill and stale return shapes.
-- [Inspect cache behavior](/cache/observability/) explains the point-in-time verdict and reader witness.
-- [Implementation status](/cache/api-status/) records unfinished timing and unavailable-policy behavior.
+- [How Cache works](/docs/cache/how-it-works/) explains the invalidation knowledge behind these read decisions.
+- [Cache fundamentals](/docs/cache/core-concepts/) defines Registry, Bus, consistency, and grace in plain language.
+- [Read and cache values](/docs/cache/reading-and-filling/) follows the foreground fill and stale return shapes.
+- [Inspect cache behavior](/docs/cache/observability/) explains the point-in-time verdict and reader witness.
+- [Implementation status](/docs/cache/api-status/) records unfinished timing and unavailable-policy behavior.

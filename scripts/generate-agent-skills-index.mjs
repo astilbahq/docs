@@ -2,7 +2,14 @@ import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
-const skillsDirectory = resolve(process.cwd(), "dist/.well-known/agent-skills");
+import { DOCS_BASE_PATH, withDocsBase } from "../src/docs/urls.ts";
+
+const skillsDirectory = resolve(
+  process.cwd(),
+  "dist",
+  DOCS_BASE_PATH.slice(1),
+  ".well-known/agent-skills"
+);
 const indexPath = resolve(skillsDirectory, "index.json");
 const schema = "https://schemas.agentskills.io/discovery/0.2.0/schema.json";
 const skillNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -73,7 +80,7 @@ for (const entry of entries) {
     name,
     type: "skill-md",
     description,
-    url: `/.well-known/agent-skills/${name}/SKILL.md`,
+    url: withDocsBase(`/.well-known/agent-skills/${name}/SKILL.md`),
     digest: `sha256:${createHash("sha256").update(bytes).digest("hex")}`,
   });
 }

@@ -20,7 +20,7 @@ const expectGlobalSecurityHeaders = (response: Response): void => {
 };
 
 const getExpectedPageDiscoveryLink = (markdownPath: string): string =>
-  `<${markdownPath}>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`;
+  `<${markdownPath}>; rel="alternate"; type="text/markdown", </docs/llms.txt>; rel="describedby"; type="text/plain", </docs/.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`;
 
 const createAssets = ({
   policyBody = `${TEST_CONTENT_SECURITY_POLICY}\n`,
@@ -38,10 +38,11 @@ const createAssets = ({
     }
 
     if (
-      path === "/index.md" ||
-      path === "/agents/mcp.md" ||
-      path === "/cache.md" ||
-      path === "/cache/overview.md"
+      path === "/docs/index.md" ||
+      path === "/docs/agents/llms-txt.md" ||
+      path === "/docs/agents/mcp.md" ||
+      path === "/docs/cache.md" ||
+      path === "/docs/cache/overview.md"
     ) {
       if (request.headers.get("If-None-Match") === '"markdown"') {
         return new Response(null, {
@@ -53,13 +54,16 @@ const createAssets = ({
         });
       }
 
-      return new Response(`# ${path === "/index.md" ? "Home" : "Overview"}`, {
-        headers: {
-          "Content-Signal": "ai-train=yes, search=yes, ai-input=yes",
-          "Content-Type": "text/markdown; charset=utf-8",
-          ETag: '"markdown"',
-        },
-      });
+      return new Response(
+        `# ${path === "/docs/index.md" ? "Home" : "Overview"}`,
+        {
+          headers: {
+            "Content-Signal": "ai-train=yes, search=yes, ai-input=yes",
+            "Content-Type": "text/markdown; charset=utf-8",
+            ETag: '"markdown"',
+          },
+        }
+      );
     }
 
     if (path.endsWith("/missing.md") || path.endsWith("/missing/")) {
@@ -150,24 +154,28 @@ describe("Markdown negotiation", () => {
   });
 
   it("maps canonical pages to their authored Markdown siblings", () => {
-    expect(getMarkdownPath("/")).toBe("/index.md");
-    expect(getMarkdownPath("/cache/")).toBe("/cache.md");
-    expect(getMarkdownPath("/cache/overview/")).toBe("/cache/overview.md");
-    expect(getMarkdownPath("/agents/llms-txt/")).toBe("/agents/llms-txt.md");
-    expect(getMarkdownPath("/agents/mcp/")).toBe("/agents/mcp.md");
-    expect(getMarkdownPath("/cache/overview")).toBeUndefined();
-    expect(getMarkdownPath("/missing/")).toBeUndefined();
+    expect(getMarkdownPath("/docs/")).toBe("/docs/index.md");
+    expect(getMarkdownPath("/docs/cache/")).toBe("/docs/cache.md");
+    expect(getMarkdownPath("/docs/cache/overview/")).toBe(
+      "/docs/cache/overview.md"
+    );
+    expect(getMarkdownPath("/docs/agents/llms-txt/")).toBe(
+      "/docs/agents/llms-txt.md"
+    );
+    expect(getMarkdownPath("/docs/agents/mcp/")).toBe("/docs/agents/mcp.md");
+    expect(getMarkdownPath("/docs/cache/overview")).toBeUndefined();
+    expect(getMarkdownPath("/docs/missing/")).toBeUndefined();
   });
 
   it("redirects an unslashed product root to its canonical home", async () => {
     const { assets, fetch } = createAssets();
     const response = await handleRequest(
-      new Request("https://docs.astilba.com/cache?ref=product"),
+      new Request("https://astilba.com/docs/cache?ref=product"),
       assets
     );
 
     expect(response.status).toBe(307);
-    expect(response.headers.get("Location")).toBe("/cache/?ref=product");
+    expect(response.headers.get("Location")).toBe("/docs/cache/?ref=product");
     expectGlobalSecurityHeaders(response);
     expect(fetch).not.toHaveBeenCalled();
   });
@@ -175,7 +183,7 @@ describe("Markdown negotiation", () => {
   it("streams the Markdown asset at the canonical URL", async () => {
     const { assets, fetch } = createAssets();
     const response = await handleRequest(
-      new Request("https://docs.astilba.com/cache/overview/", {
+      new Request("https://astilba.com/docs/cache/overview/", {
         headers: { Accept: "text/markdown" },
       }),
       assets
@@ -184,9 +192,11 @@ describe("Markdown negotiation", () => {
     expect(response.headers.get("Content-Type")).toBe(
       "text/markdown; charset=utf-8"
     );
-    expect(response.headers.get("Content-Location")).toBe("/cache/overview.md");
+    expect(response.headers.get("Content-Location")).toBe(
+      "/docs/cache/overview.md"
+    );
     expect(response.headers.get("Link")).toBe(
-      getExpectedPageDiscoveryLink("/cache/overview.md")
+      getExpectedPageDiscoveryLink("/docs/cache/overview.md")
     );
     expect(response.headers.get("Vary")).toBe("Accept");
     expect(response.headers.get("ETag")).toBe('"markdown"');
@@ -194,13 +204,13 @@ describe("Markdown negotiation", () => {
     const assetInput = fetch.mock.calls[0]?.[0];
     const assetUrl =
       assetInput instanceof Request ? assetInput.url : assetInput?.toString();
-    expect(new URL(assetUrl ?? "").pathname).toBe("/cache/overview.md");
+    expect(new URL(assetUrl ?? "").pathname).toBe("/docs/cache/overview.md");
   });
 
   it("preserves Markdown revalidation responses", async () => {
     const { assets, fetch } = createAssets();
     const response = await handleRequest(
-      new Request("https://docs.astilba.com/cache/overview/", {
+      new Request("https://astilba.com/docs/cache/overview/", {
         headers: {
           Accept: "text/markdown",
           "If-None-Match": '"markdown"',
@@ -213,17 +223,19 @@ describe("Markdown negotiation", () => {
     expect(response.headers.get("Content-Type")).toBe(
       "text/markdown; charset=utf-8"
     );
-    expect(response.headers.get("Content-Location")).toBe("/cache/overview.md");
+    expect(response.headers.get("Content-Location")).toBe(
+      "/docs/cache/overview.md"
+    );
     expect(response.headers.get("Vary")).toBe("Accept");
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it.each(["/index.md", "/cache.md", "/cache/overview.md"])(
+  it.each(["/docs/index.md", "/docs/cache.md", "/docs/cache/overview.md"])(
     "sets direct Markdown headers for %s without buffering the asset",
     async (path) => {
       const { assets, fetch } = createAssets();
       const response = await handleRequest(
-        new Request(`https://docs.astilba.com${path}`),
+        new Request(`https://astilba.com${path}`),
         assets
       );
 
@@ -242,7 +254,7 @@ describe("Markdown negotiation", () => {
   it("preserves direct Markdown revalidation headers", async () => {
     const { assets } = createAssets();
     const response = await handleRequest(
-      new Request("https://docs.astilba.com/cache/overview.md", {
+      new Request("https://astilba.com/docs/cache/overview.md", {
         headers: { "If-None-Match": '"markdown"' },
       }),
       assets
@@ -257,12 +269,12 @@ describe("Markdown negotiation", () => {
     expect(response.headers.get("ETag")).toBe('"markdown"');
   });
 
-  it.each(["/missing.md", "/cache/missing.md"])(
+  it.each(["/docs/missing.md", "/docs/cache/missing.md"])(
     "preserves the HTML 404 for unknown direct Markdown path %s",
     async (path) => {
       const { assets } = createAssets();
       const response = await handleRequest(
-        new Request(`https://docs.astilba.com${path}`),
+        new Request(`https://astilba.com${path}`),
         assets
       );
 
@@ -280,11 +292,11 @@ describe("Markdown negotiation", () => {
   );
 
   it.each([
-    { markdownPath: "/index.md", pagePath: "/" },
-    { markdownPath: "/cache.md", pagePath: "/cache/" },
+    { markdownPath: "/docs/index.md", pagePath: "/docs/" },
+    { markdownPath: "/docs/cache.md", pagePath: "/docs/cache/" },
     {
-      markdownPath: "/cache/overview.md",
-      pagePath: "/cache/overview/",
+      markdownPath: "/docs/cache/overview.md",
+      pagePath: "/docs/cache/overview/",
     },
   ])(
     "adds discovery links to GET, HEAD, and revalidation for $pagePath",
@@ -292,7 +304,7 @@ describe("Markdown negotiation", () => {
       const { assets, fetch } = createAssets();
       const expectedLink = getExpectedPageDiscoveryLink(markdownPath);
       const response = await handleRequest(
-        new Request(`https://docs.astilba.com${pagePath}`),
+        new Request(`https://astilba.com${pagePath}`),
         assets
       );
 
@@ -304,7 +316,7 @@ describe("Markdown negotiation", () => {
       expect(response.headers.get("Vary")).toBe("Accept-Encoding, Accept");
 
       const headResponse = await handleRequest(
-        new Request(`https://docs.astilba.com${pagePath}`, {
+        new Request(`https://astilba.com${pagePath}`, {
           method: "HEAD",
         }),
         assets
@@ -316,7 +328,7 @@ describe("Markdown negotiation", () => {
       );
 
       const revalidationResponse = await handleRequest(
-        new Request(`https://docs.astilba.com${pagePath}`, {
+        new Request(`https://astilba.com${pagePath}`, {
           headers: { "If-None-Match": '"html"' },
         }),
         assets
@@ -348,12 +360,12 @@ describe("Markdown negotiation", () => {
     }
   );
 
-  it.each(["/missing/", "/cache/missing/"])(
+  it.each(["/docs/missing/", "/docs/cache/missing/"])(
     "preserves unknown page behavior for %s",
     async (pagePath) => {
       const { assets, fetch } = createAssets();
       const response = await handleRequest(
-        new Request(`https://docs.astilba.com${pagePath}`, {
+        new Request(`https://astilba.com${pagePath}`, {
           headers: { Accept: "text/markdown" },
         }),
         assets
@@ -369,7 +381,7 @@ describe("Markdown negotiation", () => {
       );
 
       const headResponse = await handleRequest(
-        new Request(`https://docs.astilba.com${pagePath}`, {
+        new Request(`https://astilba.com${pagePath}`, {
           method: "HEAD",
         }),
         assets
@@ -383,7 +395,7 @@ describe("Markdown negotiation", () => {
   it("does not treat the slash-suffixed MCP path as the protocol endpoint", async () => {
     const { assets, fetch } = createAssets();
     const response = await handleRequest(
-      new Request("https://docs.astilba.com/mcp/", { method: "POST" }),
+      new Request("https://astilba.com/docs/mcp/", { method: "POST" }),
       assets
     );
 
@@ -397,7 +409,7 @@ describe("Markdown negotiation", () => {
   it("adds global security headers to Worker-generated MCP failures", async () => {
     const { assets } = createAssets();
     const response = await handleRequest(
-      new Request("https://docs.astilba.com/mcp"),
+      new Request("https://astilba.com/docs/mcp"),
       assets
     );
 
@@ -418,7 +430,7 @@ describe("Markdown negotiation", () => {
 
       try {
         const response = await handleRequest(
-          new Request("https://docs.astilba.com/cache/overview/"),
+          new Request("https://astilba.com/docs/cache/overview/"),
           assets
         );
 
@@ -437,4 +449,21 @@ describe("Markdown negotiation", () => {
       }
     }
   );
+
+  it("permanently redirects the legacy host path and query", async () => {
+    const { assets, fetch } = createAssets();
+    const response = await handleRequest(
+      new Request(
+        "https://docs.astilba.com/cache/overview/?source=legacy&empty="
+      ),
+      assets
+    );
+
+    expect(response.status).toBe(308);
+    expect(response.headers.get("Location")).toBe(
+      "https://astilba.com/docs/cache/overview/?source=legacy&empty="
+    );
+    expectGlobalSecurityHeaders(response);
+    expect(fetch).not.toHaveBeenCalled();
+  });
 });

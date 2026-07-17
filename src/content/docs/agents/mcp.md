@@ -10,7 +10,7 @@ Astilba provides a public, read-only Model Context Protocol endpoint for the sam
 Configure a remote Streamable HTTP server with this URL:
 
 ```text
-https://docs.astilba.com/mcp
+https://astilba.com/docs/mcp
 ```
 
 The endpoint does not require credentials or create a session. It cannot change documentation, access accounts, follow arbitrary URLs, or read private Astilba material.
@@ -20,7 +20,7 @@ Add it to an MCP client as a remote server. Client configuration formats differ,
 For a compatible coding agent, the shortest setup path is:
 
 ```text
-Fetch https://docs.astilba.com/agent-setup/prompt.md and follow its instructions.
+Fetch https://astilba.com/docs/agent-setup/prompt.md and follow its instructions.
 ```
 
 ## Try it
@@ -31,7 +31,7 @@ Once connected, ask the client questions such as:
 - “Find the documentation for invalidating related cached values.”
 - “How do the Cloudflare Workers platform and React Router framework support differ?”
 
-The client should search before reading a bounded page or resource. Answers about availability should use the current [Implementation status](/cache/api-status/) page.
+The client should search before reading a bounded page or resource. Answers about availability should use the current [Implementation status](/docs/cache/api-status/) page.
 
 ## Tools
 
@@ -44,11 +44,11 @@ Both tools are read-only, non-destructive, and idempotent. Search returns five r
 
 ## Resources
 
-Every published Markdown page is also exposed as a fixed MCP resource. Resource URIs stay on `docs.astilba.com`; the server does not fetch arbitrary URLs.
+Every published Markdown page is also exposed as a fixed MCP resource. Resource URIs stay under `astilba.com/docs`; the server does not fetch arbitrary URLs.
 
 Prefer resources when your client supports them: discovery gives you the canonical page list and a resource read returns the published document directly. Use `search_docs` and `read_doc` when the client exposes tools more reliably than resources.
 
-When you need to make a release or availability claim about Cache, read [Implementation status](/cache/api-status/) before relying on examples elsewhere in the documentation.
+When you need to make a release or availability claim about Cache, read [Implementation status](/docs/cache/api-status/) before relying on examples elsewhere in the documentation.
 
 ## Usage limits
 
@@ -67,11 +67,11 @@ Request bodies are limited to 256,000 bytes. The server accepts up to 16 legacy 
 
 ## Discovery
 
-The endpoint publishes machine-readable connection metadata through the [MCP catalog](https://docs.astilba.com/.well-known/mcp/catalog.json), [server card](https://docs.astilba.com/mcp/server-card), and [API catalog](https://docs.astilba.com/.well-known/api-catalog). MCP Server Card discovery is experimental, so its metadata format may evolve while the protocol endpoint remains at the URL above.
+The endpoint publishes machine-readable connection metadata through the [MCP catalog](https://astilba.com/docs/.well-known/mcp/catalog.json), [server card](https://astilba.com/docs/mcp/server-card), and [API catalog](https://astilba.com/docs/.well-known/api-catalog). MCP Server Card discovery is experimental, so its metadata format may evolve while the protocol endpoint remains at the URL above.
 
 ## Troubleshooting
 
-- **The client cannot add a remote Streamable HTTP server.** Use [`/llms.txt`](/llms.txt) or fetch an individual `.md` page instead.
-- **The server is missing after configuration.** Confirm the endpoint is exactly `https://docs.astilba.com/mcp`, then restart the client if its MCP configuration is only read at startup.
+- **The client cannot add a remote Streamable HTTP server.** Use [`/llms.txt`](/docs/llms.txt) or fetch an individual `.md` page instead.
+- **The server is missing after configuration.** Confirm the endpoint is exactly `https://astilba.com/docs/mcp`, then restart the client if its MCP configuration is only read at startup.
 - **The client asks for credentials.** This endpoint is public and does not use authentication. Check that the client is connecting to the Astilba endpoint rather than another server.
 - **A request returns HTTP 429.** Wait for the `Retry-After` interval and reduce parallel tool or resource calls.

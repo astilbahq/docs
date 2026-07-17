@@ -2,11 +2,12 @@ import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 
 import { parseDocsCorpus } from "../src/docs/mcp-corpus.ts";
+import { withDocsBase } from "../src/docs/urls.ts";
 
 const maxCorpusBytes = 1_000_000;
 const maxPageBytes = 128_000;
 const dist = resolve(process.cwd(), "dist");
-const outputDirectory = resolve(dist, "_mcp");
+const outputDirectory = resolve(dist, withDocsBase("/_mcp").slice(1));
 const outputPath = resolve(outputDirectory, "docs.json");
 const siteValue = process.env.ASTILBA_DOCS_SITE;
 

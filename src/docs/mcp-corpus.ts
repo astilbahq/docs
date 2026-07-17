@@ -1,7 +1,7 @@
 import { docsProducts } from "./catalog.ts";
 import { siteDocsPages } from "./site-pages.ts";
+import { ASTILBA_ORIGIN, withDocsBase } from "./urls.ts";
 
-export const DOCS_ORIGIN = "https://docs.astilba.com";
 export const MAX_CORPUS_CHARS = 1_000_000;
 export const MAX_DOCUMENT_CHARS = 128_000;
 
@@ -44,13 +44,16 @@ for (const product of docsProducts) {
   for (const version of product.versions) {
     for (const section of version.sections) {
       for (const page of section.items) {
-        catalogMetadataByPath.set(`/${version.basePath}/${page.slug}.md`, {
-          docsVersion: version.label,
-          docsVersionId: version.id,
-          lifecycle: version.lifecycle,
-          product: product.label,
-          productId: product.id,
-        });
+        catalogMetadataByPath.set(
+          withDocsBase(`/${version.basePath}/${page.slug}.md`),
+          {
+            docsVersion: version.label,
+            docsVersionId: version.id,
+            lifecycle: version.lifecycle,
+            product: product.label,
+            productId: product.id,
+          }
+        );
       }
     }
   }
@@ -123,7 +126,7 @@ const parsePublicUrl = (
   const url = new URL(rawUrl);
 
   if (
-    url.origin !== DOCS_ORIGIN ||
+    url.origin !== ASTILBA_ORIGIN ||
     url.username ||
     url.password ||
     url.search ||
@@ -252,12 +255,13 @@ export const parseDocsCorpus = (value: unknown): DocsCorpus => {
     return Object.freeze(page);
   });
 
+  const indexMarkdownPath = withDocsBase("/index.md");
   pages.sort((left, right) => {
-    if (left.markdownPath === "/index.md") {
+    if (left.markdownPath === indexMarkdownPath) {
       return -1;
     }
 
-    if (right.markdownPath === "/index.md") {
+    if (right.markdownPath === indexMarkdownPath) {
       return 1;
     }
 

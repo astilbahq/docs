@@ -36,7 +36,7 @@ describe("documentation sitemap", () => {
     const lastModified = createDocsSitemapLastModified({ runGit });
 
     expect(lastModified.size).toBe(docsSitemapSources.length);
-    expect(lastModified.get("/cache/overview/")).toBe(
+    expect(lastModified.get("/docs/cache/overview/")).toBe(
       "2026-07-14T11:34:56.000Z"
     );
     expect(runGit).toHaveBeenCalledWith(
@@ -73,22 +73,22 @@ describe("documentation sitemap", () => {
 
   it("adds only mapped dates to generated sitemap entries", () => {
     const lastModified = new Map([
-      ["/cache/overview/", "2026-07-14T11:34:56.000Z"],
+      ["/docs/cache/overview/", "2026-07-14T11:34:56.000Z"],
     ]);
 
     expect(
       addDocsSitemapLastModified(
-        { priority: 0.5, url: "https://docs.astilba.com/cache/overview/" },
+        { priority: 0.5, url: "https://astilba.com/docs/cache/overview/" },
         lastModified
       )
     ).toEqual({
       lastmod: "2026-07-14T11:34:56.000Z",
       priority: 0.5,
-      url: "https://docs.astilba.com/cache/overview/",
+      url: "https://astilba.com/docs/cache/overview/",
     });
     expect(() =>
       addDocsSitemapLastModified(
-        { url: "https://docs.astilba.com/not-public/" },
+        { url: "https://astilba.com/docs/not-public/" },
         lastModified
       )
     ).toThrow("Sitemap URL has no public source mapping");

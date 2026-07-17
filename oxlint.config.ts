@@ -90,7 +90,10 @@ export default defineConfig({
       },
     },
     {
-      files: ["scripts/smoke-production.mjs"],
+      files: [
+        "scripts/smoke-production.mjs",
+        "site/scripts/smoke-production.mjs",
+      ],
       rules: {
         "no-promise-executor-return": "off",
         "no-throw-literal": "off",

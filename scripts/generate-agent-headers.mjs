@@ -2,6 +2,7 @@ import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 
 import { CONTENT_SECURITY_POLICY_ASSET_PATH } from "../src/docs/security.ts";
+import { DOCS_BASE_PATH } from "../src/docs/urls.ts";
 import {
   createContentSecurityPolicy,
   getInlineScriptHashes,
@@ -9,6 +10,7 @@ import {
 
 const dist = resolve(process.cwd(), "dist");
 const headersPath = resolve(dist, "_headers");
+const docsDist = resolve(dist, DOCS_BASE_PATH.slice(1));
 const headersTemplatePath = resolve(process.cwd(), "public/_headers");
 const contentSecurityPolicyAssetPath = resolve(
   dist,
@@ -50,9 +52,8 @@ const fileExists = async (path) => {
   }
 };
 
-await access(headersPath);
 const staticHeaders = (await readFile(headersTemplatePath, "utf8")).trimEnd();
-const files = await collectFiles(dist);
+const files = await collectFiles(docsDist);
 const htmlDocuments = await Promise.all(
   files
     .filter((file) => file.endsWith(".html"))
@@ -145,11 +146,11 @@ if (/^\s+Content-Security-Policy:/im.test(staticHeaders)) {
   );
 }
 
-const rootRulePrefix = "/*\n";
+const rootRulePrefix = `${DOCS_BASE_PATH}/*\n`;
 
 if (!staticHeaders.startsWith(rootRulePrefix)) {
   throw new Error(
-    "[agent-headers] dist/_headers must begin with the global /* rule."
+    `[agent-headers] dist/_headers must begin with the global ${DOCS_BASE_PATH}/* rule.`
   );
 }
 

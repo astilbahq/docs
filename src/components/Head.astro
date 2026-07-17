@@ -1,5 +1,7 @@
 ---
 import { findDocsContext, getDocumentTitle } from "../docs/catalog";
+import { API_CATALOG_PATH } from "../docs/agent-discovery";
+import { withDocsBase } from "../docs/urls";
 
 const route = Astro.locals.starlightRoute;
 const { entry } = route;
@@ -27,13 +29,13 @@ const isDocumentationPage =
   entry.id !== "404" && !entry.id.endsWith("/404");
 const baseUrl = Astro.site ?? Astro.url;
 const markdownUrl = isDocumentationPage
-  ? new URL(entry.id ? `/${entry.id}.md` : "/index.md", baseUrl)
+  ? new URL(withDocsBase(entry.id ? `/${entry.id}.md` : "/index.md"), baseUrl)
   : undefined;
 const llmsUrl = isDocumentationPage && Astro.site
-  ? new URL("/llms.txt", Astro.site)
+  ? new URL(withDocsBase("/llms.txt"), Astro.site)
   : undefined;
 const apiCatalogUrl = isDocumentationPage && Astro.site
-  ? new URL("/.well-known/api-catalog", Astro.site)
+  ? new URL(API_CATALOG_PATH, Astro.site)
   : undefined;
 ---
 

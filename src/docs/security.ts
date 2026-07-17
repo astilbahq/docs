@@ -1,5 +1,8 @@
-export const CONTENT_SECURITY_POLICY_ASSET_PATH =
-  "/_security/content-security-policy.txt";
+import { withDocsBase } from "./urls.ts";
+
+export const CONTENT_SECURITY_POLICY_ASSET_PATH = withDocsBase(
+  "/_security/content-security-policy.txt"
+);
 export const CONTENT_SECURITY_POLICY_HEADER = "Content-Security-Policy";
 
 const permissionsPolicy = [

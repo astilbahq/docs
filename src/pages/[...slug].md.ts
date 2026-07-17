@@ -4,6 +4,7 @@ import { getCollection } from "astro:content";
 import { docsProducts, findDocsContext } from "../docs/catalog";
 import { findSiteDocsPage } from "../docs/site-pages";
 import { getDocsSourceUrl } from "../docs/source";
+import { withDocsBase } from "../docs/urls";
 
 interface MarkdownPageProps {
   body: string | undefined;
@@ -97,7 +98,7 @@ export const getStaticPaths = (async () => {
       ];
     }
 
-    const context = findDocsContext(`/${entry.id}/`);
+    const context = findDocsContext(withDocsBase(`/${entry.id}/`));
 
     if (!context) {
       return [];
@@ -108,7 +109,7 @@ export const getStaticPaths = (async () => {
         params: { slug: entry.id },
         props: {
           body: entry.body,
-          canonicalPath: `/${entry.id}/`,
+          canonicalPath: withDocsBase(`/${entry.id}/`),
           description: entry.data.description ?? "",
           docsVersion: context.version.label,
           docsVersionId: context.version.id,

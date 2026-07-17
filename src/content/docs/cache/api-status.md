@@ -7,7 +7,7 @@ Astilba Cache is unreleased. The portable correctness kernel and the main Worker
 
 Use this page as the preview ledger. “Implemented” means behavior exists on public main and is exercised by the repository's test lanes. It does not mean the package has an npm installation or production support commitment.
 
-Use [API reference](/cache/api-reference/) for exact exported shapes. When another page and this ledger appear to differ, follow this page and report the stale page.
+Use [API reference](/docs/cache/api-reference/) for exact exported shapes. When another page and this ledger appear to differ, follow this page and report the stale page.
 
 ## Configuration requirements
 
@@ -108,10 +108,10 @@ The repository's <code>v0.1</code> tag records the sealed correctness-kernel mil
 
 ## Related
 
-- [Local quickstart](/cache/quickstart/) demonstrates the smallest runnable source configuration.
-- [Cloudflare Workers](/cache/cloudflare-workers/) documents the current runtime factory and bindings.
-- [Cache HTTP responses](/cache/response-caching/) documents the implemented L3 collection and header boundary.
-- [Inspect cache behavior](/cache/observability/) documents <code>explain()</code> and the telemetry catalog.
-- [API reference](/cache/api-reference/) documents every root and adapter export.
-- [Runtime architecture](/cache/architecture/) maps configuration requirements to capability contracts.
-- [Driver implementations](/cache/drivers-and-status/) gives component-level implementation detail.
+- [Local quickstart](/docs/cache/quickstart/) demonstrates the smallest runnable source configuration.
+- [Cloudflare Workers](/docs/cache/cloudflare-workers/) documents the current runtime factory and bindings.
+- [Cache HTTP responses](/docs/cache/response-caching/) documents the implemented L3 collection and header boundary.
+- [Inspect cache behavior](/docs/cache/observability/) documents <code>explain()</code> and the telemetry catalog.
+- [API reference](/docs/cache/api-reference/) documents every root and adapter export.
+- [Runtime architecture](/docs/cache/architecture/) maps configuration requirements to capability contracts.
+- [Driver implementations](/docs/cache/drivers-and-status/) gives component-level implementation detail.

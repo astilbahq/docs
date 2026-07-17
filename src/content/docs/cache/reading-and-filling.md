@@ -5,7 +5,7 @@ description: Choose between the simple value API and the metadata-rich entry API
 
 Astilba Cache provides two read APIs. Use <code>getOrSet()</code> when you only need a value. Use <code>getOrSetEntry()</code> when the caller needs cache metadata or the factory may intentionally skip storage.
 
-If terms such as factory, L1, L2, origin, or entry are new, see [Cache fundamentals](/cache/core-concepts/).
+If terms such as factory, L1, L2, origin, or entry are new, see [Cache fundamentals](/docs/cache/core-concepts/).
 
 ## Choose the return shape
 
@@ -112,9 +112,9 @@ A soft-stale eventual read currently awaits a best-effort refresh, then still re
 
 ## Related
 
-- [Local quickstart](/cache/quickstart/) shows both value reads against the implemented memory Store used as a development-only L2.
-- [Cache fundamentals](/cache/core-concepts/) explains the storage tiers and read vocabulary.
-- [Consistency and resilience](/cache/consistency-and-resilience/) explains when stale values may be reused.
-- [Cache HTTP responses](/cache/response-caching/) explains how served and factory-declared tags reach a response collector.
-- [Inspect cache behavior](/cache/observability/) shows how to witness the stored final tag set.
-- [Implementation status](/cache/api-status/) lists provisional metadata and unimplemented helpers.
+- [Local quickstart](/docs/cache/quickstart/) shows both value reads against the implemented memory Store used as a development-only L2.
+- [Cache fundamentals](/docs/cache/core-concepts/) explains the storage tiers and read vocabulary.
+- [Consistency and resilience](/docs/cache/consistency-and-resilience/) explains when stale values may be reused.
+- [Cache HTTP responses](/docs/cache/response-caching/) explains how served and factory-declared tags reach a response collector.
+- [Inspect cache behavior](/docs/cache/observability/) shows how to witness the stored final tag set.
+- [Implementation status](/docs/cache/api-status/) lists provisional metadata and unimplemented helpers.

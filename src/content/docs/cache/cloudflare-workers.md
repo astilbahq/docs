@@ -146,4 +146,4 @@ It does not yet provide:
 - an end-to-end CDN purge path, even though the React Router adapter now emits safe <code>Cache-Tag</code> headers;
 - the chaos demo and deployed consistency measurements that complete the Workers release path.
 
-Continue with [React Router](/cache/react-and-server-apps/) if that is your server framework, [Cache HTTP responses](/cache/response-caching/) for the response-tag safety model, [Driver implementations](/cache/drivers-and-status/) for component-level status, or [Implementation status](/cache/api-status/) for kernel limitations.
+Continue with [React Router](/docs/cache/react-and-server-apps/) if that is your server framework, [Cache HTTP responses](/docs/cache/response-caching/) for the response-tag safety model, [Driver implementations](/docs/cache/drivers-and-status/) for component-level status, or [Implementation status](/docs/cache/api-status/) for kernel limitations.

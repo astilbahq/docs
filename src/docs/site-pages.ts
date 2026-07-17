@@ -1,4 +1,5 @@
 import type { DocsIcon } from "./types";
+import { withDocsBase } from "./urls.ts";
 
 interface SiteDocsNavigation {
   group: string;
@@ -18,23 +19,23 @@ export interface SiteDocsPage {
 
 export const siteDocsPages: readonly SiteDocsPage[] = Object.freeze([
   {
-    canonicalPath: "/",
+    canonicalPath: withDocsBase("/"),
     id: "index",
-    markdownPath: "/index.md",
+    markdownPath: withDocsBase("/index.md"),
     sourcePath: "src/content/docs/index.md",
   },
   {
-    canonicalPath: "/cache/",
+    canonicalPath: withDocsBase("/cache/"),
     id: "cache",
-    markdownPath: "/cache.md",
+    markdownPath: withDocsBase("/cache.md"),
     presentation: "product-home",
     productId: "cache",
     sourcePath: "src/content/docs/cache.md",
   },
   {
-    canonicalPath: "/agents/llms-txt/",
+    canonicalPath: withDocsBase("/agents/llms-txt/"),
     id: "agents/llms-txt",
-    markdownPath: "/agents/llms-txt.md",
+    markdownPath: withDocsBase("/agents/llms-txt.md"),
     navigation: {
       group: "AI for Agents",
       icon: "file-digit",
@@ -43,9 +44,9 @@ export const siteDocsPages: readonly SiteDocsPage[] = Object.freeze([
     sourcePath: "src/content/docs/agents/llms-txt.md",
   },
   {
-    canonicalPath: "/agents/mcp/",
+    canonicalPath: withDocsBase("/agents/mcp/"),
     id: "agents/mcp",
-    markdownPath: "/agents/mcp.md",
+    markdownPath: withDocsBase("/agents/mcp.md"),
     navigation: {
       group: "AI for Agents",
       icon: "model-context-protocol",

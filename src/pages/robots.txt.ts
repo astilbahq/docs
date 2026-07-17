@@ -1,15 +1,17 @@
 import type { APIRoute } from "astro";
 
+import { docsUrl, withDocsBase } from "../docs/urls";
+
 export const prerender = true;
 
 export const GET: APIRoute = ({ site }) => {
-  const sitemapUrl = site ? new URL("/sitemap.xml", site) : undefined;
+  const sitemapUrl = site ? docsUrl("/sitemap.xml") : undefined;
   const body = [
     "User-agent: *",
     "Content-Signal: ai-train=yes, search=yes, ai-input=yes",
-    "Allow: /",
+    `Allow: ${withDocsBase("/")}`,
     sitemapUrl ? "" : undefined,
-    sitemapUrl ? `Sitemap: ${sitemapUrl.href}` : undefined,
+    sitemapUrl ? `Sitemap: ${sitemapUrl}` : undefined,
     "",
   ]
     .filter((line): line is string => line !== undefined)

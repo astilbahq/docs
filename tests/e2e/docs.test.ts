@@ -8,6 +8,7 @@ import { expect, type Page, test } from "@playwright/test";
 import { AGENT_SETUP_COPY_TEXT } from "../../src/docs/agent-setup";
 import { EXPECTED_CORPUS_PAGES } from "../../src/docs/mcp-corpus";
 import { GLOBAL_SECURITY_HEADERS } from "../../src/docs/security";
+import { ASTILBA_ORIGIN, docsUrl, withDocsBase } from "../../src/docs/urls";
 
 interface WebMcpToolProbe {
   annotations: {
@@ -30,7 +31,7 @@ declare global {
   }
 }
 
-const docsOrigin = "https://docs.astilba.com";
+const docsOrigin = ASTILBA_ORIGIN;
 
 const expectSimpleGetCors = (headers: Record<string, string>): void => {
   expect(headers["access-control-allow-origin"]).toBe("*");
@@ -45,7 +46,7 @@ const expectGlobalSecurityHeaders = (headers: Record<string, string>): void => {
 };
 
 const getExpectedPageDiscoveryLink = (markdownPath: string): string =>
-  `<${markdownPath}>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain", </.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`;
+  `<${markdownPath}>; rel="alternate"; type="text/markdown", <${withDocsBase("/llms.txt")}>; rel="describedby"; type="text/plain", <${withDocsBase("/.well-known/api-catalog")}>; rel="api-catalog"; type="application/linkset+json"`;
 
 const expectNoAxeViolations = async (page: Page): Promise<void> => {
   const results = await new AxeBuilder({ page })
@@ -74,7 +75,9 @@ test("serves the public documentation corpus over MCP", async ({ baseURL }) => {
     name: "astilba-docs-test",
     version: "1.0.0",
   });
-  const transport = new StreamableHTTPClientTransport(new URL("/mcp", baseURL));
+  const transport = new StreamableHTTPClientTransport(
+    new URL(withDocsBase("/mcp"), baseURL)
+  );
 
   try {
     await client.connect(transport);
@@ -85,7 +88,7 @@ test("serves the public documentation corpus over MCP", async ({ baseURL }) => {
       arguments: { query: "tag invalidation" },
       name: "search_docs",
     });
-    const overviewUri = `${docsOrigin}/cache/overview.md`;
+    const overviewUri = `${docsOrigin}/docs/cache/overview.md`;
     const overview = await client.readResource({ uri: overviewUri });
 
     expect(tools.tools.map(({ name }) => name)).toEqual([
@@ -109,7 +112,7 @@ test("serves the public documentation corpus over MCP", async ({ baseURL }) => {
     };
     expect(searchOutput.results[0]).toMatchObject({
       title: "Invalidate cached data",
-      uri: `${docsOrigin}/cache/tags-and-invalidation.md`,
+      uri: `${docsOrigin}/docs/cache/tags-and-invalidation.md`,
     });
     expect(overview.contents[0]).toMatchObject({
       mimeType: "text/markdown",
@@ -125,7 +128,7 @@ test("serves the public documentation corpus over MCP", async ({ baseURL }) => {
 });
 
 test("serves the direct sitemap as a static XML asset", async ({ request }) => {
-  const sitemapResponse = await request.get("/sitemap.xml", {
+  const sitemapResponse = await request.get("/docs/sitemap.xml", {
     maxRedirects: 0,
   });
   expect(sitemapResponse.status()).toBe(200);
@@ -137,12 +140,12 @@ test("serves the direct sitemap as a static XML asset", async ({ request }) => {
   expect(sitemap).toContain(
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
   );
-  expect(sitemap).toContain(`<loc>${docsOrigin}/</loc>`);
+  expect(sitemap).toContain(`<loc>${docsUrl("/")}</loc>`);
   expect(sitemap).toMatch(
     /<lastmod>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z<\/lastmod>/
   );
 
-  const sitemapHeadResponse = await request.head("/sitemap.xml", {
+  const sitemapHeadResponse = await request.head("/docs/sitemap.xml", {
     maxRedirects: 0,
   });
   expect(sitemapHeadResponse.status()).toBe(200);
@@ -158,9 +161,12 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
 }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
 
-  const apiCatalogResponse = await request.get("/.well-known/api-catalog", {
-    maxRedirects: 0,
-  });
+  const apiCatalogResponse = await request.get(
+    "/docs/.well-known/api-catalog",
+    {
+      maxRedirects: 0,
+    }
+  );
   expect(apiCatalogResponse.status()).toBe(200);
   expect(apiCatalogResponse.headers()["content-type"]).toBe(
     'application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"'
@@ -173,16 +179,16 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
   expect(await apiCatalogResponse.json()).toEqual({
     linkset: [
       {
-        anchor: `${docsOrigin}/mcp`,
+        anchor: `${docsOrigin}/docs/mcp`,
         "service-desc": [
           {
-            href: `${docsOrigin}/mcp/server-card`,
+            href: `${docsOrigin}/docs/mcp/server-card`,
             type: "application/mcp-server-card+json",
           },
         ],
         "service-doc": [
           {
-            href: `${docsOrigin}/agents/mcp/`,
+            href: `${docsOrigin}/docs/agents/mcp/`,
             type: "text/html",
           },
         ],
@@ -190,15 +196,17 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
     ],
   });
 
-  const apiCatalogHead = await request.head("/.well-known/api-catalog", {
+  const apiCatalogHead = await request.head("/docs/.well-known/api-catalog", {
     maxRedirects: 0,
   });
   expect(apiCatalogHead.status()).toBe(200);
   expect(apiCatalogHead.headers().link).toBe(
-    '</.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"'
+    '</docs/.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"'
   );
 
-  const mcpCatalogResponse = await request.get("/.well-known/mcp/catalog.json");
+  const mcpCatalogResponse = await request.get(
+    "/docs/.well-known/mcp/catalog.json"
+  );
   expect(mcpCatalogResponse.status()).toBe(200);
   expect(mcpCatalogResponse.headers()["content-type"]).toContain(
     "application/json"
@@ -209,13 +217,13 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
       {
         identifier: "urn:air:astilba.com:docs",
         type: "application/mcp-server-card+json",
-        url: `${docsOrigin}/mcp/server-card`,
+        url: `${docsOrigin}/docs/mcp/server-card`,
       },
     ],
     specVersion: "draft",
   });
 
-  const serverCardResponse = await request.get("/mcp/server-card", {
+  const serverCardResponse = await request.get("/docs/mcp/server-card", {
     headers: { Accept: "application/mcp-server-card+json" },
     maxRedirects: 0,
   });
@@ -230,13 +238,13 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
     remotes: [
       {
         type: "streamable-http",
-        url: `${docsOrigin}/mcp`,
+        url: `${docsOrigin}/docs/mcp`,
       },
     ],
     version: "0.1.0",
   });
   expect(serverCard).not.toHaveProperty("capabilities");
-  const serverCardHead = await request.head("/mcp/server-card", {
+  const serverCardHead = await request.head("/docs/mcp/server-card", {
     maxRedirects: 0,
   });
   expect(serverCardHead.status()).toBe(200);
@@ -245,7 +253,7 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
   );
 
   const compatibilityCardResponse = await request.get(
-    "/.well-known/mcp/server-card.json"
+    "/docs/.well-known/mcp/server-card.json"
   );
   expect(compatibilityCardResponse.status()).toBe(200);
   expectSimpleGetCors(compatibilityCardResponse.headers());
@@ -253,16 +261,16 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
     capabilities: { resources: {}, tools: {} },
     serverInfo: { name: "com.astilba/docs", version: "0.1.0" },
     transport: {
-      endpoint: `${docsOrigin}/mcp`,
+      endpoint: `${docsOrigin}/docs/mcp`,
       type: "streamable-http",
     },
   });
 
-  const unsupportedMcpMethod = await request.get("/mcp");
+  const unsupportedMcpMethod = await request.get("/docs/mcp");
   expect(unsupportedMcpMethod.status()).toBe(405);
   expectGlobalSecurityHeaders(unsupportedMcpMethod.headers());
 
-  const initializeMcp = await request.post("/mcp", {
+  const initializeMcp = await request.post("/docs/mcp", {
     data: {
       id: 1,
       jsonrpc: "2.0",
@@ -282,29 +290,29 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
   expect(initializeMcp.status()).toBe(200);
   expectGlobalSecurityHeaders(initializeMcp.headers());
 
-  const usageResponse = await request.get("/agents/mcp/", {
+  const usageResponse = await request.get("/docs/agents/mcp/", {
     maxRedirects: 0,
   });
   expect(usageResponse.status()).toBe(200);
   expect(await usageResponse.text()).toContain("MCP Server");
-  const usageMarkdownResponse = await request.get("/agents/mcp/", {
+  const usageMarkdownResponse = await request.get("/docs/agents/mcp/", {
     headers: { Accept: "text/markdown" },
   });
   expect(usageMarkdownResponse.headers()["content-location"]).toBe(
-    "/agents/mcp.md"
+    "/docs/agents/mcp.md"
   );
   expect(await usageMarkdownResponse.text()).toContain("# MCP Server");
 
-  const llmsGuideResponse = await request.get("/agents/llms-txt/", {
+  const llmsGuideResponse = await request.get("/docs/agents/llms-txt/", {
     headers: { Accept: "text/markdown" },
   });
   expect(llmsGuideResponse.status()).toBe(200);
   expect(llmsGuideResponse.headers()["content-location"]).toBe(
-    "/agents/llms-txt.md"
+    "/docs/agents/llms-txt.md"
   );
   expect(await llmsGuideResponse.text()).toContain("# LLMs.txt");
 
-  await page.goto("/agents/llms-txt/");
+  await page.goto("/docs/agents/llms-txt/");
   await expect(page.getByRole("heading", { name: "LLMs.txt" })).toBeVisible();
   const agentSetupInstruction = page
     .locator(".expressive-code .frame")
@@ -313,7 +321,7 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
   await expect(agentSetupInstruction).not.toHaveClass(/\bhas-title\b/);
   await expectNoAxeViolations(page);
 
-  await page.goto("/agents/mcp/");
+  await page.goto("/docs/agents/mcp/");
   await expect(page.getByRole("heading", { name: "MCP Server" })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Copy Markdown" })
@@ -391,7 +399,7 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
   await firstCopyCode.click();
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-    .toBe("https://docs.astilba.com/mcp");
+    .toBe("https://astilba.com/docs/mcp");
   await expectNoAxeViolations(page);
 });
 
@@ -399,7 +407,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   page,
   request,
 }) => {
-  const homeMarkdownResponse = await request.get("/", {
+  const homeMarkdownResponse = await request.get("/docs/", {
     headers: { Accept: "text/markdown" },
   });
   expect(homeMarkdownResponse.ok()).toBe(true);
@@ -412,7 +420,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   expect(homeMarkdown).toContain("## Sponsors");
   expect(homeMarkdown).not.toContain("## How to read these docs");
 
-  const rootMarkdownResponse = await request.get("/index.md");
+  const rootMarkdownResponse = await request.get("/docs/index.md");
   expect(rootMarkdownResponse.status()).toBe(200);
   expect(rootMarkdownResponse.headers()["content-type"]).toBe(
     "text/markdown; charset=utf-8"
@@ -422,7 +430,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   );
   expect(rootMarkdownResponse.headers().etag).toBeTruthy();
 
-  const agentSetupResponse = await request.get("/agent-setup/prompt.md");
+  const agentSetupResponse = await request.get("/docs/agent-setup/prompt.md");
   expect(agentSetupResponse.status()).toBe(200);
   expect(agentSetupResponse.headers()["content-type"]).toBe(
     "text/markdown; charset=utf-8"
@@ -437,11 +445,11 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   );
 
   for (const { markdownPath, pagePath } of [
-    { markdownPath: "/index.md", pagePath: "/" },
-    { markdownPath: "/cache.md", pagePath: "/cache/" },
+    { markdownPath: "/docs/index.md", pagePath: "/docs/" },
+    { markdownPath: "/docs/cache.md", pagePath: "/docs/cache/" },
     {
-      markdownPath: "/cache/overview.md",
-      pagePath: "/cache/overview/",
+      markdownPath: "/docs/cache/overview.md",
+      pagePath: "/docs/cache/overview/",
     },
   ]) {
     const expectedLink = getExpectedPageDiscoveryLink(markdownPath);
@@ -473,15 +481,18 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     expect(pageRevalidationResponse.headers().link).toBe(expectedLink);
   }
 
-  const negotiatedMarkdownResponse = await request.get("/cache/overview/", {
-    headers: { Accept: "text/markdown" },
-  });
+  const negotiatedMarkdownResponse = await request.get(
+    "/docs/cache/overview/",
+    {
+      headers: { Accept: "text/markdown" },
+    }
+  );
   expect(negotiatedMarkdownResponse.ok()).toBe(true);
   expect(negotiatedMarkdownResponse.headers()["content-type"]).toContain(
     "text/markdown"
   );
   expect(negotiatedMarkdownResponse.headers()["content-location"]).toBe(
-    "/cache/overview.md"
+    "/docs/cache/overview.md"
   );
   expect(negotiatedMarkdownResponse.headers()["content-signal"]).toBe(
     "ai-train=yes, search=yes, ai-input=yes"
@@ -494,7 +505,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     "For React applications, “server-side” means"
   );
 
-  const markdownHeadResponse = await request.head("/cache/overview/", {
+  const markdownHeadResponse = await request.head("/docs/cache/overview/", {
     headers: { Accept: "text/markdown" },
   });
   expect(markdownHeadResponse.ok()).toBe(true);
@@ -502,40 +513,40 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     "text/markdown"
   );
 
-  const canonicalRedirect = await request.get("/cache/overview", {
+  const canonicalRedirect = await request.get("/docs/cache/overview", {
     headers: { Accept: "text/markdown" },
     maxRedirects: 0,
   });
   expect(canonicalRedirect.status()).toBe(307);
-  expect(canonicalRedirect.headers().location).toBe("/cache/overview/");
+  expect(canonicalRedirect.headers().location).toBe("/docs/cache/overview/");
 
-  const productRootRedirect = await request.get("/cache", {
+  const productRootRedirect = await request.get("/docs/cache", {
     maxRedirects: 0,
   });
   expect(productRootRedirect.status()).toBe(307);
-  expect(productRootRedirect.headers().location).toBe("/cache/");
+  expect(productRootRedirect.headers().location).toBe("/docs/cache/");
 
-  const productHomeResponse = await request.get("/cache/", {
+  const productHomeResponse = await request.get("/docs/cache/", {
     maxRedirects: 0,
   });
   expect(productHomeResponse.status()).toBe(200);
   expect(productHomeResponse.headers()["content-type"]).toContain("text/html");
 
-  const htmlResponse = await request.get("/cache/overview/", {
+  const htmlResponse = await request.get("/docs/cache/overview/", {
     headers: { Accept: "text/html, text/markdown;q=0" },
   });
   expect(htmlResponse.headers()["content-type"]).toContain("text/html");
   expect(htmlResponse.headers().vary).toContain("Accept");
   expectGlobalSecurityHeaders(htmlResponse.headers());
 
-  const preferredHtmlResponse = await request.get("/cache/overview/", {
+  const preferredHtmlResponse = await request.get("/docs/cache/overview/", {
     headers: { Accept: "text/html;q=1, text/markdown;q=0.1" },
   });
   expect(preferredHtmlResponse.headers()["content-type"]).toContain(
     "text/html"
   );
 
-  const markdownResponse = await request.get("/cache/overview.md");
+  const markdownResponse = await request.get("/docs/cache/overview.md");
   expect(markdownResponse.ok()).toBe(true);
   expect(markdownResponse.headers()["content-type"]).toBe(
     "text/markdown; charset=utf-8"
@@ -551,9 +562,12 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   expect(markdown).toContain("# Overview");
   expect(markdown).toContain("For React applications, “server-side” means");
 
-  const markdownRevalidationResponse = await request.get("/cache/overview.md", {
-    headers: { "If-None-Match": markdownEtag },
-  });
+  const markdownRevalidationResponse = await request.get(
+    "/docs/cache/overview.md",
+    {
+      headers: { "If-None-Match": markdownEtag },
+    }
+  );
   expect(markdownRevalidationResponse.status()).toBe(304);
   expect(markdownRevalidationResponse.headers()["content-type"]).toBe(
     "text/markdown; charset=utf-8"
@@ -562,7 +576,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     "nosniff"
   );
 
-  const missingMarkdownResponse = await request.get("/missing/", {
+  const missingMarkdownResponse = await request.get("/docs/missing/", {
     headers: { Accept: "text/markdown" },
   });
   expect(missingMarkdownResponse.status()).toBe(404);
@@ -571,7 +585,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   );
   expect(missingMarkdownResponse.headers().link).toBeUndefined();
 
-  const missingNestedPageResponse = await request.get("/cache/missing/", {
+  const missingNestedPageResponse = await request.get("/docs/cache/missing/", {
     headers: { Accept: "text/html" },
   });
   expect(missingNestedPageResponse.status()).toBe(404);
@@ -580,13 +594,13 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   );
   expect(missingNestedPageResponse.headers().link).toBeUndefined();
 
-  const missingPageHeadResponse = await request.head("/cache/missing/", {
+  const missingPageHeadResponse = await request.head("/docs/cache/missing/", {
     headers: { Accept: "text/html" },
   });
   expect(missingPageHeadResponse.status()).toBe(404);
   expect(missingPageHeadResponse.headers().link).toBeUndefined();
 
-  const missingDirectResponse = await request.get("/missing.md");
+  const missingDirectResponse = await request.get("/docs/missing.md");
   const missingEtag = missingDirectResponse.headers().etag;
   expect(missingDirectResponse.status()).toBe(404);
   expect(missingDirectResponse.headers()["content-type"]).toContain(
@@ -594,13 +608,13 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   );
   expect(missingEtag).toBeTruthy();
 
-  const missingNestedResponse = await request.get("/cache/missing.md");
+  const missingNestedResponse = await request.get("/docs/cache/missing.md");
   expect(missingNestedResponse.status()).toBe(404);
   expect(missingNestedResponse.headers()["content-type"]).toContain(
     "text/html"
   );
 
-  const missingRevalidationResponse = await request.get("/missing/", {
+  const missingRevalidationResponse = await request.get("/docs/missing/", {
     headers: {
       Accept: "text/markdown",
       "If-None-Match": missingEtag,
@@ -616,7 +630,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   expect(missingRevalidationResponse.headers().link).toBeUndefined();
 
   const skillsIndexResponse = await request.get(
-    "/.well-known/agent-skills/index.json"
+    "/docs/.well-known/agent-skills/index.json"
   );
   expect(skillsIndexResponse.ok()).toBe(true);
   expect(skillsIndexResponse.headers()["content-type"]).toContain(
@@ -637,7 +651,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     `sha256:${createHash("sha256").update(skillContent).digest("hex")}`
   );
 
-  await page.goto("/cache/overview/");
+  await page.goto("/docs/cache/overview/");
   const pageTitleBox = await page
     .getByRole("heading", { level: 1, name: "Overview" })
     .boundingBox();
@@ -865,7 +879,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
 test("copies heading links without navigating", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.setViewportSize({ height: 900, width: 1440 });
-  await page.goto("/cache/overview/");
+  await page.goto("/docs/cache/overview/");
   await page.evaluate(() => {
     document.documentElement.dataset.theme = "light";
   });
@@ -998,7 +1012,7 @@ test("copies heading links without navigating", async ({ page }) => {
 });
 
 test("searches the production Pagefind index", async ({ page }) => {
-  await page.goto("/cache/overview/");
+  await page.goto("/docs/cache/overview/");
 
   const searchButton = page.locator("[data-sidebar-search-trigger]");
   await expect(searchButton).toBeEnabled();
@@ -1031,7 +1045,7 @@ test("enforces CSP without blocking the interactive shell", async ({
     });
   });
 
-  const response = await page.goto("/cache/overview/");
+  const response = await page.goto("/docs/cache/overview/");
   const policy = response?.headers()["content-security-policy"] ?? "";
 
   expect(policy).toContain("default-src 'none'");
@@ -1096,7 +1110,7 @@ test("registers a read-only WebMCP tool when the API is available", async ({
     });
   });
 
-  await page.goto("/cache/overview/");
+  await page.goto("/docs/cache/overview/");
   await expect
     .poll(() => page.evaluate(() => window.__webMcpTools?.length ?? 0))
     .toBe(1);
@@ -1181,34 +1195,34 @@ test("registers a read-only WebMCP tool when the API is available", async ({
     "For React applications, “server-side” means"
   );
   expect(markdownChunks.at(-1)).toMatch(/End of page\.$/);
-  expect(markdownRequests).toEqual(["/cache/overview.md"]);
+  expect(markdownRequests).toEqual(["/docs/cache/overview.md"]);
 
   const nextPageChunk = await page.evaluate(async () => {
     const markdownLink = document.querySelector<HTMLLinkElement>(
       'link[rel="alternate"][type="text/markdown"]'
     );
-    markdownLink?.setAttribute("href", "/cache/quickstart.md");
+    markdownLink?.setAttribute("href", "/docs/cache/quickstart.md");
 
     return window.__webMcpTools?.[0]?.execute({ offset: 0 });
   });
   expect(nextPageChunk).toContain("# Local quickstart");
   expect(markdownRequests).toEqual([
-    "/cache/overview.md",
-    "/cache/quickstart.md",
+    "/docs/cache/overview.md",
+    "/docs/cache/quickstart.md",
   ]);
 
   const cachedOverviewChunk = await page.evaluate(async () => {
     const markdownLink = document.querySelector<HTMLLinkElement>(
       'link[rel="alternate"][type="text/markdown"]'
     );
-    markdownLink?.setAttribute("href", "/cache/overview.md");
+    markdownLink?.setAttribute("href", "/docs/cache/overview.md");
 
     return window.__webMcpTools?.[0]?.execute({ offset: 0 });
   });
   expect(cachedOverviewChunk).toContain("# Overview");
   expect(markdownRequests).toEqual([
-    "/cache/overview.md",
-    "/cache/quickstart.md",
+    "/docs/cache/overview.md",
+    "/docs/cache/quickstart.md",
   ]);
 });
 
@@ -1237,7 +1251,7 @@ test("falls back to legacy navigator.registerTool for WebMCP", async ({
     });
   });
 
-  await page.goto("/cache/overview/");
+  await page.goto("/docs/cache/overview/");
   await expect
     .poll(() => page.evaluate(() => window.__webMcpTools?.length ?? 0))
     .toBe(1);
@@ -1271,7 +1285,7 @@ test("falls back to legacy navigator.provideContext for WebMCP", async ({
     });
   });
 
-  await page.goto("/cache/overview/");
+  await page.goto("/docs/cache/overview/");
   await expect
     .poll(() => page.evaluate(() => window.__webMcpTools?.length ?? 0))
     .toBe(1);
@@ -1287,7 +1301,7 @@ test("falls back to legacy navigator.provideContext for WebMCP", async ({
 test("persists desktop sidebar disclosure state across navigation", async ({
   page,
 }) => {
-  await page.goto("/cache/overview/");
+  await page.goto("/docs/cache/overview/");
 
   const getStarted = page.getByRole("button", {
     name: "Get started",
@@ -1309,12 +1323,12 @@ test("persists desktop sidebar disclosure state across navigation", async ({
 test("targets the active product repository from the header", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/docs/");
   await expect(
     page.getByRole("link", { name: "Astilba on GitHub", exact: true })
   ).toHaveAttribute("href", "https://github.com/astilbahq");
 
-  await page.goto("/cache/overview/");
+  await page.goto("/docs/cache/overview/");
   await expect(
     page.getByRole("link", {
       name: "Astilba Cache on GitHub",
@@ -1322,7 +1336,7 @@ test("targets the active product repository from the header", async ({
     })
   ).toHaveAttribute("href", "https://github.com/astilbahq/cache");
 
-  await page.goto("/cache/");
+  await page.goto("/docs/cache/");
   await expect(
     page.getByRole("link", {
       name: "Astilba Cache on GitHub",
@@ -1332,31 +1346,31 @@ test("targets the active product repository from the header", async ({
 });
 
 test("uses product-aware document titles", async ({ page }) => {
-  await page.goto("/cache/quickstart/");
+  await page.goto("/docs/cache/quickstart/");
   await expect(page).toHaveTitle("Local quickstart | Astilba Cache");
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
     "content",
     "Local quickstart | Astilba Cache"
   );
 
-  await page.goto("/");
+  await page.goto("/docs/");
   await expect(page).toHaveTitle("Astilba");
 
-  await page.goto("/cache/");
+  await page.goto("/docs/cache/");
   await expect(page).toHaveTitle("Cache | Astilba");
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
     "content",
     "Cache | Astilba"
   );
 
-  await page.goto("/agents/mcp/");
+  await page.goto("/docs/agents/mcp/");
   await expect(page).toHaveTitle("MCP Server | Astilba");
 });
 
 test("presents products and copies the agent setup prompt from the homepage", async ({
   page,
 }) => {
-  await page.goto("/");
+  await page.goto("/docs/");
 
   const pageTitle = page.getByRole("heading", { level: 1, name: "Overview" });
   await expect(pageTitle).toBeVisible();
@@ -1366,21 +1380,21 @@ test("presents products and copies the agent setup prompt from the homepage", as
   await expect(sidebar).toBeVisible();
   await expect(
     sidebar.getByRole("link", { name: "Cache documentation" })
-  ).toHaveAttribute("href", "/cache/");
+  ).toHaveAttribute("href", "/docs/cache/");
   await expect(
     sidebar.getByRole("button", { name: "AI for Agents", exact: true })
   ).toHaveAttribute("aria-expanded", "true");
   await expect(
     sidebar.getByRole("link", { name: "LLMs.txt", exact: true })
-  ).toHaveAttribute("href", "/agents/llms-txt/");
+  ).toHaveAttribute("href", "/docs/agents/llms-txt/");
   await expect(
     sidebar.getByRole("link", { name: "MCP Server", exact: true })
-  ).toHaveAttribute("href", "/agents/mcp/");
+  ).toHaveAttribute("href", "/docs/agents/mcp/");
   const primaryAction = page.getByRole("link", {
     name: "Read the docs",
     exact: true,
   });
-  await expect(primaryAction).toHaveAttribute("href", "/cache/");
+  await expect(primaryAction).toHaveAttribute("href", "/docs/cache/");
   await expect(primaryAction).toHaveCSS("height", "40px");
   await expect(primaryAction).toHaveCSS("padding-inline", "14px");
   const primarySelection = await primaryAction.evaluate((element) => {
@@ -1406,7 +1420,7 @@ test("presents products and copies the agent setup prompt from the homepage", as
   await expect(product).toContainText("There is no supported npm release");
   await expect(product.getByRole("link", { name: "Cache" })).toHaveAttribute(
     "href",
-    "/cache/"
+    "/docs/cache/"
   );
   await expect(
     page.getByRole("heading", { level: 2, name: "How to read these docs" })
@@ -1504,7 +1518,7 @@ test("presents products and copies the agent setup prompt from the homepage", as
 });
 
 test("presents Cache as a distinct product home", async ({ page }) => {
-  await page.goto("/cache/");
+  await page.goto("/docs/cache/");
 
   const title = page.getByRole("heading", { level: 1, name: "Cache" });
   await expect(title).toBeVisible();
@@ -1519,7 +1533,7 @@ test("presents Cache as a distinct product home", async ({ page }) => {
 
   await expect(
     page.getByRole("link", { name: "Read the docs", exact: true })
-  ).toHaveAttribute("href", "/cache/overview/");
+  ).toHaveAttribute("href", "/docs/cache/overview/");
   await expect(
     page.getByRole("button", { name: "Copy agent setup", exact: true })
   ).toBeVisible();
@@ -1536,10 +1550,10 @@ test("presents Cache as a distinct product home", async ({ page }) => {
       name: "Cache documentation home",
       exact: true,
     })
-  ).toHaveAttribute("href", "/cache/");
+  ).toHaveAttribute("href", "/docs/cache/");
   await expect(
     sidebar.getByRole("link", { name: "Overview", exact: true })
-  ).toHaveAttribute("href", "/cache/overview/");
+  ).toHaveAttribute("href", "/docs/cache/overview/");
   await expect(
     page.getByRole("banner").getByRole("link", { name: "Cache", exact: true })
   ).toHaveAttribute("aria-current", "page");
@@ -1553,7 +1567,7 @@ test("keeps document pagination balanced and uses the ghost treatment", async ({
     localStorage.setItem("starlight-theme", "light");
   });
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto("/cache/overview/");
+  await page.goto("/docs/cache/overview/");
 
   const pagination = page.locator(".pagination-links");
   const next = pagination.locator('a[rel="next"]');
@@ -1595,7 +1609,7 @@ test("keeps document pagination balanced and uses the ghost treatment", async ({
   await next.hover();
   await expect(next).toHaveCSS("background-color", "rgba(0, 0, 0, 0.02)");
 
-  await page.goto("/cache/api-status/");
+  await page.goto("/docs/cache/api-status/");
   const previous = page.locator('.pagination-links a[rel="prev"]');
   const previousPaginationBox = await page
     .locator(".pagination-links")
@@ -1617,7 +1631,7 @@ test("keeps document pagination balanced and uses the ghost treatment", async ({
   );
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/cache/overview/");
+  await page.goto("/docs/cache/overview/");
   const mobilePaginationBox = await page
     .locator(".pagination-links")
     .boundingBox();
@@ -1631,7 +1645,7 @@ test("keeps document pagination balanced and uses the ghost treatment", async ({
 
   expect(mobileNextBox.width).toBeCloseTo(mobilePaginationBox.width, 0);
 
-  await page.goto("/cache/quickstart/");
+  await page.goto("/docs/cache/quickstart/");
   const mobilePreviousBox = await page
     .locator('.pagination-links a[rel="prev"]')
     .boundingBox();
@@ -1650,7 +1664,7 @@ test("keeps sidebar controls in place while only navigation scrolls", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 480 });
-  await page.goto("/cache/overview/");
+  await page.goto("/docs/cache/overview/");
 
   const sidebar = page.locator("#starlight__sidebar");
   const searchTrigger = page.locator("[data-sidebar-search-trigger]");
@@ -1760,7 +1774,7 @@ test("keeps sidebar controls in place while only navigation scrolls", async ({
 test("keeps native header search available without a sidebar", async ({
   page,
 }) => {
-  const response = await page.goto("/missing/");
+  const response = await page.goto("/docs/missing/");
   expect(response?.status()).toBe(404);
 
   const searchTrigger = page.locator("site-search > button[data-open-modal]");
@@ -1771,7 +1785,7 @@ test("keeps native header search available without a sidebar", async ({
 
 test("switches themes and opens mobile navigation", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto("/cache/quickstart/");
+  await page.goto("/docs/cache/quickstart/");
 
   const root = page.locator("html");
   const initialTheme = await root.getAttribute("data-theme");
@@ -1805,7 +1819,7 @@ test("has no automatically detectable accessibility violations", async ({
   await page.addInitScript(() => {
     localStorage.setItem("starlight-theme", "light");
   });
-  await page.goto("/cache/overview/");
+  await page.goto("/docs/cache/overview/");
   await expect(page.getByRole("heading", { name: "Overview" })).toBeVisible();
   await expectNoAxeViolations(page);
 

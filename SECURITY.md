@@ -2,7 +2,7 @@
 
 ## Supported version
 
-Security fixes apply to the documentation currently deployed at <https://docs.astilba.com> from the `main` branch. This repository does not publish independently supported release branches.
+Security fixes apply to the documentation currently deployed at <https://astilba.com/docs> from the `main` branch. This repository does not publish independently supported release branches.
 
 ## Report a vulnerability
 

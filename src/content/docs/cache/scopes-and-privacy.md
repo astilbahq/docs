@@ -5,7 +5,7 @@ description: Keep identity-bearing values local while allowing deliberate public
 
 In Astilba Cache, scope answers a storage question: may this value leave the current isolate and enter a shared tier?
 
-L1 is local to one process or worker isolate; L2 is shared or durable. The Workers factory supplies a bounded <code>memory()</code> L1 automatically. See [Cache fundamentals](/cache/core-concepts/) for the complete storage vocabulary.
+L1 is local to one process or worker isolate; L2 is shared or durable. The Workers factory supplies a bounded <code>memory()</code> L1 automatically. See [Cache fundamentals](/docs/cache/core-concepts/) for the complete storage vocabulary.
 
 ## Follow the resolution rules
 
@@ -80,13 +80,13 @@ Value scope also gates React Router response caching. The middleware records sco
 - missing or malformed stored scope also fails closed to private;
 - <code>l3: false</code> may suppress a tag, but it never suppresses the entry's scope evidence.
 
-A bare <code>RenderCollector.dependsOn()</code> is different: it is not backed by a managed entry, so it has no scope claim and cannot poison the response by itself. See [Cache HTTP responses](/cache/response-caching/) for the complete header algorithm.
+A bare <code>RenderCollector.dependsOn()</code> is different: it is not backed by a managed entry, so it has no scope claim and cannot poison the response by itself. See [Cache HTTP responses](/docs/cache/response-caching/) for the complete header algorithm.
 
 ## Related
 
-- [Runtime architecture](/cache/architecture/) shows how L1 and L2 fit into a configured cache.
-- [React Router](/cache/react-and-server-apps/) shows how a server adapter carries authenticated identity into the request frame.
-- [Read and cache values](/cache/reading-and-filling/) explains durability metadata and tier selection.
-- [Invalidate cached data](/cache/tags-and-invalidation/) covers the limits of key and scope-qualified selectors.
-- [Cache HTTP responses](/cache/response-caching/) explains how value scope controls shared-response eligibility.
-- [Inspect cache behavior](/cache/observability/) covers scope evidence in <code>explain()</code> and telemetry.
+- [Runtime architecture](/docs/cache/architecture/) shows how L1 and L2 fit into a configured cache.
+- [React Router](/docs/cache/react-and-server-apps/) shows how a server adapter carries authenticated identity into the request frame.
+- [Read and cache values](/docs/cache/reading-and-filling/) explains durability metadata and tier selection.
+- [Invalidate cached data](/docs/cache/tags-and-invalidation/) covers the limits of key and scope-qualified selectors.
+- [Cache HTTP responses](/docs/cache/response-caching/) explains how value scope controls shared-response eligibility.
+- [Inspect cache behavior](/docs/cache/observability/) covers scope evidence in <code>explain()</code> and telemetry.

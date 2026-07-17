@@ -28,4 +28,6 @@ jobs:
           node-version: 24.18.0
 
       - name: Smoke-test production
-        run: node scripts/smoke-production.mjs
+        run: |
+          node site/scripts/smoke-production.mjs
+          node scripts/smoke-production.mjs

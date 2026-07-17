@@ -11,6 +11,7 @@ import {
   type DocsProductContext,
   type DocsVersion,
 } from "./types.ts";
+import { withDocsBase, withoutDocsBase } from "./urls.ts";
 
 const assertUnique = (
   values: Set<string>,
@@ -36,7 +37,7 @@ export const validateDocsProducts = (products: DocsProduct[]): void => {
   const sourcePaths = new Set<string>();
 
   for (const page of siteDocsPages) {
-    const route = normalizePath(page.canonicalPath);
+    const route = normalizePath(withoutDocsBase(page.canonicalPath));
     assertUnique(globalRoutePaths, route, "global documentation route");
     globalRoutes.set(route, page);
     assertUnique(sourcePaths, page.sourcePath, "documentation source path");
@@ -138,7 +139,7 @@ export const validateDocsProducts = (products: DocsProduct[]): void => {
 
     if (
       productHomePages.length !== 1 ||
-      productHomePages[0].canonicalPath !== product.homePath
+      productHomePages[0].canonicalPath !== withDocsBase(product.homePath)
     ) {
       throw new Error(
         `${product.label} must declare exactly one matching product home page.`
@@ -187,10 +188,10 @@ export const docsSidebar: NonNullable<StarlightUserConfig["sidebar"]> =
 const docsIconNames = new Set<string>(docsIcons);
 
 export const getPageHref = (version: DocsVersion, page: DocsPage): string =>
-  `/${version.basePath}/${page.slug}/`;
+  withDocsBase(`/${version.basePath}/${page.slug}/`);
 
 export const getProductHomeHref = (product: DocsProduct): string =>
-  product.homePath;
+  withDocsBase(product.homePath);
 
 export const getDefaultVersion = (product: DocsProduct): DocsVersion => {
   const version = product.versions.find(
@@ -236,7 +237,7 @@ export const getVersionPageHref = (
 };
 
 export const findDocsContext = (pathname: string): DocsContext | undefined => {
-  const path = normalizePath(pathname);
+  const path = normalizePath(withDocsBase(pathname));
 
   for (const product of docsProducts) {
     for (const version of product.versions) {
@@ -263,9 +264,9 @@ export const findDocsProductContext = (
     };
   }
 
-  const path = normalizePath(pathname);
+  const path = normalizePath(withDocsBase(pathname));
   const product = docsProducts.find(
-    (candidate) => normalizePath(candidate.homePath) === path
+    (candidate) => normalizePath(getProductHomeHref(candidate)) === path
   );
 
   return product ? { product, version: getDefaultVersion(product) } : undefined;
