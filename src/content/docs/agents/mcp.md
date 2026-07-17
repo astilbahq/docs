@@ -1,5 +1,5 @@
 ---
-title: Documentation MCP
+title: MCP Server
 description: Connect an MCP client to search and read Astilba's published documentation.
 prev: false
 next: false
@@ -9,13 +9,29 @@ Astilba provides a public, read-only Model Context Protocol endpoint for the sam
 
 Configure a remote Streamable HTTP server with this URL:
 
-```text title="MCP endpoint"
+```text
 https://docs.astilba.com/mcp
 ```
 
 The endpoint does not require credentials or create a session. It cannot change documentation, access accounts, follow arbitrary URLs, or read private Astilba material.
 
 Add it to an MCP client as a remote server. Client configuration formats differ, so use the endpoint above rather than copying configuration intended for another client.
+
+For a compatible coding agent, the shortest setup path is:
+
+```text
+Fetch https://docs.astilba.com/agent-setup/prompt.md and follow its instructions.
+```
+
+## Try it
+
+Once connected, ask the client questions such as:
+
+- “Is Astilba Cache ready for production?”
+- “Find the documentation for invalidating related cached values.”
+- “How do the Cloudflare Workers platform and React Router framework support differ?”
+
+The client should search before reading a bounded page or resource. Answers about availability should use the current [Implementation status](/cache/api-status/) page.
 
 ## Tools
 
@@ -52,3 +68,10 @@ Request bodies are limited to 256,000 bytes. The server accepts up to 16 legacy 
 ## Discovery
 
 The endpoint publishes machine-readable connection metadata through the [MCP catalog](https://docs.astilba.com/.well-known/mcp/catalog.json), [server card](https://docs.astilba.com/mcp/server-card), and [API catalog](https://docs.astilba.com/.well-known/api-catalog). MCP Server Card discovery is experimental, so its metadata format may evolve while the protocol endpoint remains at the URL above.
+
+## Troubleshooting
+
+- **The client cannot add a remote Streamable HTTP server.** Use [`/llms.txt`](/llms.txt) or fetch an individual `.md` page instead.
+- **The server is missing after configuration.** Confirm the endpoint is exactly `https://docs.astilba.com/mcp`, then restart the client if its MCP configuration is only read at startup.
+- **The client asks for credentials.** This endpoint is public and does not use authentication. Check that the client is connecting to the Astilba endpoint rather than another server.
+- **A request returns HTTP 429.** Wait for the `Retry-After` interval and reduce parallel tool or resource calls.

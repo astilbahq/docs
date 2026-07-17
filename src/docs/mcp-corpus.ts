@@ -25,9 +25,9 @@ export interface DocsCorpus {
 }
 
 interface CatalogMetadata {
-  docsVersion: string;
-  docsVersionId: string;
-  lifecycle: string;
+  docsVersion?: string;
+  docsVersionId?: string;
+  lifecycle?: string;
   product: string;
   productId: string;
 }
@@ -64,8 +64,29 @@ for (const markdownPath of siteMarkdownPaths) {
   }
 }
 
-export const EXPECTED_CORPUS_PAGES =
-  catalogMetadataByPath.size + siteMarkdownPaths.size;
+for (const page of siteDocsPages) {
+  if (!page.productId) {
+    continue;
+  }
+
+  const product = docsProducts.find(({ id }) => id === page.productId);
+
+  if (!product) {
+    throw new Error(
+      `[docs-mcp] Unknown documentation product for ${page.markdownPath}.`
+    );
+  }
+
+  catalogMetadataByPath.set(page.markdownPath, {
+    product: product.label,
+    productId: product.id,
+  });
+}
+
+export const EXPECTED_CORPUS_PAGES = new Set([
+  ...catalogMetadataByPath.keys(),
+  ...siteMarkdownPaths,
+]).size;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value);
@@ -139,8 +160,8 @@ const assertCatalogMetadata = (page: DocsCorpusPage): void => {
     return;
   }
 
-  for (const [field, value] of Object.entries(expected)) {
-    if (actual[field as keyof typeof actual] !== value) {
+  for (const [field, value] of Object.entries(actual)) {
+    if (value !== expected[field as keyof CatalogMetadata]) {
       throw new Error(
         `[docs-mcp] ${page.markdownPath} has metadata that differs from the public documentation catalog.`
       );

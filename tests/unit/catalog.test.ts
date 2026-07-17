@@ -3,10 +3,13 @@ import { describe, expect, it } from "vitest";
 import {
   docsProducts,
   findDocsContext,
+  findDocsProductContext,
   getDefaultPage,
   getDefaultVersion,
+  getDocumentTitle,
   getDocsIcon,
   getPageHref,
+  getProductHomeHref,
   getVersionMeta,
   getVersionPageHref,
   validateDocsProducts,
@@ -24,6 +27,7 @@ describe("documentation catalog", () => {
     expect(version.id).toBe("unreleased");
     expect(page.key).toBe("overview");
     expect(cache.repositoryUrl).toBe("https://github.com/astilbahq/cache");
+    expect(getProductHomeHref(cache)).toBe("/cache/");
     expect(getPageHref(version, page)).toBe("/cache/overview/");
   });
 
@@ -87,11 +91,78 @@ describe("documentation catalog", () => {
     expect(findDocsContext("/not-a-doc/")).toBeUndefined();
   });
 
+  it("finds product context on the stable product home", () => {
+    const context = findDocsProductContext("/cache/");
+
+    expect(context?.product.id).toBe("cache");
+    expect(context?.version.id).toBe("unreleased");
+    expect(findDocsContext("/cache/")).toBeUndefined();
+  });
+
+  it("requires an exact canonical product-home path", () => {
+    expect(() =>
+      validateDocsProducts([{ ...cache, homePath: "/cache" }])
+    ).toThrow("Cache must declare exactly one matching product home page.");
+  });
+
+  it("builds product-aware document titles", () => {
+    const context = findDocsContext("/cache/quickstart/");
+
+    expect(context).toBeDefined();
+    expect(
+      getDocumentTitle({
+        context,
+        isHome: false,
+        pageTitle: "Local quickstart",
+        siteTitle: "Astilba",
+      })
+    ).toBe("Local quickstart | Astilba Cache");
+    expect(
+      getDocumentTitle({
+        isHome: false,
+        pageTitle: "MCP Server",
+        siteTitle: "Astilba",
+      })
+    ).toBe("MCP Server | Astilba");
+    expect(
+      getDocumentTitle({
+        isHome: false,
+        pageTitle: "LLMs.txt",
+        siteTitle: "Astilba",
+      })
+    ).toBe("LLMs.txt | Astilba");
+    expect(
+      getDocumentTitle({
+        isHome: true,
+        pageTitle: "Overview",
+        siteTitle: "Astilba",
+      })
+    ).toBe("Astilba");
+
+    if (!context) {
+      throw new Error("Cache quickstart context must exist.");
+    }
+
+    expect(
+      getDocumentTitle({
+        context: {
+          ...context,
+          product: { ...context.product, defaultVersion: "2.0" },
+          version: { ...context.version, id: "1.2", label: "1.2" },
+        },
+        isHome: false,
+        pageTitle: "Local quickstart",
+        siteTitle: "Astilba",
+      })
+    ).toBe("Local quickstart | Astilba Cache 1.2");
+  });
+
   it("keeps version roots distinct from page routes", () => {
     const version = getDefaultVersion(cache);
     const conflictingProduct = {
       ...cache,
       defaultVersion: "collision",
+      homePath: "/collision/",
       id: "collision",
       label: "Collision",
       versions: [
@@ -114,6 +185,7 @@ describe("documentation catalog", () => {
     const conflictingProduct = {
       ...cache,
       defaultVersion: "collision",
+      homePath: "/collision/",
       id: "collision",
       label: "Collision",
       versions: [

@@ -4,6 +4,7 @@ import {
   collectDocsSidebarGroupIds,
   createDocsSidebarContext,
   createDocsSidebarEntries,
+  createSiteSidebarEntries,
   getDocsSidebarHash,
 } from "../../src/docs/sidebar-model";
 
@@ -92,26 +93,55 @@ describe("documentation sidebar model", () => {
   it("describes known and unknown documentation contexts", () => {
     const known = createDocsSidebarContext("/cache/overview/");
     const unknown = createDocsSidebarContext("/outside/");
-    const docsHome = known.product.options?.find(
-      (option) => option.id === "docs-home"
-    );
-    const cache = known.product.options?.find(
-      (option) => option.id === "cache"
-    );
 
     expect(known.product.label).toBe("Cache");
-    expect(docsHome).toMatchObject({
-      href: "/",
-      label: "Docs home",
-      selected: false,
-    });
-    expect(cache).toMatchObject({
-      href: "/cache/overview/",
-      label: "Cache",
-      selected: true,
-    });
+    expect(known.product.href).toBe("/cache/");
+    expect(known.product.options).toBeUndefined();
     expect(known.version?.label).toBe("Unreleased");
-    expect(unknown.product.label).toBe("All products");
-    expect(unknown.product.options?.[0]?.href).toBe("/cache/overview/");
+    expect(unknown.product.label).toBe("Cache");
+    expect(unknown.product.href).toBe("/cache/");
+    expect(unknown.product.options).toBeUndefined();
+
+    const productHome = createDocsSidebarContext("/cache/");
+    expect(productHome.product.href).toBe("/cache/");
+    expect(productHome.version?.label).toBe("Unreleased");
+  });
+
+  it("adds global agent navigation independently of product context", () => {
+    const homeEntries = createSiteSidebarEntries("/");
+    const mcpEntries = createSiteSidebarEntries("/agents/mcp/");
+    const homeGroup = homeEntries[0];
+    const mcpGroup = mcpEntries[0];
+
+    expect(homeGroup).toMatchObject({
+      type: "group",
+      label: "AI for Agents",
+      collapsed: false,
+      containsCurrent: false,
+    });
+    expect(mcpGroup).toMatchObject({
+      type: "group",
+      label: "AI for Agents",
+      containsCurrent: true,
+    });
+    expect(homeGroup?.type === "group" && homeGroup.entries).toMatchObject([
+      {
+        type: "link",
+        label: "LLMs.txt",
+        href: "/agents/llms-txt/",
+        icon: "file-digit",
+        isCurrent: false,
+      },
+      {
+        type: "link",
+        label: "MCP Server",
+        href: "/agents/mcp/",
+        icon: "model-context-protocol",
+        isCurrent: false,
+      },
+    ]);
+    expect(mcpGroup?.type === "group" && mcpGroup.entries[1]).toMatchObject({
+      isCurrent: true,
+    });
   });
 });

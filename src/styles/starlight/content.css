@@ -17,17 +17,56 @@
     max-inline-size: 70ch;
   }
 
-  .sl-markdown-content :is(h2, h3, h4) {
+  .sl-markdown-content :is(h2, h3, h4):not(:where(.not-content *)) {
     letter-spacing: -0.015em;
     text-wrap: balance;
   }
 
-  .sl-markdown-content h2 {
+  .sl-markdown-content .sl-heading-wrapper {
+    position: relative;
+    padding-inline-start: 2rem;
+  }
+
+  .sl-markdown-content .sl-heading-wrapper > :first-child {
+    padding-inline-end: 0;
+  }
+
+  .sl-markdown-content .sl-anchor-link {
+    position: absolute;
+    inset-block-start: calc(
+      (var(--sl-line-height-headings) * 1em - 2rem) / 2
+    );
+    inset-inline-start: 0;
+    display: inline-grid;
+    inline-size: 2rem;
+    block-size: 2rem;
+    margin-inline-start: 0;
+    place-items: center;
+    color: var(--astilba-colors-ink-muted);
+    opacity: 1;
+    transition-duration: var(--astilba-durations-control);
+    transition-property: color;
+    transition-timing-function: var(--astilba-easings-out-expo);
+  }
+
+  .sl-markdown-content .sl-anchor-link:is(:hover, :focus-visible) {
+    color: var(--astilba-colors-ink-strong);
+  }
+
+  .sl-markdown-content .sl-anchor-icon,
+  .sl-markdown-content .sl-anchor-icon > svg {
+    display: block;
+    inline-size: 1.125rem;
+    block-size: 1.125rem;
+    transform: none;
+  }
+
+  .sl-markdown-content h2:not(:where(.not-content *)) {
     margin-block-start: 3rem !important;
     font-size: var(--sl-text-h2);
   }
 
-  .sl-markdown-content h3 {
+  .sl-markdown-content h3:not(:where(.not-content *)) {
     margin-block-start: 2.25rem !important;
     font-size: var(--sl-text-h3);
   }
@@ -187,6 +226,18 @@
     padding-inline-end: 1.125rem !important;
   }
 
+  .expressive-code
+    .frame:not(.has-title, .is-terminal):has(.ec-line:only-child) {
+    --ec-codePadBlk: 0.625rem;
+  }
+
+  .expressive-code
+    .frame:not(.has-title, .is-terminal):has(.ec-line:only-child)
+    .copy {
+    inset-block-start: 0.25rem;
+    inset-inline-end: 0.25rem;
+  }
+
   .expressive-code .ec-line .code {
     padding-inline-start: calc(
       var(--ecIndent, 0ch) + 1.125rem - var(--ecGtrBrdWd)
@@ -219,6 +270,41 @@
 
   .expressive-code .copy > button:active {
     background: var(--astilba-colors-surface-copy-pressed) !important;
+  }
+
+  .expressive-code .copy[data-copy-tooltip]::before {
+    content: attr(data-copy-tooltip);
+    position: absolute;
+    z-index: var(--sl-z-index-menu);
+    inset-block-end: calc(100% + 0.5rem);
+    inset-inline-start: 50%;
+    padding-block: 0.375rem;
+    padding-inline: 0.5rem;
+    background: var(--astilba-colors-surface-elevated);
+    color: var(--astilba-colors-ink-control);
+    font-family: var(--sl-font), ui-sans-serif, sans-serif;
+    font-size: 0.75rem;
+    font-weight: var(--astilba-font-weights-regular);
+    line-height: 1;
+    opacity: 0;
+    white-space: nowrap;
+    box-shadow: var(--astilba-shadows-elevated);
+    transform: translateX(-50%) scale(0.96);
+    transform-origin: 50% 100%;
+    pointer-events: none;
+    transition:
+      opacity var(--astilba-durations-tooltip-close)
+        var(--astilba-easings-out-expo),
+      transform var(--astilba-durations-tooltip-close)
+        var(--astilba-easings-out-expo);
+    will-change: opacity, transform;
+  }
+
+  .expressive-code
+    .copy[data-copy-tooltip]:has(> button:is(:hover, :focus-visible))::before {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
+    transition-duration: var(--astilba-durations-tooltip-open);
   }
 
   /* Keep the live copy confirmation for assistive tech without a visual tooltip. */
@@ -326,8 +412,13 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .sl-markdown-content .sl-anchor-link {
+      transition: none;
+    }
+
     .expressive-code .copy > button::before,
-    .expressive-code .copy > button::after {
+    .expressive-code .copy > button::after,
+    .expressive-code .copy[data-copy-tooltip]::before {
       filter: none;
       transition: none;
     }
@@ -341,6 +432,15 @@
   }
 
   @media (min-width: 50rem) {
+    .sl-markdown-content .sl-heading-wrapper {
+      padding-inline-start: 0;
+    }
+
+    .sl-markdown-content .sl-anchor-link {
+      inset-inline-start: auto;
+      inset-inline-end: calc(100% + 0.25rem);
+    }
+
     main > .content-panel:has(#_top) {
       padding-block-start: var(--astilba-page-pad-block-start);
     }

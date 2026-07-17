@@ -56,9 +56,11 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
   const [isReady, setIsReady] = useState(false);
   const [inputModality, setInputModality] = useState<InputModality>("pointer");
   const [status, setStatus] = useState("");
+  const copyInFlight = useRef(false);
   const copyResetTimer = useRef<number | undefined>(undefined);
   const linkCopyRequestId = useRef(0);
   const linkCopyResetTimer = useRef<number | undefined>(undefined);
+  const splitControlRef = useRef<HTMLDivElement>(null);
   const statusResetTimer = useRef<number | undefined>(undefined);
 
   useEffect(() => {
@@ -119,6 +121,12 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
   };
 
   const copyMarkdown = async (): Promise<void> => {
+    if (copyInFlight.current) {
+      return;
+    }
+
+    copyInFlight.current = true;
+
     if (copyResetTimer.current !== undefined) {
       window.clearTimeout(copyResetTimer.current);
       copyResetTimer.current = undefined;
@@ -145,6 +153,8 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
       showCopyFeedback("copied", "Page Markdown copied.");
     } catch {
       showCopyFeedback("error", "Page Markdown could not be copied.");
+    } finally {
+      copyInFlight.current = false;
     }
   };
 
@@ -190,132 +200,157 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
       data-pagefind-ignore=""
       role="group"
     >
-      <Button
-        aria-busy={copyState === "copying"}
-        className={`${styles.control} ${styles.copyControl}`}
-        data-copy-state={copyState}
-        disabled={!isReady || copyState === "copying"}
-        onClick={() => {
-          void copyMarkdown();
-        }}
-        title="Copy Markdown"
+      <div
+        className={styles.splitControl}
+        data-page-actions-split=""
+        ref={splitControlRef}
       >
-        <span
-          aria-hidden="true"
-          className={styles.iconSwap}
-          data-state={copyState}
-        >
-          <span data-copy-icon="idle">
-            <ActionIcon icon={Copy} />
-          </span>
-          <span data-copy-icon="copied">
-            <ActionIcon icon={Check} />
-          </span>
-          <span data-copy-icon="error">
-            <ActionIcon icon={CircleAlert} />
-          </span>
-        </span>
-        <span>Copy Markdown</span>
-      </Button>
-
-      <Menu.Root modal={false}>
-        <Menu.Trigger
-          className={styles.control}
+        <Button
+          aria-label="Copy Markdown"
+          aria-busy={copyState === "copying"}
+          aria-disabled={copyState === "copying"}
+          className={styles.copyControl}
+          data-copy-state={copyState}
           disabled={!isReady}
-          onKeyDown={() => setInputModality("keyboard")}
-          onPointerDown={() => setInputModality("pointer")}
+          onClick={() => {
+            void copyMarkdown();
+          }}
+          title="Copy Markdown"
         >
-          Open in
-          <ChevronDown
-            absoluteStrokeWidth
+          <span
             aria-hidden="true"
-            className={styles.chevron}
-            focusable="false"
-            size={14}
-            strokeWidth={0.75}
-          />
-        </Menu.Trigger>
-        <Menu.Portal>
-          <Menu.Positioner
-            align="start"
-            className={styles.positioner}
-            collisionAvoidance={{
-              align: "shift",
-              fallbackAxisSide: "none",
-              side: "shift",
-            }}
-            collisionPadding={8}
-            side="bottom"
-            sideOffset={4}
+            className={styles.iconSwap}
+            data-state={copyState}
           >
-            <Menu.Popup
-              className={styles.menu}
-              data-input-modality={inputModality}
-              onKeyDownCapture={() => setInputModality("keyboard")}
-              onPointerMoveCapture={() => setInputModality("pointer")}
+            <span data-copy-icon="idle">
+              <ActionIcon icon={Copy} />
+            </span>
+            <span data-copy-icon="copied">
+              <ActionIcon icon={Check} />
+            </span>
+            <span data-copy-icon="error">
+              <ActionIcon icon={CircleAlert} />
+            </span>
+          </span>
+          <span
+            aria-hidden="true"
+            className={styles.textSwap}
+            data-state={copyState}
+          >
+            <span data-copy-label="idle">Copy Markdown</span>
+            <span data-copy-label="copied">Copied!</span>
+          </span>
+        </Button>
+
+        <Menu.Root modal={false}>
+          <Menu.Trigger
+            aria-label="More page actions"
+            className={styles.menuTrigger}
+            disabled={!isReady}
+            onKeyDown={() => setInputModality("keyboard")}
+            onPointerDown={() => setInputModality("pointer")}
+            title="More page actions"
+          >
+            <ChevronDown
+              absoluteStrokeWidth
+              aria-hidden="true"
+              className={styles.chevron}
+              focusable="false"
+              size={14}
+              strokeWidth={0.75}
+            />
+          </Menu.Trigger>
+          <Menu.Portal>
+            <Menu.Positioner
+              align="start"
+              anchor={splitControlRef}
+              className={styles.positioner}
+              collisionAvoidance={{
+                align: "shift",
+                fallbackAxisSide: "none",
+                side: "shift",
+              }}
+              collisionPadding={8}
+              side="bottom"
+              sideOffset={4}
             >
-              <Menu.Item
-                className={styles.menuItem}
-                closeOnClick={false}
-                data-copy-state={linkCopyState}
-                data-page-actions-item=""
-                label="Copy Markdown link"
-                onClick={() => {
-                  void copyMarkdownLink();
-                }}
+              <Menu.Popup
+                className={styles.menu}
+                data-input-modality={inputModality}
+                onKeyDownCapture={() => setInputModality("keyboard")}
+                onPointerMoveCapture={() => setInputModality("pointer")}
               >
-                <span className={styles.menuIcon}>
-                  <span
-                    aria-hidden="true"
-                    className={styles.iconSwap}
-                    data-state={linkCopyState}
-                  >
-                    <span data-copy-icon="idle">
-                      <ActionIcon icon={Link} size={14} />
-                    </span>
-                    <span data-copy-icon="copied">
-                      <ActionIcon icon={Check} size={14} />
-                    </span>
-                    <span data-copy-icon="error">
-                      <ActionIcon icon={CircleAlert} size={14} />
+                <Menu.Item
+                  aria-label="Copy Markdown link"
+                  className={styles.menuItem}
+                  closeOnClick={false}
+                  data-copy-state={linkCopyState}
+                  data-page-actions-item=""
+                  label="Copy Markdown link"
+                  onClick={() => {
+                    void copyMarkdownLink();
+                  }}
+                >
+                  <span className={styles.menuIcon}>
+                    <span
+                      aria-hidden="true"
+                      className={styles.iconSwap}
+                      data-state={linkCopyState}
+                    >
+                      <span data-copy-icon="idle">
+                        <ActionIcon icon={Link} size={14} />
+                      </span>
+                      <span data-copy-icon="copied">
+                        <ActionIcon icon={Check} size={14} />
+                      </span>
+                      <span data-copy-icon="error">
+                        <ActionIcon icon={CircleAlert} size={14} />
+                      </span>
                     </span>
                   </span>
-                </span>
-                <span className={styles.menuLabel}>Copy Markdown link</span>
-              </Menu.Item>
-
-              {destinations.map((destination) => {
-                return (
-                  <Menu.LinkItem
-                    className={styles.menuItem}
-                    closeOnClick
-                    data-page-actions-item=""
-                    href={destination.href}
-                    key={destination.id}
-                    label={destination.label}
-                    rel="noopener noreferrer"
-                    target="_blank"
+                  <span
+                    aria-hidden="true"
+                    className={`${styles.menuLabel} ${styles.textSwap}`}
+                    data-state={linkCopyState}
                   >
-                    <span className={styles.menuIcon}>
-                      <PageActionBrandIcon
-                        className={styles.controlIcon}
-                        destination={destination.id}
-                        size={14}
-                      />
-                    </span>
-                    <span className={styles.menuLabel}>
-                      {destination.label}
-                    </span>
-                    <span aria-hidden="true" className={styles.menuTrailing}>
-                      <ActionIcon icon={ExternalLink} size={12} />
-                    </span>
-                  </Menu.LinkItem>
-                );
-              })}
-            </Menu.Popup>
-          </Menu.Positioner>
-        </Menu.Portal>
-      </Menu.Root>
+                    <span data-copy-label="idle">Copy Markdown link</span>
+                    <span data-copy-label="copied">Copied!</span>
+                  </span>
+                </Menu.Item>
+
+                {destinations.map((destination) => {
+                  return (
+                    <Menu.LinkItem
+                      className={styles.menuItem}
+                      closeOnClick
+                      data-page-actions-item=""
+                      href={destination.href}
+                      key={destination.id}
+                      label={destination.label}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      <span className={styles.menuIcon}>
+                        <PageActionBrandIcon
+                          className={styles.controlIcon}
+                          destination={destination.id}
+                          size={14}
+                        />
+                      </span>
+                      <span className={styles.menuLabel}>
+                        {destination.label}
+                      </span>
+                      <span aria-hidden="true" className={styles.menuTrailing}>
+                        <ActionIcon icon={ExternalLink} size={12} />
+                      </span>
+                    </Menu.LinkItem>
+                  );
+                })}
+              </Menu.Popup>
+            </Menu.Positioner>
+          </Menu.Portal>
+        </Menu.Root>
+      </div>
 
       <span aria-live="polite" className={styles.status} role="status">
         {status}

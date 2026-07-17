@@ -1,7 +1,28 @@
 ---
-import StarlightHead from "@astrojs/starlight/components/Head.astro";
+import { findDocsContext, getDocumentTitle } from "../docs/catalog";
 
-const { entry } = Astro.locals.starlightRoute;
+const route = Astro.locals.starlightRoute;
+const { entry } = route;
+const documentTitle = getDocumentTitle({
+  context: findDocsContext(Astro.url.pathname),
+  isHome: entry.id === "" || entry.id === "index",
+  pageTitle: entry.data.title,
+  siteTitle: route.siteTitle,
+});
+const head = route.head.map((item) => {
+  if (item.tag === "title") {
+    return { ...item, content: documentTitle };
+  }
+
+  if (item.tag === "meta" && item.attrs?.property === "og:title") {
+    return {
+      ...item,
+      attrs: { ...item.attrs, content: documentTitle },
+    };
+  }
+
+  return item;
+});
 const isDocumentationPage =
   entry.id !== "404" && !entry.id.endsWith("/404");
 const baseUrl = Astro.site ?? Astro.url;
@@ -16,7 +37,7 @@ const apiCatalogUrl = isDocumentationPage && Astro.site
   : undefined;
 ---
 
-<StarlightHead />
+{head.map(({ tag: Tag, attrs, content }) => <Tag {...attrs} set:html={content} />)}
 {
   markdownUrl && (
     <link

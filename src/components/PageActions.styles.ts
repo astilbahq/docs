@@ -7,21 +7,47 @@ export const pageActionsStyles = {
     display: "flex",
     flexWrap: "wrap",
     alignItems: "center",
-    gap: "0.125rem",
     marginBlockStart: "1.25rem",
-    marginInlineStart: "-0.625rem",
     "@media print": {
       display: "none",
     },
   }),
-  control: ghostControl({ appearance: "outline" }),
-  copyControl: css({
-    minInlineSize: "8.5rem",
-    justifyContent: "flex-start",
-    '&:disabled[data-copy-state="copying"]': {
-      cursor: "default",
+  splitControl: css({
+    position: "relative",
+    display: "inline-flex",
+    alignItems: "stretch",
+    "&::after": {
+      position: "absolute",
+      inset: 0,
+      borderWidth: "1px",
+      borderStyle: "solid",
+      borderColor: "border.control",
+      content: '""',
+      pointerEvents: "none",
     },
   }),
+  copyControl: cx(
+    ghostControl(),
+    css({
+      minInlineSize: "8.5rem",
+      justifyContent: "flex-start",
+      '&:disabled[data-copy-state="copying"]': {
+        cursor: "default",
+      },
+    })
+  ),
+  menuTrigger: cx(
+    ghostControl({ iconOnly: true }),
+    css({
+      borderInlineStartWidth: "1px",
+      borderInlineStartStyle: "solid",
+      borderInlineStartColor: "border.control",
+      "&[data-popup-open]": {
+        background: "surface.hover",
+        color: "ink.strong",
+      },
+    })
+  ),
   controlIcon: css({
     display: "block",
     flex: "0 0 auto",
@@ -53,6 +79,28 @@ export const pageActionsStyles = {
       "& [data-copy-icon]": {
         transition: "none",
       },
+    },
+  }),
+  textSwap: css({
+    display: "inline-grid",
+    minInlineSize: 0,
+    textAlign: "start",
+    "& [data-copy-label]": {
+      gridArea: "1 / 1",
+      opacity: 1,
+      visibility: "visible",
+    },
+    '& [data-copy-label="copied"]': {
+      opacity: 0,
+      visibility: "hidden",
+    },
+    '&[data-state="copied"] [data-copy-label="idle"]': {
+      opacity: 0,
+      visibility: "hidden",
+    },
+    '&[data-state="copied"] [data-copy-label="copied"]': {
+      opacity: 1,
+      visibility: "visible",
     },
   }),
   chevron: css({

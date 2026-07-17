@@ -5,6 +5,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { expect, type Page, test } from "@playwright/test";
 
+import { AGENT_SETUP_COPY_TEXT } from "../../src/docs/agent-setup";
 import { EXPECTED_CORPUS_PAGES } from "../../src/docs/mcp-corpus";
 import { GLOBAL_SECURITY_HEADERS } from "../../src/docs/security";
 
@@ -23,6 +24,7 @@ declare global {
       blockedUri: string;
       effectiveDirective: string;
     }>;
+    __tooltipExitDuration?: string;
     __webMcpRegistrationMethods?: string[];
     __webMcpTools?: WebMcpToolProbe[];
   }
@@ -154,6 +156,8 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
   page,
   request,
 }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+
   const apiCatalogResponse = await request.get("/.well-known/api-catalog", {
     maxRedirects: 0,
   });
@@ -282,22 +286,112 @@ test("publishes MCP and RFC 9727 discovery metadata", async ({
     maxRedirects: 0,
   });
   expect(usageResponse.status()).toBe(200);
-  expect(await usageResponse.text()).toContain("Documentation MCP");
+  expect(await usageResponse.text()).toContain("MCP Server");
   const usageMarkdownResponse = await request.get("/agents/mcp/", {
     headers: { Accept: "text/markdown" },
   });
   expect(usageMarkdownResponse.headers()["content-location"]).toBe(
     "/agents/mcp.md"
   );
-  expect(await usageMarkdownResponse.text()).toContain("# Documentation MCP");
+  expect(await usageMarkdownResponse.text()).toContain("# MCP Server");
+
+  const llmsGuideResponse = await request.get("/agents/llms-txt/", {
+    headers: { Accept: "text/markdown" },
+  });
+  expect(llmsGuideResponse.status()).toBe(200);
+  expect(llmsGuideResponse.headers()["content-location"]).toBe(
+    "/agents/llms-txt.md"
+  );
+  expect(await llmsGuideResponse.text()).toContain("# LLMs.txt");
+
+  await page.goto("/agents/llms-txt/");
+  await expect(page.getByRole("heading", { name: "LLMs.txt" })).toBeVisible();
+  const agentSetupInstruction = page
+    .locator(".expressive-code .frame")
+    .filter({ hasText: AGENT_SETUP_COPY_TEXT });
+  await expect(agentSetupInstruction).toHaveCount(1);
+  await expect(agentSetupInstruction).not.toHaveClass(/\bhas-title\b/);
+  await expectNoAxeViolations(page);
 
   await page.goto("/agents/mcp/");
-  await expect(
-    page.getByRole("heading", { name: "Documentation MCP" })
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "MCP Server" })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Copy Markdown" })
   ).toBeVisible();
+
+  const compactCodeFrames = page.locator(
+    ".expressive-code .frame:not(.has-title)"
+  );
+  const copyCodeButtons = page.getByRole("button", { name: "Copy code" });
+
+  await expect(compactCodeFrames).toHaveCount(2);
+  await expect(copyCodeButtons).toHaveCount(2);
+
+  for (let index = 0; index < 2; index += 1) {
+    const frame = compactCodeFrames.nth(index);
+    const line = frame.locator(".ec-line");
+    const button = frame.getByRole("button", { name: "Copy code" });
+    const [frameBox, lineBox, buttonBox] = await Promise.all([
+      frame.boundingBox(),
+      line.boundingBox(),
+      button.boundingBox(),
+    ]);
+
+    if (!(frameBox && lineBox && buttonBox)) {
+      throw new Error(
+        "Compact code text and its copy control must be visible."
+      );
+    }
+
+    expect(
+      Math.abs(
+        lineBox.y + lineBox.height / 2 - (buttonBox.y + buttonBox.height / 2)
+      )
+    ).toBeLessThan(1);
+    expect(
+      frameBox.x + frameBox.width - (buttonBox.x + buttonBox.width)
+    ).toBeCloseTo(4, 1);
+    await expect(button).not.toHaveAttribute("title");
+  }
+
+  const firstCopyCode = copyCodeButtons.nth(0);
+  const firstCopyWrapper = compactCodeFrames.nth(0).locator(".copy");
+  const idleCopyTooltip = await firstCopyWrapper.evaluate((element) => {
+    const tooltip = getComputedStyle(element, "::before");
+
+    return {
+      content: tooltip.content,
+      duration: tooltip.transitionDuration,
+      fontWeight: tooltip.fontWeight,
+      opacity: tooltip.opacity,
+      transform: tooltip.transform,
+    };
+  });
+
+  expect(idleCopyTooltip.content).toBe('"Copy code"');
+  expect(idleCopyTooltip.duration).toBe("0.05s, 0.05s");
+  expect(idleCopyTooltip.fontWeight).toBe("400");
+  expect(idleCopyTooltip.opacity).toBe("0");
+  expect(idleCopyTooltip.transform).toContain("0.96");
+
+  await firstCopyCode.hover();
+  await expect
+    .poll(() =>
+      firstCopyWrapper.evaluate(
+        (element) => getComputedStyle(element, "::before").opacity
+      )
+    )
+    .toBe("1");
+  expect(
+    await firstCopyWrapper.evaluate(
+      (element) => getComputedStyle(element, "::before").transitionDuration
+    )
+  ).toBe("0.15s");
+
+  await firstCopyCode.click();
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe("https://docs.astilba.com/mcp");
   await expectNoAxeViolations(page);
 });
 
@@ -313,9 +407,10 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     "text/markdown"
   );
   expect(homeMarkdownResponse.headers().vary).toContain("Accept");
-  expect(await homeMarkdownResponse.text()).toContain(
-    "# Astilba documentation"
-  );
+  const homeMarkdown = await homeMarkdownResponse.text();
+  expect(homeMarkdown).toContain("# Overview");
+  expect(homeMarkdown).toContain("## Sponsors");
+  expect(homeMarkdown).not.toContain("## How to read these docs");
 
   const rootMarkdownResponse = await request.get("/index.md");
   expect(rootMarkdownResponse.status()).toBe(200);
@@ -327,8 +422,23 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   );
   expect(rootMarkdownResponse.headers().etag).toBeTruthy();
 
+  const agentSetupResponse = await request.get("/agent-setup/prompt.md");
+  expect(agentSetupResponse.status()).toBe(200);
+  expect(agentSetupResponse.headers()["content-type"]).toBe(
+    "text/markdown; charset=utf-8"
+  );
+  expect(agentSetupResponse.headers()["access-control-allow-origin"]).toBe("*");
+  expect(agentSetupResponse.headers()["x-content-type-options"]).toBe(
+    "nosniff"
+  );
+  expect(agentSetupResponse.headers()["x-robots-tag"]).toBe("noindex");
+  expect(await agentSetupResponse.text()).toContain(
+    "# Set up Astilba documentation"
+  );
+
   for (const { markdownPath, pagePath } of [
     { markdownPath: "/index.md", pagePath: "/" },
+    { markdownPath: "/cache.md", pagePath: "/cache/" },
     {
       markdownPath: "/cache/overview.md",
       pagePath: "/cache/overview/",
@@ -399,13 +509,17 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   expect(canonicalRedirect.status()).toBe(307);
   expect(canonicalRedirect.headers().location).toBe("/cache/overview/");
 
-  for (const productRoot of ["/cache", "/cache/"]) {
-    const productRootRedirect = await request.get(productRoot, {
-      maxRedirects: 0,
-    });
-    expect(productRootRedirect.status()).toBe(307);
-    expect(productRootRedirect.headers().location).toBe("/cache/overview/");
-  }
+  const productRootRedirect = await request.get("/cache", {
+    maxRedirects: 0,
+  });
+  expect(productRootRedirect.status()).toBe(307);
+  expect(productRootRedirect.headers().location).toBe("/cache/");
+
+  const productHomeResponse = await request.get("/cache/", {
+    maxRedirects: 0,
+  });
+  expect(productHomeResponse.status()).toBe(200);
+  expect(productHomeResponse.headers()["content-type"]).toContain("text/html");
 
   const htmlResponse = await request.get("/cache/overview/", {
     headers: { Accept: "text/html, text/markdown;q=0" },
@@ -524,13 +638,102 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   );
 
   await page.goto("/cache/overview/");
+  const pageTitleBox = await page
+    .getByRole("heading", { level: 1, name: "Overview" })
+    .boundingBox();
+  const pageActions = page.getByRole("group", { name: "Page actions" });
+  const pageActionsBox = await pageActions.boundingBox();
+
+  if (!(pageTitleBox && pageActionsBox)) {
+    throw new Error(
+      "Page title and actions must have measurable layout boxes."
+    );
+  }
+
+  expect(pageActionsBox.x).toBeCloseTo(pageTitleBox.x, 1);
   const copyMarkdown = page.getByRole("button", {
     name: "Copy Markdown",
   });
+  const morePageActions = page.getByRole("button", {
+    name: "More page actions",
+  });
+  const splitControl = page.locator("[data-page-actions-split]");
 
   await expect(copyMarkdown).toBeEnabled();
+  await expect(morePageActions).toHaveAttribute("aria-haspopup", "menu");
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = "light";
+  });
+  await copyMarkdown.evaluate((button) => {
+    button.setAttribute("disabled", "");
+  });
+  await morePageActions.evaluate((button) => {
+    button.setAttribute("disabled", "");
+  });
+  await expect(copyMarkdown).toHaveCSS("color", "rgb(108, 108, 108)");
+  await expect(morePageActions).toHaveCSS("color", "rgb(108, 108, 108)");
+  await expect(copyMarkdown).toHaveCSS("border-top-width", "0px");
+  await expect(morePageActions).toHaveCSS(
+    "border-inline-start-color",
+    "rgba(0, 0, 0, 0.12)"
+  );
+  await expect(morePageActions).toHaveCSS("border-inline-start-width", "1px");
+  expect(
+    await splitControl.evaluate((element) => {
+      const styles = getComputedStyle(element, "::after");
+
+      return {
+        borderColor: styles.borderColor,
+        borderWidth: styles.borderWidth,
+      };
+    })
+  ).toEqual({
+    borderColor: "rgba(0, 0, 0, 0.12)",
+    borderWidth: "1px",
+  });
+  await copyMarkdown.evaluate((button) => {
+    button.removeAttribute("disabled");
+  });
+  await morePageActions.evaluate((button) => {
+    button.removeAttribute("disabled");
+  });
+  const copyMarkdownWidth = await copyMarkdown.evaluate(
+    (button) => button.getBoundingClientRect().width
+  );
+  const copyMarkdownIdleLabel = copyMarkdown.locator(
+    '[data-copy-label="idle"]'
+  );
+  const copyMarkdownCopiedLabel = copyMarkdown.locator(
+    '[data-copy-label="copied"]'
+  );
+  await expect(copyMarkdownIdleLabel).toHaveCSS("opacity", "1");
+  await expect(copyMarkdownCopiedLabel).toHaveCSS("opacity", "0");
+  await page.route(
+    "**/cache/overview.md",
+    async (route) => {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 200);
+      });
+      await route.continue();
+    },
+    { times: 1 }
+  );
   await copyMarkdown.click();
-  await expect(page.getByRole("status")).toHaveText("Page Markdown copied.");
+  await expect(copyMarkdown).toHaveAttribute("aria-busy", "true");
+  await expect(copyMarkdown).toHaveAttribute("aria-disabled", "true");
+  await expect(copyMarkdown).toBeEnabled();
+  await expect(
+    pageActions.getByRole("status").filter({ hasText: "Page Markdown copied." })
+  ).toHaveText("Page Markdown copied.");
+  await expect(copyMarkdown).toHaveAttribute("data-copy-state", "copied");
+  await expect(copyMarkdownIdleLabel).toHaveCSS("opacity", "0");
+  await expect(copyMarkdownCopiedLabel).toHaveCSS("opacity", "1");
+  await expect(copyMarkdownCopiedLabel).toHaveText("Copied!");
+  await expect
+    .poll(() =>
+      copyMarkdown.evaluate((button) => button.getBoundingClientRect().width)
+    )
+    .toBe(copyMarkdownWidth);
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(
     "# Overview"
   );
@@ -538,13 +741,21 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     timeout: 3000,
   });
 
-  await page.getByRole("button", { name: "Open in" }).click();
-  const openInMenu = page.getByRole("menu");
+  await morePageActions.focus();
+  await morePageActions.press("Enter");
+  await expect(page.getByRole("menu")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("menu")).toBeHidden();
+  await expect(morePageActions).toBeFocused();
+
+  await morePageActions.click();
+  const pageActionsMenu = page.getByRole("menu");
   const copyMarkdownLink = page.getByRole("menuitem", {
     name: "Copy Markdown link",
   });
   const sidebarSubItem = page.locator("[data-docs-nav-link]").first();
 
+  await expect(pageActionsMenu).toHaveCSS("opacity", "1");
   const [menuItemMetrics, sidebarItemMetrics] = await Promise.all(
     [copyMarkdownLink, sidebarSubItem].map((item) =>
       item.evaluate((element) => {
@@ -576,14 +787,35 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     page.getByRole("menuitem", { name: "GitHub" }).locator("svg").last()
   ).toHaveCSS("inline-size", "12px");
 
+  const copyMarkdownLinkWidth = await copyMarkdownLink.evaluate(
+    (item) => item.getBoundingClientRect().width
+  );
+  const copyMarkdownLinkIdleLabel = copyMarkdownLink.locator(
+    '[data-copy-label="idle"]'
+  );
+  const copyMarkdownLinkCopiedLabel = copyMarkdownLink.locator(
+    '[data-copy-label="copied"]'
+  );
+  await expect(copyMarkdownLinkIdleLabel).toHaveCSS("opacity", "1");
+  await expect(copyMarkdownLinkCopiedLabel).toHaveCSS("opacity", "0");
   await copyMarkdownLink.click();
-  await expect(page.getByRole("status")).toHaveText("Markdown link copied.");
-  await expect(openInMenu).toBeVisible();
+  await expect(
+    pageActions.getByRole("status").filter({ hasText: "Markdown link copied." })
+  ).toHaveText("Markdown link copied.");
+  await expect(pageActionsMenu).toBeVisible();
   await expect(copyMarkdownLink).toHaveAttribute("data-copy-state", "copied");
   await expect(copyMarkdownLink.locator('[data-copy-icon="copied"]')).toHaveCSS(
     "opacity",
     "1"
   );
+  await expect(copyMarkdownLinkIdleLabel).toHaveCSS("opacity", "0");
+  await expect(copyMarkdownLinkCopiedLabel).toHaveCSS("opacity", "1");
+  await expect(copyMarkdownLinkCopiedLabel).toHaveText("Copied!");
+  await expect
+    .poll(() =>
+      copyMarkdownLink.evaluate((item) => item.getBoundingClientRect().width)
+    )
+    .toBe(copyMarkdownLinkWidth);
   await expect(copyMarkdown).toHaveAttribute("data-copy-state", "idle");
   await expect
     .poll(() => page.evaluate(() => navigator.clipboard.readText()))
@@ -630,6 +862,141 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   });
 });
 
+test("copies heading links without navigating", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.setViewportSize({ height: 900, width: 1440 });
+  await page.goto("/cache/overview/");
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = "light";
+  });
+
+  const heading = page.getByRole("heading", {
+    level: 2,
+    name: "Decide whether Cache fits",
+  });
+  const anchor = page.locator(
+    '.sl-anchor-link[href="#decide-whether-cache-fits"]'
+  );
+  const tooltip = page.getByRole("tooltip");
+  const idleLabel = tooltip.locator('[data-tooltip-label="idle"]');
+  const activeLabel = tooltip.locator('[data-tooltip-label="active"]');
+
+  await expect(anchor).toBeVisible();
+  await expect(anchor).toHaveAttribute(
+    "aria-label",
+    "Copy link to Decide whether Cache fits"
+  );
+  await expect(anchor).toHaveCSS("color", "rgb(108, 108, 108)");
+  await expect(anchor).toHaveCSS("transition-property", "color");
+  await expect(anchor.locator("svg")).toHaveClass(/\blucide-link\b/);
+  await expect(anchor.locator("svg")).toHaveCSS("inline-size", "18px");
+
+  const [headingBox, anchorBox] = await Promise.all([
+    heading.boundingBox(),
+    anchor.boundingBox(),
+  ]);
+
+  if (!(headingBox && anchorBox)) {
+    throw new Error("The heading and its copy link must be measurable.");
+  }
+
+  expect(anchorBox.x + anchorBox.width).toBeLessThan(headingBox.x);
+
+  await anchor.hover();
+  await expect(anchor).toHaveCSS("color", "rgb(13, 13, 13)");
+  await expect(tooltip).toBeVisible();
+  await expect(tooltip).toHaveAttribute("aria-label", "Copy link");
+  await expect(tooltip).toHaveAttribute("data-open", "");
+  await expect(tooltip).toHaveCSS("font-weight", "500");
+  await expect(tooltip).toHaveCSS("transition-duration", "0.15s");
+  await expect(tooltip).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+  await expect(idleLabel).toHaveCSS("opacity", "1");
+  await expect(activeLabel).toHaveCSS("opacity", "0");
+
+  const idleTooltipWidth = await tooltip.evaluate(
+    (element) => element.getBoundingClientRect().width
+  );
+  const tooltipBox = await tooltip.boundingBox();
+
+  if (!tooltipBox) {
+    throw new Error("The heading tooltip must be measurable.");
+  }
+
+  expect(
+    Math.abs(
+      tooltipBox.x + tooltipBox.width / 2 - (anchorBox.x + anchorBox.width / 2)
+    )
+  ).toBeLessThan(1);
+
+  const pageUrl = page.url();
+  await anchor.click();
+  await expect(page).toHaveURL(pageUrl);
+  await expect(anchor).toHaveAttribute("data-tooltip-state", "active");
+  await expect(anchor).toHaveAttribute(
+    "aria-label",
+    "Copied link to Decide whether Cache fits"
+  );
+  await expect(tooltip).toHaveAttribute("aria-label", "Copied!");
+  await expect(idleLabel).toHaveCSS("opacity", "0");
+  await expect(activeLabel).toHaveCSS("opacity", "1");
+  await expect
+    .poll(() =>
+      tooltip.evaluate((element) => element.getBoundingClientRect().width)
+    )
+    .toBe(idleTooltipWidth);
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(`${pageUrl}#decide-whether-cache-fits`);
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "Link to Decide whether Cache fits copied." })
+  ).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(tooltip).toHaveCount(0);
+  await expect(anchor).toHaveAttribute("data-tooltip-state", "idle");
+  await page.getByRole("heading", { level: 1, name: "Overview" }).hover();
+  await anchor.hover();
+  await expect(tooltip).toHaveAttribute("aria-label", "Copy link");
+  await page.evaluate(() => {
+    window.__tooltipExitDuration = undefined;
+    const observer = new MutationObserver(() => {
+      const endingTooltip = document.querySelector<HTMLElement>(
+        '[role="tooltip"][data-ending-style]'
+      );
+
+      if (endingTooltip) {
+        window.__tooltipExitDuration =
+          getComputedStyle(endingTooltip).transitionDuration;
+        observer.disconnect();
+      }
+    });
+
+    observer.observe(document.body, {
+      attributeFilter: ["data-ending-style"],
+      attributes: true,
+      subtree: true,
+    });
+  });
+  await page.getByRole("heading", { level: 1, name: "Overview" }).hover();
+  await expect
+    .poll(() => page.evaluate(() => window.__tooltipExitDuration))
+    .toBe("0.05s");
+  await expect(tooltip).toHaveCount(0);
+
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, "writeText", {
+      configurable: true,
+      value: async () => {
+        throw new Error("Clipboard write rejected.");
+      },
+    });
+  });
+  await anchor.click();
+  await expect(page).toHaveURL(`${pageUrl}#decide-whether-cache-fits`);
+  await expectNoAxeViolations(page);
+});
+
 test("searches the production Pagefind index", async ({ page }) => {
   await page.goto("/cache/overview/");
 
@@ -645,11 +1012,9 @@ test("searches the production Pagefind index", async ({ page }) => {
   await expect(
     dialog.getByRole("link", { name: /Runtime architecture/i }).first()
   ).toBeVisible();
-  await dialog
-    .getByRole("textbox", { name: "Search" })
-    .fill("Documentation MCP");
+  await dialog.getByRole("textbox", { name: "Search" }).fill("MCP Server");
   await expect(
-    dialog.getByRole("link", { name: /Documentation MCP/i }).first()
+    dialog.getByRole("link", { name: /MCP Server/i }).first()
   ).toBeVisible();
 });
 
@@ -956,6 +1321,329 @@ test("targets the active product repository from the header", async ({
       exact: true,
     })
   ).toHaveAttribute("href", "https://github.com/astilbahq/cache");
+
+  await page.goto("/cache/");
+  await expect(
+    page.getByRole("link", {
+      name: "Astilba Cache on GitHub",
+      exact: true,
+    })
+  ).toHaveAttribute("href", "https://github.com/astilbahq/cache");
+});
+
+test("uses product-aware document titles", async ({ page }) => {
+  await page.goto("/cache/quickstart/");
+  await expect(page).toHaveTitle("Local quickstart | Astilba Cache");
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+    "content",
+    "Local quickstart | Astilba Cache"
+  );
+
+  await page.goto("/");
+  await expect(page).toHaveTitle("Astilba");
+
+  await page.goto("/cache/");
+  await expect(page).toHaveTitle("Cache | Astilba");
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+    "content",
+    "Cache | Astilba"
+  );
+
+  await page.goto("/agents/mcp/");
+  await expect(page).toHaveTitle("MCP Server | Astilba");
+});
+
+test("presents products and copies the agent setup prompt from the homepage", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  const pageTitle = page.getByRole("heading", { level: 1, name: "Overview" });
+  await expect(pageTitle).toBeVisible();
+  await expect(pageTitle).toHaveCSS("font-size", "56px");
+  await expect(pageTitle).toHaveCSS("font-weight", "500");
+  const sidebar = page.locator("#starlight__sidebar");
+  await expect(sidebar).toBeVisible();
+  await expect(
+    sidebar.getByRole("link", { name: "Cache documentation" })
+  ).toHaveAttribute("href", "/cache/");
+  await expect(
+    sidebar.getByRole("button", { name: "AI for Agents", exact: true })
+  ).toHaveAttribute("aria-expanded", "true");
+  await expect(
+    sidebar.getByRole("link", { name: "LLMs.txt", exact: true })
+  ).toHaveAttribute("href", "/agents/llms-txt/");
+  await expect(
+    sidebar.getByRole("link", { name: "MCP Server", exact: true })
+  ).toHaveAttribute("href", "/agents/mcp/");
+  const primaryAction = page.getByRole("link", {
+    name: "Read the docs",
+    exact: true,
+  });
+  await expect(primaryAction).toHaveAttribute("href", "/cache/");
+  await expect(primaryAction).toHaveCSS("height", "40px");
+  await expect(primaryAction).toHaveCSS("padding-inline", "14px");
+  const primarySelection = await primaryAction.evaluate((element) => {
+    const selection = getComputedStyle(element, "::selection");
+
+    return {
+      backgroundColor: selection.backgroundColor,
+      color: selection.color,
+    };
+  });
+  expect(primarySelection).toEqual({
+    backgroundColor: "rgb(255, 255, 255)",
+    color: "rgb(13, 13, 13)",
+  });
+  await primaryAction.hover();
+  await expect(primaryAction).toHaveCSS("background-color", "rgb(42, 42, 42)");
+  await expect(primaryAction).toHaveCSS("color", "rgb(255, 255, 255)");
+
+  const product = page.getByRole("article").filter({
+    has: page.getByRole("heading", { level: 3, name: "Cache" }),
+  });
+  await expect(product).toContainText("Preview");
+  await expect(product).toContainText("There is no supported npm release");
+  await expect(product.getByRole("link", { name: "Cache" })).toHaveAttribute(
+    "href",
+    "/cache/"
+  );
+  await expect(
+    page.getByRole("heading", { level: 2, name: "How to read these docs" })
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { level: 2, name: "Sponsors" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Sponsor Astilba on GitHub." })
+  ).toHaveAttribute("href", "https://github.com/sponsors/astilbahq");
+  const sponsorsHeading = page.getByRole("heading", {
+    level: 2,
+    name: "Sponsors",
+  });
+  const sponsorsCopy = page
+    .getByRole("region", { name: "Sponsors" })
+    .locator("p");
+  const [sponsorsHeadingBox, sponsorsCopyBox] = await Promise.all([
+    sponsorsHeading.boundingBox(),
+    sponsorsCopy.boundingBox(),
+  ]);
+  expect(sponsorsHeadingBox?.y).toBeCloseTo(sponsorsCopyBox?.y ?? 0, 1);
+
+  const copy = page.getByRole("button", {
+    name: "Copy agent setup",
+    exact: true,
+  });
+  await expect(copy).toHaveCSS("cursor", "copy");
+  await expect(copy).toHaveCSS("height", "40px");
+  await expect(copy).toHaveCSS("padding-inline", "14px");
+  await expect(copy).toHaveCSS("border-color", "rgba(0, 0, 0, 0.12)");
+  await expect(copy.locator("[data-agent-setup-content]")).toHaveCSS(
+    "gap",
+    "12px"
+  );
+  const chatGptIcon = page.locator('[data-agent-brand-icon="chatgpt"]');
+  const claudeIcon = page.locator('[data-agent-brand-icon="claude"]');
+  const cursorIcon = page.locator('[data-agent-brand-icon="cursor"]');
+  const copyLabel = copy.locator('[data-agent-setup-label="copy"]');
+  const copiedLabel = copy.locator('[data-agent-setup-label="copied"]');
+  const errorLabel = copy.locator('[data-agent-setup-label="error"]');
+  await copy.hover();
+  await expect(chatGptIcon).toHaveCSS("animation-delay", "0s");
+  await expect(claudeIcon).toHaveCSS("animation-delay", "0.08s");
+  await expect(cursorIcon).toHaveCSS("animation-delay", "0.16s");
+  await expect(chatGptIcon).toHaveCSS("animation-duration", "0.54s");
+  await expect(chatGptIcon).not.toHaveCSS("animation-name", "none");
+  await expect(copyLabel).toBeVisible();
+  await expect(copiedLabel).toBeHidden();
+  const initialButtonWidth = await copy.evaluate(
+    (element) => element.getBoundingClientRect().width
+  );
+  await copy.click();
+  await expect(copy).toHaveAttribute("data-copy-state", "copied");
+  await expect(copyLabel).toBeHidden();
+  await expect(copiedLabel).toBeVisible();
+  await expect
+    .poll(() =>
+      copy.evaluate((element) => element.getBoundingClientRect().width)
+    )
+    .toBe(initialButtonWidth);
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    AGENT_SETUP_COPY_TEXT
+  );
+  await expect(
+    page.getByRole("status").filter({ hasText: "Agent setup prompt copied." })
+  ).toHaveText("Agent setup prompt copied.");
+  await expect(copy).toHaveAttribute("data-copy-state", "idle", {
+    timeout: 3000,
+  });
+  await page.evaluate(() => {
+    Object.defineProperty(navigator.clipboard, "writeText", {
+      configurable: true,
+      value: async () => {
+        throw new Error("Clipboard write rejected.");
+      },
+    });
+  });
+  await copy.click();
+  await expect(copy).toHaveAttribute("data-copy-state", "error");
+  await expect(copyLabel).toBeHidden();
+  await expect(copiedLabel).toBeHidden();
+  await expect(errorLabel).toBeVisible();
+  await expect
+    .poll(() =>
+      copy.evaluate((element) => element.getBoundingClientRect().width)
+    )
+    .toBe(initialButtonWidth);
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: "Agent setup prompt could not be copied." })
+  ).toHaveText("Agent setup prompt could not be copied.");
+  await expectNoAxeViolations(page);
+});
+
+test("presents Cache as a distinct product home", async ({ page }) => {
+  await page.goto("/cache/");
+
+  const title = page.getByRole("heading", { level: 1, name: "Cache" });
+  await expect(title).toBeVisible();
+  await expect(title).toHaveCSS("font-size", "56px");
+  await expect(title).toHaveCSS("font-weight", "500");
+  await expect(title.locator("img")).toHaveCount(0);
+  await expect(
+    page.getByText(
+      "A portable server-side TypeScript cache with explicit invalidation, resilience, and privacy boundaries."
+    )
+  ).toBeVisible();
+
+  await expect(
+    page.getByRole("link", { name: "Read the docs", exact: true })
+  ).toHaveAttribute("href", "/cache/overview/");
+  await expect(
+    page.getByRole("button", { name: "Copy agent setup", exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByText("There is no supported npm release")
+  ).toBeVisible();
+  await expect(page.getByRole("group", { name: "Page actions" })).toHaveCount(
+    0
+  );
+
+  const sidebar = page.locator("#starlight__sidebar");
+  await expect(
+    sidebar.getByRole("link", {
+      name: "Cache documentation home",
+      exact: true,
+    })
+  ).toHaveAttribute("href", "/cache/");
+  await expect(
+    sidebar.getByRole("link", { name: "Overview", exact: true })
+  ).toHaveAttribute("href", "/cache/overview/");
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: "Cache", exact: true })
+  ).toHaveAttribute("aria-current", "page");
+  await expectNoAxeViolations(page);
+});
+
+test("keeps document pagination balanced and uses the ghost treatment", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("starlight-theme", "light");
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/cache/overview/");
+
+  const pagination = page.locator(".pagination-links");
+  const next = pagination.locator('a[rel="next"]');
+  const paginationBox = await pagination.boundingBox();
+  const nextBox = await next.boundingBox();
+
+  if (!(paginationBox && nextBox)) {
+    throw new Error("Pagination must have measurable layout boxes.");
+  }
+
+  expect(nextBox.width).toBeCloseTo((paginationBox.width - 12) / 2, 0);
+  expect(nextBox.x + nextBox.width).toBeCloseTo(
+    paginationBox.x + paginationBox.width,
+    0
+  );
+  await expect(next).toHaveCSS("border-top-width", "0px");
+  await expect(next).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(next).toHaveCSS("gap", "12px");
+  await expect(next).toHaveCSS("text-transform", "none");
+  await expect(next.locator(":scope > span")).toHaveCSS("text-align", "start");
+  await expect(next.locator(".link-title")).toHaveCSS("font-weight", "400");
+  await expect(next.locator(".link-title")).toHaveCSS(
+    "-webkit-line-clamp",
+    "1"
+  );
+  await expect(next.locator("svg")).toHaveCSS("width", "18px");
+  await expect(next.locator("svg")).toHaveCSS("height", "10px");
+  const nextArrowBox = await next.locator("svg").boundingBox();
+  const nextTitleBox = await next.locator(".link-title").boundingBox();
+
+  if (!(nextArrowBox && nextTitleBox)) {
+    throw new Error("Pagination arrow and title must be measurable.");
+  }
+
+  expect(nextArrowBox.y + nextArrowBox.height / 2).toBeCloseTo(
+    nextTitleBox.y + nextTitleBox.height / 2,
+    0
+  );
+  await next.hover();
+  await expect(next).toHaveCSS("background-color", "rgba(0, 0, 0, 0.02)");
+
+  await page.goto("/cache/api-status/");
+  const previous = page.locator('.pagination-links a[rel="prev"]');
+  const previousPaginationBox = await page
+    .locator(".pagination-links")
+    .boundingBox();
+  const previousBox = await previous.boundingBox();
+
+  if (!(previousPaginationBox && previousBox)) {
+    throw new Error("Previous pagination must have a measurable layout box.");
+  }
+
+  expect(previousBox.width).toBeCloseTo(
+    (previousPaginationBox.width - 12) / 2,
+    0
+  );
+  expect(previousBox.x).toBeCloseTo(previousPaginationBox.x, 0);
+  await expect(previous.locator(":scope > span")).toHaveCSS(
+    "text-align",
+    "end"
+  );
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/cache/overview/");
+  const mobilePaginationBox = await page
+    .locator(".pagination-links")
+    .boundingBox();
+  const mobileNextBox = await page
+    .locator('.pagination-links a[rel="next"]')
+    .boundingBox();
+
+  if (!(mobilePaginationBox && mobileNextBox)) {
+    throw new Error("Mobile pagination must have measurable layout boxes.");
+  }
+
+  expect(mobileNextBox.width).toBeCloseTo(mobilePaginationBox.width, 0);
+
+  await page.goto("/cache/quickstart/");
+  const mobilePreviousBox = await page
+    .locator('.pagination-links a[rel="prev"]')
+    .boundingBox();
+  const mobileFollowingBox = await page
+    .locator('.pagination-links a[rel="next"]')
+    .boundingBox();
+
+  if (!(mobilePreviousBox && mobileFollowingBox)) {
+    throw new Error("Mobile pagination links must have measurable boxes.");
+  }
+
+  expect(mobilePreviousBox.y).toBeLessThan(mobileFollowingBox.y);
 });
 
 test("keeps sidebar controls in place while only navigation scrolls", async ({
@@ -1122,9 +1810,14 @@ test("has no automatically detectable accessibility violations", async ({
   await expectNoAxeViolations(page);
 
   await page.getByRole("button", { name: "Switch to dark theme" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator("body")).toHaveCSS(
+    "background-color",
+    "rgb(18, 18, 18)"
+  );
   await expectNoAxeViolations(page);
 
-  await page.getByRole("button", { name: "Open in" }).click();
+  await page.getByRole("button", { name: "More page actions" }).click();
   const menu = page.getByRole("menu");
   await expect(menu).toBeVisible();
   await expect(menu).toHaveCSS("opacity", "1");

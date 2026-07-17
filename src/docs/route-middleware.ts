@@ -3,6 +3,8 @@ import {
   type StarlightRouteData,
 } from "@astrojs/starlight/route-data";
 
+import { findDocsProductContext } from "./catalog";
+
 type SidebarEntry = StarlightRouteData["sidebar"][number];
 type SidebarGroup = Extract<SidebarEntry, { type: "group" }>;
 type SidebarLink = Exclude<StarlightRouteData["pagination"]["prev"], undefined>;
@@ -15,6 +17,20 @@ const containsCurrentPage = (entry: SidebarEntry): boolean =>
   entry.type === "link"
     ? entry.isCurrent
     : entry.entries.some(containsCurrentPage);
+
+const containsLinkAttribute = (
+  entry: SidebarEntry,
+  attribute: "data-product" | "data-version",
+  value: string
+): boolean =>
+  entry.type === "link"
+    ? Object.entries(entry.attrs).some(
+        ([name, attributeValue]) =>
+          name === attribute && attributeValue === value
+      )
+    : entry.entries.some((child) =>
+        containsLinkAttribute(child, attribute, value)
+      );
 
 const flattenSidebar = (entries: SidebarEntry[]): SidebarLink[] =>
   entries.flatMap((entry) =>
@@ -74,13 +90,28 @@ const updatePagination = (route: StarlightRouteData): void => {
 
 export const onRequest = defineRouteMiddleware((context, next) => {
   const route = context.locals.starlightRoute;
+  const productContext = findDocsProductContext(context.url.pathname);
   const productGroup = route.sidebar.find(
     (entry): entry is SidebarGroup =>
-      isGroup(entry) && containsCurrentPage(entry)
+      isGroup(entry) &&
+      (containsCurrentPage(entry) ||
+        (productContext !== undefined &&
+          containsLinkAttribute(
+            entry,
+            "data-product",
+            productContext.product.id
+          )))
   );
   const versionGroup = productGroup?.entries.find(
     (entry): entry is SidebarGroup =>
-      isGroup(entry) && containsCurrentPage(entry)
+      isGroup(entry) &&
+      (containsCurrentPage(entry) ||
+        (productContext !== undefined &&
+          containsLinkAttribute(
+            entry,
+            "data-version",
+            productContext.version.id
+          )))
   );
 
   if (versionGroup) {

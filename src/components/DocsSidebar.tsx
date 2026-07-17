@@ -168,7 +168,25 @@ const DocsContext = ({ context }: { context: DocsSidebarContextModel }) => (
     className={styles.context}
     role="group"
   >
-    <DocsContextMenu row={context.product} />
+    {context.product.options ? (
+      <DocsContextMenu row={context.product} />
+    ) : context.product.href ? (
+      <a
+        aria-label={context.product.ariaLabel}
+        className={cx(styles.contextControl, styles.contextLink)}
+        href={context.product.href}
+      >
+        <ContextRowContent row={context.product} />
+      </a>
+    ) : (
+      <div
+        aria-label={context.product.ariaLabel}
+        className={styles.contextControl}
+        role="group"
+      >
+        <ContextRowContent row={context.product} />
+      </div>
+    )}
     {context.version &&
       (context.version.options ? (
         <DocsContextMenu row={context.version} />

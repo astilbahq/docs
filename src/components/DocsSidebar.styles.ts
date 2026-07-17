@@ -57,6 +57,23 @@ export const docsSidebarStyles = {
       outlineWidth: "0.125rem",
     },
   }),
+  contextLink: css({
+    cursor: "pointer",
+    textDecoration: "none",
+    "&:is(:hover, :focus-visible)": {
+      background: "surface.hover",
+      color: "ink.strong",
+    },
+    _active: {
+      background: "surface.pressed",
+    },
+    _focusVisible: {
+      outlineColor: "signal",
+      outlineOffset: "-0.125rem",
+      outlineStyle: "solid",
+      outlineWidth: "0.125rem",
+    },
+  }),
   contextIcon: css({
     flex: "0 0 auto",
   }),

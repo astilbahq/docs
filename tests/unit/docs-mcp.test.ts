@@ -12,6 +12,39 @@ import {
 
 const docsOrigin = "https://docs.astilba.com";
 
+const getSitePageFixture = (
+  id: string
+): { content: string; description: string; title: string } => {
+  switch (id) {
+    case "index":
+      return {
+        content: "# Astilba documentation\n\nBrowse the public product docs.",
+        description: "Public documentation for Astilba products.",
+        title: "Astilba documentation",
+      };
+    case "cache":
+      return {
+        content: "# Cache\n\nExplore the public Cache documentation.",
+        description: "A portable server-side TypeScript cache.",
+        title: "Cache",
+      };
+    case "agents/llms-txt":
+      return {
+        content: "# LLMs.txt\n\nChoose a generated documentation corpus.",
+        description: "Choose an Astilba documentation corpus for an agent.",
+        title: "LLMs.txt",
+      };
+    case "agents/mcp":
+      return {
+        content: "# MCP Server\n\nConnect to the public documentation server.",
+        description: "Connect an MCP client to Astilba documentation.",
+        title: "MCP Server",
+      };
+    default:
+      throw new Error(`Missing site documentation fixture for ${id}.`);
+  }
+};
+
 const createRateLimiter = (success = true) => {
   const limit = vi.fn(async () => ({ success }));
   const rateLimiter = { limit } satisfies RateLimit;
@@ -22,20 +55,27 @@ const createRateLimiter = (success = true) => {
 const createCorpusValue = () => ({
   schemaVersion: 1,
   pages: [
-    ...siteDocsPages.map(({ canonicalPath, id, markdownPath }) => ({
-      canonicalUrl: new URL(canonicalPath, docsOrigin).href,
-      content:
-        id === "index"
-          ? "# Astilba documentation\n\nBrowse the public product docs."
-          : "# Documentation MCP\n\nConnect to the public documentation server.",
-      description:
-        id === "index"
-          ? "Public documentation for Astilba products."
-          : "Connect an MCP client to Astilba documentation.",
-      markdownPath,
-      title: id === "index" ? "Astilba documentation" : "Documentation MCP",
-      uri: `${docsOrigin}${markdownPath}`,
-    })),
+    ...siteDocsPages.map(({ canonicalPath, id, markdownPath, productId }) => {
+      const fixture = getSitePageFixture(id);
+      const product = productId
+        ? docsProducts.find((candidate) => candidate.id === productId)
+        : undefined;
+
+      return {
+        canonicalUrl: new URL(canonicalPath, docsOrigin).href,
+        content: fixture.content,
+        description: fixture.description,
+        markdownPath,
+        ...(product
+          ? {
+              product: product.label,
+              productId: product.id,
+            }
+          : {}),
+        title: fixture.title,
+        uri: `${docsOrigin}${markdownPath}`,
+      };
+    }),
     ...docsProducts.flatMap((product) =>
       product.versions.flatMap((version) =>
         version.sections.flatMap((section) =>
@@ -199,6 +239,27 @@ describe("generated MCP corpus", () => {
     );
   });
 
+  it("rejects version metadata on an unversioned product home", () => {
+    const value = createCorpusValue();
+    const cacheHome = value.pages.find(
+      (page) => page.markdownPath === "/cache.md"
+    );
+
+    if (!cacheHome) {
+      throw new Error("Missing Cache product home fixture.");
+    }
+
+    Object.assign(cacheHome, {
+      docsVersion: "Unreleased",
+      docsVersionId: "unreleased",
+      lifecycle: "unreleased",
+    });
+
+    expect(() => parseDocsCorpus(value)).toThrow(
+      "differs from the public documentation catalog"
+    );
+  });
+
   it("rejects empty and overlong catalogue metadata", () => {
     const emptyMetadata = createCorpusValue();
     const emptyOverview = emptyMetadata.pages.find(
@@ -289,6 +350,17 @@ describe("generated MCP corpus", () => {
     expect(
       searchDocs(corpus, { query: "related cached values" })[0]
     ).toMatchObject({ title: "Invalidate cached data" });
+    expect(
+      searchDocs(corpus, {
+        productId: "cache",
+        query: "Explore public Cache documentation",
+      })[0]
+    ).toMatchObject({
+      productId: "cache",
+      title: "Cache",
+      uri: `${docsOrigin}/cache.md`,
+      versionId: null,
+    });
   });
 
   it("reads only allowlisted resources and avoids splitting surrogate pairs", () => {
