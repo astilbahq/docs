@@ -8,6 +8,7 @@ import {
   type DocsIcon,
   type DocsPage,
   type DocsProduct,
+  type DocsProductContext,
   type DocsVersion,
 } from "./types.ts";
 
@@ -27,19 +28,27 @@ const normalizePath = (path: string): string => path.replace(/^\/+|\/+$/g, "");
 
 export const validateDocsProducts = (products: DocsProduct[]): void => {
   const productIds = new Set<string>();
+  const productHomePaths = new Set<string>();
   const basePaths = new Set<string>();
-  const globalRoutes = new Set(
-    siteDocsPages.map(({ canonicalPath }) => normalizePath(canonicalPath))
-  );
+  const globalRoutePaths = new Set<string>();
+  const globalRoutes = new Map<string, (typeof siteDocsPages)[number]>();
   const routes = new Set<string>();
   const sourcePaths = new Set<string>();
 
   for (const page of siteDocsPages) {
+    const route = normalizePath(page.canonicalPath);
+    assertUnique(globalRoutePaths, route, "global documentation route");
+    globalRoutes.set(route, page);
     assertUnique(sourcePaths, page.sourcePath, "documentation source path");
   }
 
   for (const product of products) {
     assertUnique(productIds, product.id, "documentation product id");
+    assertUnique(
+      productHomePaths,
+      normalizePath(product.homePath),
+      "documentation product home path"
+    );
 
     if (product.versions.length === 0) {
       throw new Error(`${product.label} must declare at least one version.`);
@@ -60,7 +69,8 @@ export const validateDocsProducts = (products: DocsProduct[]): void => {
         );
       }
 
-      if (globalRoutes.has(version.basePath)) {
+      const globalRootPage = globalRoutes.get(version.basePath);
+      if (globalRootPage && globalRootPage.productId !== product.id) {
         throw new Error(
           `Documentation base path collides with a global page: "${version.basePath}".`
         );
@@ -121,6 +131,27 @@ export const validateDocsProducts = (products: DocsProduct[]): void => {
         `Missing default version "${product.defaultVersion}" for ${product.label}.`
       );
     }
+
+    const productHomePages = siteDocsPages.filter(
+      (page) => page.productId === product.id
+    );
+
+    if (
+      productHomePages.length !== 1 ||
+      productHomePages[0].canonicalPath !== product.homePath
+    ) {
+      throw new Error(
+        `${product.label} must declare exactly one matching product home page.`
+      );
+    }
+  }
+
+  for (const page of siteDocsPages) {
+    if (page.productId && !productIds.has(page.productId)) {
+      throw new Error(
+        `Unknown documentation product for ${page.canonicalPath}: "${page.productId}".`
+      );
+    }
   }
 };
 
@@ -157,6 +188,9 @@ const docsIconNames = new Set<string>(docsIcons);
 
 export const getPageHref = (version: DocsVersion, page: DocsPage): string =>
   `/${version.basePath}/${page.slug}/`;
+
+export const getProductHomeHref = (product: DocsProduct): string =>
+  product.homePath;
 
 export const getDefaultVersion = (product: DocsProduct): DocsVersion => {
   const version = product.versions.find(
@@ -215,6 +249,54 @@ export const findDocsContext = (pathname: string): DocsContext | undefined => {
   }
 
   return undefined;
+};
+
+export const findDocsProductContext = (
+  pathname: string
+): DocsProductContext | undefined => {
+  const pageContext = findDocsContext(pathname);
+
+  if (pageContext) {
+    return {
+      product: pageContext.product,
+      version: pageContext.version,
+    };
+  }
+
+  const path = normalizePath(pathname);
+  const product = docsProducts.find(
+    (candidate) => normalizePath(candidate.homePath) === path
+  );
+
+  return product ? { product, version: getDefaultVersion(product) } : undefined;
+};
+
+interface DocumentTitleOptions {
+  context?: DocsContext;
+  isHome: boolean;
+  pageTitle: string;
+  siteTitle: string;
+}
+
+export const getDocumentTitle = ({
+  context,
+  isHome,
+  pageTitle,
+  siteTitle,
+}: DocumentTitleOptions): string => {
+  if (isHome) {
+    return siteTitle;
+  }
+
+  if (!context) {
+    return `${pageTitle} | ${siteTitle}`;
+  }
+
+  const { product, version } = context;
+  const versionLabel =
+    version.id === product.defaultVersion ? "" : ` ${version.label}`;
+
+  return `${pageTitle} | ${siteTitle} ${product.label}${versionLabel}`;
 };
 
 export const getVersionMeta = (version: DocsVersion): string => {

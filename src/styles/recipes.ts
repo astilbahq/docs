@@ -37,7 +37,7 @@ export const ghostControl = cva({
     },
     _disabled: {
       background: "transparent",
-      color: "ink.faint",
+      color: "ink.muted",
       cursor: "default",
     },
   },
@@ -47,7 +47,34 @@ export const ghostControl = cva({
       outline: {
         borderWidth: "1px",
         borderStyle: "solid",
-        borderColor: "border.chrome",
+        borderColor: "border.control",
+      },
+      primary: {
+        borderWidth: "1px",
+        borderStyle: "solid",
+        borderColor: "surface.action.primary",
+        background: "surface.action.primary",
+        color: "ink.onPrimary",
+        "&::selection, & *::selection": {
+          background: "ink.onPrimary",
+          color: "surface.action.primary",
+        },
+        _hover: {
+          borderColor: "surface.action.primaryHover",
+          background: "surface.action.primaryHover",
+          color: "ink.onPrimary",
+        },
+        _focusVisible: {
+          borderColor: "surface.action.primaryHover",
+          background: "surface.action.primaryHover",
+          color: "ink.onPrimary",
+        },
+        _active: {
+          borderColor: "surface.action.primaryHover",
+          background: "surface.action.primaryHover",
+          color: "ink.onPrimary",
+          opacity: 0.88,
+        },
       },
     },
     iconOnly: {
@@ -56,8 +83,16 @@ export const ghostControl = cva({
         paddingInline: 0,
       },
     },
+    size: {
+      default: {},
+      large: {
+        blockSize: "2.5rem",
+        paddingInline: "0.875rem",
+      },
+    },
   },
   defaultVariants: {
     appearance: "ghost",
+    size: "default",
   },
 });

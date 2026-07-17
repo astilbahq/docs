@@ -1,6 +1,6 @@
 ---
-title: Astilba documentation
-description: Practical documentation for Astilba infrastructure libraries, with preview boundaries called out explicitly.
+title: Overview
+description: Portable infrastructure libraries with explicit correctness boundaries, documented as they exist today.
 tableOfContents: false
 ---
 
@@ -12,21 +12,18 @@ Astilba Cache is not available from npm and has no supported production installa
 
 ## Products
 
-### [Cache](/cache/overview/)
+### [Cache](/cache/)
 
-A server-side TypeScript cache with explicit soft and hard invalidation, classified stale-on-error resilience, privacy-aware storage scopes, and a portable capability boundary.
+A portable server-side TypeScript cache with explicit invalidation, resilience, and privacy boundaries.
 
 Start with the [overview](/cache/overview/), run the [local quickstart](/cache/quickstart/), or inspect the source adapters for [Cloudflare Workers](/cache/cloudflare-workers/) and [React Router](/cache/react-and-server-apps/).
 
-## How to read these docs
+## Sponsors
 
-- **Get started** explains who a product is for and provides the shortest honest path through its current release state.
-- **Platforms** show how a product runs on a particular runtime and uses its infrastructure.
-- **Frameworks** show how a product connects to an application's request lifecycle.
-- **Guides** help you complete one application task, such as reading or invalidating data.
-- **Concepts** explain the mental models and capability relationships behind those tasks.
-- **Reference** records exact public surfaces, available implementations, and current completeness. When another page and the implementation ledger appear to differ, follow the ledger.
+Astilba is currently independently funded. Sponsorship helps keep its libraries, tooling, and documentation public. [Sponsor Astilba on GitHub](https://github.com/sponsors/astilbahq).
 
 ## For agents
 
-Use the public [documentation MCP](/agents/mcp/) to search and read the same published Markdown corpus through a read-only protocol endpoint.
+Fetch the [agent setup prompt](/agent-setup/prompt.md) to connect a supported coding agent to Astilba's public documentation tools. The prompt configures documentation access only; it does not install Cache.
+
+Use the public [MCP server](/agents/mcp/) directly to search and read the same published Markdown corpus through a read-only protocol endpoint.

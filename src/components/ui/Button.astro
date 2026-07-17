@@ -3,13 +3,17 @@ import type { HTMLAttributes } from "astro/types";
 import { ghostControl } from "../../styles/recipes";
 
 interface Props extends Omit<HTMLAttributes<"button">, "class"> {
+  appearance?: "ghost" | "outline" | "primary";
   class?: string;
   iconOnly?: boolean;
+  size?: "default" | "large";
 }
 
 const {
+  appearance = "ghost",
   class: className,
   iconOnly = false,
+  size = "default",
   type = "button",
   ...attributes
 } = Astro.props;
@@ -17,7 +21,7 @@ const {
 
 <button
   {...attributes}
-  class:list={[ghostControl({ iconOnly }), className]}
+  class:list={[ghostControl({ appearance, iconOnly, size }), className]}
   type={type}
 >
   <slot />

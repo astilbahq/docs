@@ -3,13 +3,14 @@ import type { StarlightRouteData } from "@astrojs/starlight/route-data";
 import {
   docsProducts,
   findDocsContext,
+  findDocsProductContext,
   getDefaultPage,
-  getDefaultVersion,
   getDocsIcon,
-  getPageHref,
+  getProductHomeHref,
   getVersionMeta,
   getVersionPageHref,
 } from "./catalog";
+import { siteDocsPages } from "./site-pages";
 import type { DocsBadge, DocsIcon } from "./types";
 
 type StarlightSidebarEntry = StarlightRouteData["sidebar"][number];
@@ -26,6 +27,7 @@ interface DocsMenuOption {
 
 export interface DocsContextRow {
   ariaLabel: string;
+  href?: string;
   icon: DocsIcon;
   label: string;
   meta?: string;
@@ -154,6 +156,50 @@ export const createDocsSidebarEntries = (
     };
   });
 
+const normalizeSidebarPath = (path: string): string =>
+  path.replace(/^\/+|\/+$/g, "");
+
+export const createSiteSidebarEntries = (
+  pathname: string
+): DocsSidebarEntryModel[] => {
+  const pagesByGroup = new Map<string, Array<(typeof siteDocsPages)[number]>>();
+
+  for (const page of siteDocsPages) {
+    if (!page.navigation) {
+      continue;
+    }
+
+    const groupPages = pagesByGroup.get(page.navigation.group) ?? [];
+    groupPages.push(page);
+    pagesByGroup.set(page.navigation.group, groupPages);
+  }
+
+  const currentPath = normalizeSidebarPath(pathname);
+
+  return Array.from(pagesByGroup.entries()).map(
+    ([groupLabel, pages], groupIndex) => {
+      const entries: DocsSidebarEntryModel[] = pages.map((page, pageIndex) => ({
+        type: "link",
+        id: `docs-site-link-${groupIndex}-${pageIndex}`,
+        label: page.navigation?.label ?? page.id,
+        href: page.canonicalPath,
+        isCurrent: currentPath === normalizeSidebarPath(page.canonicalPath),
+        icon: page.navigation?.icon,
+        attrs: {},
+      }));
+
+      return {
+        type: "group",
+        id: `docs-site-group-${groupIndex}`,
+        label: groupLabel,
+        collapsed: false,
+        containsCurrent: hasCurrentPage(entries),
+        entries,
+      };
+    }
+  );
+};
+
 const getSidebarIdentity = (entries: DocsSidebarEntryModel[]): unknown[] =>
   entries.map((entry) =>
     entry.type === "group"
@@ -185,54 +231,29 @@ export const getDocsSidebarHash = (
 export const createDocsSidebarContext = (
   pathname: string
 ): DocsSidebarContextModel => {
-  const context = findDocsContext(pathname);
+  const pageContext = findDocsContext(pathname);
+  const productContext = findDocsProductContext(pathname);
 
-  if (!context) {
+  if (!productContext) {
+    const product = docsProducts[0];
+
+    if (!product) {
+      throw new Error("At least one documentation product is required.");
+    }
+
     return {
       product: {
-        ariaLabel: "Choose product. Viewing all products.",
-        icon: "open-book",
-        label: "All products",
-        options: docsProducts.map((product) => {
-          const version = getDefaultVersion(product);
-          const page = getDefaultPage(product, version);
-
-          return {
-            id: product.id,
-            label: product.label,
-            icon: product.icon,
-            status: product.status,
-            selected: false,
-            href: getPageHref(version, page),
-          };
-        }),
+        ariaLabel: `${product.label} documentation`,
+        href: getProductHomeHref(product),
+        icon: product.icon,
+        label: product.label,
+        status: product.status,
       },
     };
   }
 
-  const { page, product, version } = context;
-  const productOptions: DocsMenuOption[] = [
-    {
-      href: "/",
-      icon: "open-book",
-      id: "docs-home",
-      label: "Docs home",
-      selected: false,
-    },
-    ...docsProducts.map((option) => {
-      const selected = option.id === product.id;
-      const targetVersion = selected ? version : getDefaultVersion(option);
-
-      return {
-        id: option.id,
-        label: option.label,
-        icon: option.icon,
-        status: option.status,
-        selected,
-        href: getVersionPageHref(option, targetVersion, page.key),
-      };
-    }),
-  ];
+  const { product, version } = productContext;
+  const page = pageContext?.page ?? getDefaultPage(product, version);
   const versionOptions = product.versions.map((option) => ({
     id: option.id,
     label: option.label,
@@ -244,11 +265,11 @@ export const createDocsSidebarContext = (
 
   return {
     product: {
-      ariaLabel: `Choose product. Current product: ${product.label}`,
+      ariaLabel: `${product.label} documentation home`,
+      href: getProductHomeHref(product),
       icon: product.icon,
       label: product.label,
       status: product.status,
-      options: productOptions,
     },
     version: {
       ariaLabel:

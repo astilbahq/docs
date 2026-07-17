@@ -3,11 +3,7 @@ import config from "virtual:starlight/user-config";
 import SiteTitle from "virtual:starlight/components/SiteTitle";
 import { Icon } from "@astrojs/starlight/components";
 import { css } from "../../styled-system/css";
-import {
-  findDocsContext,
-  getDefaultPage,
-  getPageHref,
-} from "../docs/catalog";
+import { findDocsProductContext, getProductHomeHref } from "../docs/catalog";
 import ThemeToggle from "./ThemeToggle.astro";
 import HeaderSearch from "./HeaderSearch.astro";
 import LinkButton from "./ui/LinkButton.astro";
@@ -15,12 +11,9 @@ import LinkButton from "./ui/LinkButton.astro";
 const shouldRenderSearch =
   config.pagefind ||
   config.components.Search !== "@astrojs/starlight/components/Search.astro";
-const docsContext = findDocsContext(Astro.url.pathname);
-const productHref = docsContext
-  ? getPageHref(
-      docsContext.version,
-      getDefaultPage(docsContext.product, docsContext.version)
-    )
+const productContext = findDocsProductContext(Astro.url.pathname);
+const productHref = productContext
+  ? getProductHomeHref(productContext.product)
   : undefined;
 
 const headerClass = css({
@@ -74,11 +67,11 @@ const actionLabelClass = css({
   },
 });
 const githubHref =
-  docsContext?.product.repositoryUrl ??
+  productContext?.product.repositoryUrl ??
   config.social?.find(({ icon }) => icon === "github")?.href ??
   "https://github.com/astilbahq";
-const githubLabel = docsContext
-  ? `Astilba ${docsContext.product.label} on GitHub`
+const githubLabel = productContext
+  ? `Astilba ${productContext.product.label} on GitHub`
   : "Astilba on GitHub";
 const sponsorHref = "https://github.com/sponsors/astilbahq";
 ---
@@ -87,17 +80,15 @@ const sponsorHref = "https://github.com/sponsors/astilbahq";
   <div class:list={[titleWrapperClass, "sl-flex"]}>
     <SiteTitle />
     {
-      docsContext && productHref && (
+      productContext && productHref && (
         <a
           aria-current={
-            docsContext.page.key === docsContext.product.defaultPage
-              ? "page"
-              : undefined
+            Astro.url.pathname === productHref ? "page" : undefined
           }
           class={productLinkClass}
           href={productHref}
         >
-          {docsContext.product.label}
+          {productContext.product.label}
         </a>
       )
     }
@@ -107,7 +98,7 @@ const sponsorHref = "https://github.com/sponsors/astilbahq";
     <LinkButton
       aria-label={githubLabel}
       href={githubHref}
-      rel={docsContext ? undefined : "me"}
+      rel={productContext ? undefined : "me"}
       title={githubLabel}
     >
       <Icon

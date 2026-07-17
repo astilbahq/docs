@@ -208,11 +208,16 @@ const requiredArtifacts = [
   ".well-known/mcp/catalog.json",
   ".well-known/mcp/server-card.json",
   "_headers",
+  "agent-setup/prompt.md",
   CONTENT_SECURITY_POLICY_ASSET_PATH.slice(1),
   "_llms-txt/astilba-cache.txt",
   "_mcp/docs.json",
+  "agents/llms-txt.md",
+  "agents/llms-txt/index.html",
   "agents/mcp.md",
   "agents/mcp/index.html",
+  "cache.md",
+  "cache/index.html",
   "cache/overview.md",
   "cache/overview/index.html",
   "index.md",
@@ -333,6 +338,24 @@ assertExact(
 );
 assertHeaderValues(headerRules, "/_astro/*", "Cache-Control", [
   "public, max-age=31536000, immutable",
+]);
+assertHeaderValues(
+  headerRules,
+  "/agent-setup/prompt.md",
+  "Access-Control-Allow-Origin",
+  ["*"]
+);
+assertHeaderValues(headerRules, "/agent-setup/prompt.md", "Cache-Control", [
+  "public, max-age=3600",
+]);
+assertHeaderValues(
+  headerRules,
+  "/agent-setup/prompt.md",
+  "X-Content-Type-Options",
+  ["nosniff"]
+);
+assertHeaderValues(headerRules, "/agent-setup/prompt.md", "X-Robots-Tag", [
+  "noindex",
 ]);
 assertHeaderValues(
   headerRules,
@@ -471,6 +494,8 @@ assertIncludes(skillArtifact, skill, "https://docs.astilba.com/mcp");
 
 const pageUrl = new URL("/cache/overview/", site).href;
 const markdownUrl = new URL("/cache/overview.md", site).href;
+const cacheHomeUrl = new URL("/cache/", site).href;
+const cacheHomeMarkdownUrl = new URL("/cache.md", site).href;
 const homeUrl = new URL("/", site).href;
 const homeMarkdownUrl = new URL("/index.md", site).href;
 const llmsUrl = new URL("/llms.txt", site).href;
@@ -674,19 +699,15 @@ const llmsIndex = artifacts.get("llms.txt");
 assertIncludes("llms.txt", llmsIndex, cacheSetUrl);
 assertIncludes("llms.txt", llmsIndex, "Cache is an unreleased preview");
 assertIncludes("llms.txt", llmsIndex, mcpUrl);
-assertIncludes(
-  "llms-full.txt",
-  artifacts.get("llms-full.txt"),
-  "# Documentation MCP"
-);
+assertIncludes("llms-full.txt", artifacts.get("llms-full.txt"), "# MCP Server");
 assertIncludes("llms-full.txt", artifacts.get("llms-full.txt"), mcpUrl);
 
 const cacheSet = artifacts.get("_llms-txt/astilba-cache.txt");
 const firstCacheHeading = cacheSet.match(/^# .+$/m)?.[0];
 
-if (firstCacheHeading !== "# Overview") {
+if (firstCacheHeading !== "# Cache") {
   throw new Error(
-    `[agent-artifacts] The Cache document set must begin with Overview, found ${JSON.stringify(firstCacheHeading)}.`
+    `[agent-artifacts] The Cache document set must begin with Cache, found ${JSON.stringify(firstCacheHeading)}.`
   );
 }
 
@@ -699,14 +720,47 @@ assertLink(homeHtml, "alternate", homeMarkdownUrl);
 assertLink(homeHtml, "describedby", llmsUrl);
 assertLink(homeHtml, "api-catalog", apiCatalogUrl);
 
+const cacheHomeHtml = artifacts.get("cache/index.html");
+assertLink(cacheHomeHtml, "alternate", cacheHomeMarkdownUrl);
+assertLink(cacheHomeHtml, "describedby", llmsUrl);
+
 const mcpUsageHtml = artifacts.get("agents/mcp/index.html");
 assertLink(mcpUsageHtml, "alternate", new URL("/agents/mcp.md", site).href);
 assertLink(mcpUsageHtml, "api-catalog", apiCatalogUrl);
 const mcpUsageMarkdown = artifacts.get("agents/mcp.md");
-assertIncludes("agents/mcp.md", mcpUsageMarkdown, "# Documentation MCP");
+assertIncludes("agents/mcp.md", mcpUsageMarkdown, "# MCP Server");
 assertIncludes("agents/mcp.md", mcpUsageMarkdown, mcpUrl);
 assertIncludes("agents/mcp.md", mcpUsageMarkdown, mcpCatalogUrl);
 assertIncludes("agents/mcp.md", mcpUsageMarkdown, mcpServerCardUrl);
+
+const llmsUsageHtml = artifacts.get("agents/llms-txt/index.html");
+assertLink(
+  llmsUsageHtml,
+  "alternate",
+  new URL("/agents/llms-txt.md", site).href
+);
+const llmsUsageMarkdown = artifacts.get("agents/llms-txt.md");
+assertIncludes("agents/llms-txt.md", llmsUsageMarkdown, "# LLMs.txt");
+assertIncludes("agents/llms-txt.md", llmsUsageMarkdown, llmsUrl);
+assertIncludes("agents/llms-txt.md", llmsUsageMarkdown, mcpUrl);
+assertIncludes(
+  "agents/llms-txt.md",
+  llmsUsageMarkdown,
+  new URL("/cache/overview.md", site).href
+);
+assertIncludes(
+  "agents/llms-txt.md",
+  llmsUsageMarkdown,
+  "Fetch https://docs.astilba.com/agent-setup/prompt.md and follow its instructions."
+);
+
+assertIncludes("agents/mcp.md", mcpUsageMarkdown, "## Try it");
+assertIncludes("agents/mcp.md", mcpUsageMarkdown, "## Troubleshooting");
+assertIncludes(
+  "agents/mcp.md",
+  mcpUsageMarkdown,
+  "Fetch https://docs.astilba.com/agent-setup/prompt.md and follow its instructions."
+);
 
 const homeMarkdown = artifacts.get("index.md");
 assertIncludes(
@@ -714,7 +768,34 @@ assertIncludes(
   homeMarkdown,
   `canonical: ${JSON.stringify(homeUrl)}`
 );
-assertIncludes("index.md", homeMarkdown, "# Astilba documentation");
+assertIncludes("index.md", homeMarkdown, "# Overview");
+
+const cacheHomeMarkdown = artifacts.get("cache.md");
+assertIncludes(
+  "cache.md",
+  cacheHomeMarkdown,
+  `canonical: ${JSON.stringify(cacheHomeUrl)}`
+);
+assertIncludes("cache.md", cacheHomeMarkdown, "# Cache");
+assertIncludes("cache.md", cacheHomeMarkdown, "/cache/overview/");
+
+const agentSetupPrompt = artifacts.get("agent-setup/prompt.md");
+assertIncludes(
+  "agent-setup/prompt.md",
+  agentSetupPrompt,
+  "# Set up Astilba documentation"
+);
+assertIncludes("agent-setup/prompt.md", agentSetupPrompt, mcpUrl);
+assertIncludes(
+  "agent-setup/prompt.md",
+  agentSetupPrompt,
+  "astilba-cache-docs/SKILL.md"
+);
+assertIncludes(
+  "agent-setup/prompt.md",
+  agentSetupPrompt,
+  "unreleased source preview"
+);
 
 const markdown = artifacts.get("cache/overview.md");
 assertIncludes(

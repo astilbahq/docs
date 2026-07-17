@@ -30,9 +30,18 @@ const PAGE_MARKDOWN_ENTRIES = [
   ),
 ];
 const PAGE_MARKDOWN_PATHS = new Map(PAGE_MARKDOWN_ENTRIES);
+const CANONICAL_SITE_PATHS = new Set(
+  siteDocsPages.map(({ canonicalPath }) => canonicalPath)
+);
 const VERSION_ROOT_REDIRECTS = new Map<string, string>(
   docsProducts.flatMap((product) =>
     product.versions.flatMap((version) => {
+      const canonicalRoot = `/${version.basePath}/`;
+
+      if (CANONICAL_SITE_PATHS.has(canonicalRoot)) {
+        return [[`/${version.basePath}`, canonicalRoot] as const];
+      }
+
       const target = getPageHref(version, getDefaultPage(product, version));
 
       return [

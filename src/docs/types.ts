@@ -3,7 +3,9 @@ export const docsIcons = [
   "cloudflare-workers",
   "code-branch",
   "database",
+  "file-digit",
   "link",
+  "model-context-protocol",
   "open-book",
   "padlock",
   "react-router",
@@ -51,8 +53,11 @@ export interface DocsVersion {
 }
 
 export interface DocsProduct {
+  availabilityNote: string;
   defaultPage: string;
   defaultVersion: string;
+  description: string;
+  homePath: string;
   icon: DocsIcon;
   id: string;
   label: string;
@@ -63,6 +68,11 @@ export interface DocsProduct {
 
 export interface DocsContext {
   page: DocsPage;
+  product: DocsProduct;
+  version: DocsVersion;
+}
+
+export interface DocsProductContext {
   product: DocsProduct;
   version: DocsVersion;
 }

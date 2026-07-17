@@ -40,6 +40,7 @@ const createAssets = ({
     if (
       path === "/index.md" ||
       path === "/agents/mcp.md" ||
+      path === "/cache.md" ||
       path === "/cache/overview.md"
     ) {
       if (request.headers.get("If-None-Match") === '"markdown"') {
@@ -150,29 +151,26 @@ describe("Markdown negotiation", () => {
 
   it("maps canonical pages to their authored Markdown siblings", () => {
     expect(getMarkdownPath("/")).toBe("/index.md");
+    expect(getMarkdownPath("/cache/")).toBe("/cache.md");
     expect(getMarkdownPath("/cache/overview/")).toBe("/cache/overview.md");
+    expect(getMarkdownPath("/agents/llms-txt/")).toBe("/agents/llms-txt.md");
     expect(getMarkdownPath("/agents/mcp/")).toBe("/agents/mcp.md");
     expect(getMarkdownPath("/cache/overview")).toBeUndefined();
     expect(getMarkdownPath("/missing/")).toBeUndefined();
   });
 
-  it.each(["/cache", "/cache/"])(
-    "redirects version root %s to its configured default page",
-    async (versionRoot) => {
-      const { assets, fetch } = createAssets();
-      const response = await handleRequest(
-        new Request(`https://docs.astilba.com${versionRoot}?ref=product`),
-        assets
-      );
+  it("redirects an unslashed product root to its canonical home", async () => {
+    const { assets, fetch } = createAssets();
+    const response = await handleRequest(
+      new Request("https://docs.astilba.com/cache?ref=product"),
+      assets
+    );
 
-      expect(response.status).toBe(307);
-      expect(response.headers.get("Location")).toBe(
-        "/cache/overview/?ref=product"
-      );
-      expectGlobalSecurityHeaders(response);
-      expect(fetch).not.toHaveBeenCalled();
-    }
-  );
+    expect(response.status).toBe(307);
+    expect(response.headers.get("Location")).toBe("/cache/?ref=product");
+    expectGlobalSecurityHeaders(response);
+    expect(fetch).not.toHaveBeenCalled();
+  });
 
   it("streams the Markdown asset at the canonical URL", async () => {
     const { assets, fetch } = createAssets();
@@ -220,7 +218,7 @@ describe("Markdown negotiation", () => {
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it.each(["/index.md", "/cache/overview.md"])(
+  it.each(["/index.md", "/cache.md", "/cache/overview.md"])(
     "sets direct Markdown headers for %s without buffering the asset",
     async (path) => {
       const { assets, fetch } = createAssets();
@@ -283,6 +281,7 @@ describe("Markdown negotiation", () => {
 
   it.each([
     { markdownPath: "/index.md", pagePath: "/" },
+    { markdownPath: "/cache.md", pagePath: "/cache/" },
     {
       markdownPath: "/cache/overview.md",
       pagePath: "/cache/overview/",

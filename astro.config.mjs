@@ -148,7 +148,9 @@ export default defineConfig({
         Banner: "./src/components/VersionBanner.astro",
         Header: "./src/components/Header.astro",
         Head: "./src/components/Head.astro",
+        MarkdownContent: "./src/components/MarkdownContent.astro",
         MobileMenuToggle: "./src/components/MobileMenuToggle.astro",
+        Pagination: "./src/components/Pagination.astro",
         PageTitle: "./src/components/PageTitle.astro",
         Sidebar: "./src/components/Sidebar.astro",
       },
@@ -173,7 +175,7 @@ export default defineConfig({
                     label: "Astilba Cache",
                     description:
                       "Unreleased preview documentation for Astilba's TypeScript caching library. The package is not installable yet.",
-                    paths: ["cache/**"],
+                    paths: ["cache", "cache/**"],
                   },
                 ],
                 promote: [...sitePageOrder, ...docsPageOrder],

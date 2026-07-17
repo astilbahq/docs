@@ -7,6 +7,12 @@
 /_astro/*
   Cache-Control: public, max-age=31536000, immutable
 
+/agent-setup/prompt.md
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+  X-Content-Type-Options: nosniff
+  X-Robots-Tag: noindex
+
 /.well-known/agent-skills/*
   Access-Control-Allow-Origin: *
   Cache-Control: public, max-age=3600

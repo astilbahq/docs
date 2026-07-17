@@ -149,6 +149,11 @@ export const cacheProduct = {
   id: "cache",
   label: "Cache",
   icon: "database",
+  description:
+    "A portable server-side TypeScript cache with explicit invalidation, resilience, and privacy boundaries.",
+  availabilityNote:
+    "Source preview. There is no supported npm release or production installation path yet.",
+  homePath: "/cache/",
   repositoryUrl: "https://github.com/astilbahq/cache",
   status: {
     text: "Preview",

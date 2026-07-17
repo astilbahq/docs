@@ -3,13 +3,17 @@ import {
   collectDocsSidebarGroupIds,
   createDocsSidebarContext,
   createDocsSidebarEntries,
+  createSiteSidebarEntries,
   getDocsSidebarHash,
 } from "../docs/sidebar-model";
 import DocsSidebar from "./DocsSidebar";
 import SidebarSearch from "./SidebarSearch.astro";
 
 const { sidebar } = Astro.locals.starlightRoute;
-const entries = createDocsSidebarEntries(sidebar);
+const entries = [
+  ...createDocsSidebarEntries(sidebar),
+  ...createSiteSidebarEntries(Astro.url.pathname),
+];
 const context = createDocsSidebarContext(Astro.url.pathname);
 const sidebarHash = getDocsSidebarHash(entries);
 const groupIds = collectDocsSidebarGroupIds(entries, () => true);

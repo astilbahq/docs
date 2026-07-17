@@ -61,6 +61,12 @@ export default defineConfig({
         desktop: "50rem",
         wide: "72rem",
       },
+      keyframes: {
+        agentIconWave: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "45%": { transform: "translateY(-3px)" },
+        },
+      },
       tokens: {
         fonts: {
           body: { value: '"Geist Variable"' },
@@ -85,12 +91,15 @@ export default defineConfig({
           instant: { value: "0.01ms" },
           fast: { value: "160ms" },
           control: { value: "180ms" },
+          tooltipOpen: { value: "150ms" },
+          tooltipClose: { value: "50ms" },
           modalOpen: { value: "250ms" },
           modalClose: { value: "150ms" },
           menuOpen: { value: "250ms" },
           menuClose: { value: "150ms" },
           disclosure: { value: "250ms" },
           iconSwap: { value: "250ms" },
+          agentIconWave: { value: "540ms" },
         },
         easings: {
           inOut: { value: "ease-in-out" },
@@ -125,6 +134,7 @@ export default defineConfig({
               themeColorValues.dark.canvas,
               themeColorValues.light.canvas
             ),
+            onPrimary: themedColor("#0d0d0d", "#ffffff"),
           },
           canvas: themedColor(
             themeColorValues.dark.canvas,
@@ -166,12 +176,20 @@ export default defineConfig({
               "rgba(255, 255, 255, 0.08)",
               "rgba(0, 0, 0, 0.07)"
             ),
+            control: themedColor(
+              "rgba(255, 255, 255, 0.12)",
+              "rgba(0, 0, 0, 0.12)"
+            ),
             overlay: themedColor(
               "rgba(196, 196, 196, 0.08)",
               "rgba(0, 0, 0, 0.06)"
             ),
           },
           surface: {
+            action: {
+              primary: themedColor("#ffffff", "#0d0d0d"),
+              primaryHover: themedColor("#e3e3e3", "#2a2a2a"),
+            },
             elevated: {
               description:
                 "Raised surfaces such as callouts, dialogs, and popovers.",
