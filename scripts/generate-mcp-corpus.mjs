@@ -210,12 +210,25 @@ for (const file of files) {
     "lifecycle",
     markdownArtifact
   );
-  const metadata = [product, productId, docsVersion, docsVersionId, lifecycle];
-  const metadataCount = metadata.filter((value) => value !== undefined).length;
+  const productMetadata = [product, productId];
+  const versionMetadata = [docsVersion, docsVersionId, lifecycle];
+  const productMetadataCount = productMetadata.filter(
+    (value) => value !== undefined
+  ).length;
+  const versionMetadataCount = versionMetadata.filter(
+    (value) => value !== undefined
+  ).length;
 
-  if (metadataCount !== 0 && metadataCount !== metadata.length) {
+  if (
+    (productMetadataCount !== 0 &&
+      productMetadataCount !== productMetadata.length) ||
+    (versionMetadataCount !== 0 &&
+      versionMetadataCount !== versionMetadata.length) ||
+    (versionMetadataCount !== 0 &&
+      productMetadataCount !== productMetadata.length)
+  ) {
     throw new Error(
-      `[mcp-corpus] dist/${markdownArtifact} must provide the complete product/version metadata tuple or none of it.`
+      `[mcp-corpus] dist/${markdownArtifact} must provide no product metadata, a complete product pair, or complete product/version metadata.`
     );
   }
 

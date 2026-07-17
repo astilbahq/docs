@@ -1,7 +1,7 @@
 import type { APIRoute, GetStaticPaths } from "astro";
 import { getCollection } from "astro:content";
 
-import { findDocsContext } from "../docs/catalog";
+import { docsProducts, findDocsContext } from "../docs/catalog";
 import { findSiteDocsPage } from "../docs/site-pages";
 import { getDocsSourceUrl } from "../docs/source";
 
@@ -30,9 +30,13 @@ const createMarkdown = (
     ? [
         `product: ${yamlString(props.product)}`,
         `productId: ${yamlString(props.productId ?? "")}`,
-        `docsVersion: ${yamlString(props.docsVersion ?? "")}`,
-        `docsVersionId: ${yamlString(props.docsVersionId ?? "")}`,
-        `lifecycle: ${yamlString(props.lifecycle ?? "")}`,
+        ...(props.docsVersion
+          ? [
+              `docsVersion: ${yamlString(props.docsVersion)}`,
+              `docsVersionId: ${yamlString(props.docsVersionId ?? "")}`,
+              `lifecycle: ${yamlString(props.lifecycle ?? "")}`,
+            ]
+          : []),
       ]
     : [];
   const frontmatter = [
@@ -67,6 +71,16 @@ export const getStaticPaths = (async () => {
     const sitePage = findSiteDocsPage(entry.id);
 
     if (sitePage) {
+      const product = sitePage.productId
+        ? docsProducts.find(({ id }) => id === sitePage.productId)
+        : undefined;
+
+      if (sitePage.productId && !product) {
+        throw new Error(
+          `Unknown documentation product for ${sitePage.canonicalPath}.`
+        );
+      }
+
       return [
         {
           params: { slug: entry.id },
@@ -74,6 +88,8 @@ export const getStaticPaths = (async () => {
             body: entry.body,
             canonicalPath: sitePage.canonicalPath,
             description: entry.data.description ?? "",
+            product: product?.label,
+            productId: product?.id,
             source: getDocsSourceUrl(entry.filePath, entry.id),
             title: entry.data.title,
           } satisfies MarkdownPageProps,
