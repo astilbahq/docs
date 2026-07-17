@@ -16,7 +16,7 @@ These consistency levels become meaningful when <code>Registry</code>, <code>Bus
 | Eventual — default | Uses verified local invalidation knowledge. Unknown or suspect knowledge follows the configured unknown policy. | Usually no Registry round trip on a warm, known hit. Conservative misses or checks occur while knowledge reconverges. |
 | Strong — opt in | Performs a live, un-memoized Registry check before serving a stored entry and before running the factory for a miss. A soft-stale value is refilled in the foreground instead of returned through the eventual stale path. | Adds authoritative coordination to stored-entry reads and fills, and surfaces Registry failures. |
 
-Choose strong mode with <code>consistency: "strong"</code> on the call. Although <code>defaults.consistency</code> exists in the public type, the current read path does not consume it and still defaults an omitted call option to eventual.
+Choose strong mode with <code>consistency: "strong"</code> on the call or in <code>defaults.consistency</code>. A per-call option wins; when neither is present, the read is eventual.
 
 - Unknown or suspect knowledge never validates an entry as fresh or grace-servable by itself.
 - A hard invalidation observed during a fill can fence the result. When verified knowledge advanced, the kernel re-mints the birth epoch and may refetch within a three-attempt budget before surfacing <code>FencedError</code> or a miss entry.
@@ -33,11 +33,35 @@ Set <code>defaults.unknownPolicy</code> for eventual reads:
 | --- | --- |
 | <code>registry-check</code> — default | Ask the Registry for live tag watermarks. If the check cannot establish safety, the read fails closed. |
 | <code>miss</code> | Treat the entry as unusable and continue to the fill path. |
-| <code>error</code> | Declared as an error posture, but the current read path still treats the unknown entry as a miss and continues to fill. Do not rely on an exception yet. |
+| <code>error</code> | Throw <code>UnknownTagError</code> with the user tags whose safety could not be established. The factory does not run. |
 
-<code>takedownSensitive: true</code> selects that same provisional <code>error</code> branch unless an explicit policy overrides it; it does not yet produce a takedown-safe exception. The typed <code>defaults.onUnavailable</code> option is also not implemented. A failed strong Registry call currently propagates the driver's error rather than degrading to eventual or being wrapped as <code>RegistryUnavailableError</code>.
+<code>takedownSensitive: true</code>, at the top level or inside <code>defaults</code>, selects that same throwing posture. If either level is <code>true</code>, a <code>false</code> value at the other level does not cancel it. It is a safety override and therefore outranks even an explicit <code>unknownPolicy</code>; use it when refilling unknown content could resurrect material under a takedown or legal embargo.
 
-The source Workers factory explicitly chooses <code>registry-check</code>. Its request-piggyback poller helps future eventual reads reconverge, but it never turns unverified knowledge into a current-read hit; a read that is still suspect follows the fail-closed policy immediately.
+The source Workers factory explicitly chooses <code>registry-check</code>. Its request-driven carrier helps future eventual reads reconverge, but it never turns unverified knowledge into a current-read hit; a read that is still suspect follows the fail-closed policy immediately.
+
+## Choose the strong-outage posture
+
+By default, a failed Registry check for a strong read throws <code>RegistryUnavailableError</code>. Configure <code>defaults.onUnavailable: "eventual"</code> to degrade only that call to eventual rules instead:
+
+~~~ts
+const cache = createCache({
+  namespace: "storefront",
+  clock,
+  rng,
+  l2,
+  registry,
+  bus,
+  defaults: {
+    consistency: "strong",
+    onUnavailable: "eventual",
+  },
+  telemetry: sink,
+})
+~~~
+
+The degradation emits <code>strong_degraded</code> with reason <code>registry_unreachable</code>. Eventual does not mean “serve whatever is stored”: the call still uses verified local knowledge and the configured unknown policy. Use this opt-out only when that conservative eventual posture is acceptable during a Registry outage.
+
+Store availability is separate from Registry availability. A classified <code>throttled</code> or <code>unavailable</code> Store read emits <code>store_read_suppressed</code> and behaves as a tier miss; an L1 hit may therefore absorb an L2 outage, while a call without another usable tier proceeds to its factory. Unclassified Store errors still propagate unchanged.
 
 ## Serve stale data only for classified failures
 
@@ -71,7 +95,7 @@ Caller-originated timeouts and fact-like HTTP responses such as 403, 404, and 41
 Negative entries are never served through grace or stale-on-error. Declaring <code>notFoundTtl</code> opts an <code>HttpError</code> with status 404 into a negative write, and a negative result cannot displace a still-servable value.
 
 :::caution[Durations are not enforced]
-The presence of <code>grace</code> currently opts a stale candidate into error fallback, but elapsed grace is not measured. Likewise, <code>notFoundTtl</code> opts into a negative entry without expiring it after the declared duration. Full TTL, grace, and age behavior is unfinished.
+The presence of <code>grace</code> currently opts a stale candidate into error fallback, but elapsed grace is not measured. Likewise, <code>notFoundTtl</code> opts into a negative entry without expiring it after the declared duration. Entry <code>age</code> is measured from the served envelope's <code>bornMs</code> fill-start timestamp, but TTL and grace still do not consume that elapsed time.
 :::
 
 An eventual soft-stale read also awaits its refresh in the current implementation, then returns the stale value. Background adoption, queue retry, and refresh completion tracking are not yet present.
@@ -84,4 +108,4 @@ Use <code>cache.explain(key)</code> to inspect the current local verdict and rea
 - [Cache fundamentals](/docs/cache/core-concepts/) defines Registry, Bus, consistency, and grace in plain language.
 - [Read and cache values](/docs/cache/reading-and-filling/) follows the foreground fill and stale return shapes.
 - [Inspect cache behavior](/docs/cache/observability/) explains the point-in-time verdict and reader witness.
-- [Implementation status](/docs/cache/api-status/) records unfinished timing and unavailable-policy behavior.
+- [Implementation status](/docs/cache/api-status/) records unfinished timing and release behavior.

@@ -19,7 +19,7 @@ You can understand Astilba Cache without starting with its distributed machinery
 | **Tag** | A dependency label. Several keys can carry the same tag and be invalidated together. |
 | **Scope** | A sharing rule: public, tenant-scoped, or principal-derived and local-only. |
 
-<code>getOrSet()</code> returns only the value. <code>getOrSetEntry()</code> also reports where it came from and whether it was stale, skipped, or durable.
+<code>getOrSet()</code> returns only the value. <code>getOrSetEntry()</code> also reports where it came from, its elapsed age, whether it was stale or skipped, and whatever durability this serve can prove.
 
 ## Understand the storage tiers
 
@@ -41,10 +41,10 @@ Storage answers “do I have bytes for this key?” Invalidation answers “are 
 | Component | Responsibility |
 | --- | --- |
 | **Registry** | The authoritative record of soft and hard invalidation watermarks. Purge methods write to it; strong stored-entry reads check it live. |
-| **Bus** | The fast delivery path for ordered invalidation events to active cache instances. A reset or gap makes local knowledge suspect. |
+| **Bus** | The fast delivery path for ordered invalidation events to active cache instances. A reset or gap makes local knowledge suspect; an explicit lost event records channel reachability separately. |
 | **Replication mirror** | Durable L2 pointer, delta, and snapshot objects that let a suspect instance recover invalidation changes it missed on the Bus. |
 | **Recovery reader** | Replays contiguous deltas first, then can use the pointer-blessed snapshot as a recovery floor when a persistent hole exhausts the delta retry budget. It remains fail closed if the chain cannot be established. |
-| **Replication poller** | Drives baseline mirror observation and bounded recovery retries outside the value read. The React Router adapter supplies request-piggyback ticks; other runtimes need an equivalent driver. |
+| **Replication poller** | Drives baseline mirror observation and bounded recovery retries outside foreground value work. The Workers factory supplies read-triggered ticks, React Router can adopt request-entry ticks, and raw runtimes need an equivalent driver. |
 
 The Bus is not the authority. It transports updates; the Registry and verified local or mirror history establish what is known. Coordinated read validation is built only when Registry, Bus, and L2 are all available. <code>createCache()</code> rejects a Registry-plus-Bus configuration without L2 because that reader would have no safe recovery mirror.
 
@@ -69,11 +69,11 @@ Clock and Rng exist for portability and deterministic tests. They are constructi
 | <code>clock</code> + <code>rng</code> + <code>l2</code> | Basic read, fill, and reuse without coordinated invalidation. The local quickstart uses <code>memory()</code> for this preview-only shape. |
 | Add <code>l1</code> | Process-local reads and retention for values that cannot be shared. |
 | Add <code>registry</code> | Enables the purge methods, but does not create coordinated read validation by itself. |
-| Add <code>registry</code> + <code>bus</code> alongside the existing <code>l2</code> | Live invalidation delivery, coordinated validation, snapshot-capable mirror recovery, and an attached replication poller. The embedding runtime or adapter must supply a tick driver for background recovery; reads still perform reactive recovery without one. |
+| Add <code>registry</code> + <code>bus</code> alongside the existing <code>l2</code> | Live invalidation delivery, channel-state tracking, coordinated validation, snapshot-capable mirror recovery, and an attached replication poller. The embedding runtime or adapter must supply a tick driver for background recovery; reads still perform reactive recovery without one. |
 | Add <code>lock</code> | Lets individual calls opt into cross-instance fill exclusion. |
 | Use React Router render collection | Automatically records served Cache entries, rejects non-public response dependencies, and emits eligible user tags. |
 | Add <code>cdn</code> | Declares the L3 purge boundary; the current implementation does not drive it. |
-| Use <code>createWorkersCache()</code> | Composes memory L1, KV L2, Coordinator Registry, and redialing Bus with Workers defaults. |
+| Use <code>createWorkersCache()</code> | Composes memory L1, KV L2, lazily addressed Coordinator Registry, tick-redialed Bus, and a read-triggered recovery carrier with Workers defaults. |
 
 ## Distinguish policy terms
 

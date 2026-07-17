@@ -104,7 +104,7 @@ Do not use those completion fields as rollout or takedown guarantees yet.
 
 The purge verbs require a <code>Registry</code>. For reads to observe coordinated invalidation, configure Registry, Bus, and L2 together. L2 remains required for fills and lets suspect readers recover through durable deltas and snapshots.
 
-The source Workers factory wires the Coordinator Registry, redialing Durable Object Bus, and KV mirror. The CDN path and real purge-completion promises are still not implemented.
+The source Workers factory wires the Coordinator Registry, tick-redialed Durable Object Bus, KV mirror, and request-driven recovery carrier. The CDN path and real purge-completion promises are still not implemented.
 
 When React Router render collection is active, a served entry's stored user tags can also become a <code>Cache-Tag</code> response header. Scope and budget checks run before emission, and reserved tags are filtered. This response tagging does not make the CDN purge path operational; see [Cache HTTP responses](/docs/cache/response-caching/).
 

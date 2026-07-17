@@ -17,7 +17,7 @@ Astilba Cache stores the result of expensive server-side work so later calls can
 | Invalidate related server data after a mutation | Tags and soft or hard invalidation are core features. |
 | Keep user-specific results out of shared storage | Privacy-aware scopes are built into the key and write path. |
 | Cache browser requests or React component state | Use a client data-fetching or state library instead. Astilba Cache is a server-side cache. |
-| Evaluate a Cloudflare Workers integration | The source includes a Workers factory, KV driver, Coordinator Durable Object, live Bus, recovery poller, and React Router middleware. |
+| Evaluate a Cloudflare Workers integration | The source includes an I/O-free Workers factory, KV driver, Coordinator Durable Object, live Bus, request-driven recovery, and React Router middleware. |
 | Add a supported production cache today | Not yet. The package, elapsed-time behavior, operational measurements, and release process must complete first. |
 
 For React applications, “server-side” means code such as a route loader, server action, API route, or Server Component—not code running in the browser. The current framework adapter targets React Router v8 on the server; see [React Router](/docs/cache/react-and-server-apps/).
@@ -50,7 +50,7 @@ The portable constructor makes you supply storage, a clock, and a random source.
 | --- | --- | --- |
 | Exercise the kernel locally | A bounded <code>memory()</code> Store used as a development L2 | You are wiring a real shared runtime. |
 | Run on Cloudflare Workers | <code>createWorkersCache()</code>, a KV namespace, and the Coordinator Durable Object | You are only reviewing the portable API. |
-| Use React Router v8 | The root <code>cacheMiddleware()</code> and <code>nodejs_als</code> compatibility flag on Workers | Your framework owns request context another way. |
+| Use React Router v8 | The root <code>cacheMiddleware()</code> and <code>nodejs_compat</code> compatibility flag on Workers | Your framework owns request context another way. |
 | Invalidate related values | Dependency tags and a Registry | Values never need explicit invalidation. |
 | Reuse values inside one running server | L1, a local Store | One shared Store is sufficient. |
 | Coordinate invalidation across servers | Registry and Bus; keep L2 for fills and durable delta replay | The application has only one cache instance or does not invalidate. |
@@ -70,6 +70,7 @@ Most application code should begin with <code>getOrSet()</code>. Registry, Bus, 
 - **Identity affects storage.** Principal-derived values stay in local storage unless the application deliberately declares a shareable scope.
 - **Failures are classified.** A transient outage may reuse an eligible stale value; facts such as 403, 404, and 410 remain visible.
 - **Strong reads pay for authority.** With coordinated invalidation configured, they perform a live Registry check before serving a stored entry and before a strong miss is filled.
+- **Serve metadata reports evidence, not guesses.** Entry tier and age describe the value actually served; durability is omitted when an L1 hit cannot prove whether an L2 copy exists.
 - **A private dependency makes the rendered response private.** The React Router adapter emits response tags only when every managed dependency has readable public scope.
 
 Cache does not update your source of truth. Change the database or upstream service first, then invalidate its cached representations.
@@ -81,8 +82,8 @@ Cache does not update your source of truth. Change the database or upstream serv
 | Correctness kernel | Implemented | Read, fill, scope, codec, resilience, and invalidation behavior is exercised by deterministic tests. |
 | Driver contracts | Implemented | Application and runtime integrations can implement the typed capability boundaries. |
 | Local memory Store | Implemented in source | <code>memory()</code> provides bounded, per-instance LRU storage and optional physical TTL when given a Clock. |
-| Cloudflare path | Public source preview | <code>./cloudflare</code> exports the Workers factory, KV, Coordinator, Registry, Bus, and redial helpers; workerd integration tests cover the primary path. |
-| React Router path | Public source preview | <code>./react-router</code> exports server middleware, typed request context access, request-piggyback recovery ticks, and scope-aware response-tag collection. |
+| Cloudflare path | Public source preview | <code>./cloudflare</code> exports the Workers factory, KV, Coordinator, Registry, Bus, and tick-driven redial helpers; workerd integration tests cover the primary path. |
+| React Router path | Public source preview | <code>./react-router</code> exports server middleware, typed request context access, request-entry recovery lifecycle adoption, and scope-aware response-tag collection. |
 | Public package | Not released | npm has no <code>@astilba/cache</code> package, so there is no supported installation or production deployment path. |
 
 ## Choose a path

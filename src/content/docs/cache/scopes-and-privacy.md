@@ -28,6 +28,8 @@ const entry = await cache.getOrSetEntry({
 entry.durable // false — principal-derived values never reach shared L2
 ~~~
 
+Durability is evidence from the current serve, so the field is optional on the overall result type. Every fresh fill reports <code>true</code> or <code>false</code>, an L2 hit proves <code>true</code>, and a later principal-scoped L1 hit proves <code>false</code>. A public or tenant value served from L1 omits <code>durable</code>, because the fast path does not consult L2 merely to answer whether another copy exists.
+
 ## Retain private values with L1
 
 A principal-derived fill still needs L2 to run in the current kernel, but the result deliberately skips the L2 write. Configure an L1 <code>Store</code> if you want the private value retained for a later call on the same isolate. Without L1, the current call succeeds with <code>durable: false</code> and the next call fills again. <code>createWorkersCache()</code> includes a bounded memory L1 for this reason.
@@ -69,7 +71,7 @@ Queue consumers, cron jobs, and other contextless code resolve to the public sto
 
 A plain telemetry sink receives events as emitted and may contain raw identifiers. When <code>telemetry.hosted</code> is true and a project salt is supplied, the kernel HMAC-pseudonymizes every string field except the structural event type. A hosted configuration without a salt suppresses events rather than forwarding raw strings. Built-in delivery also swallows a sink that throws or rejects; configure <code>onSinkError</code> to observe that failure separately.
 
-The <code>memory()</code> Store can emit <code>private_evicted</code> when an LRU entry with <code>usr:</code> scope is removed under entry or byte pressure. Its payload carries only a count and byte size—never a key, scope hash, or tag. <code>createWorkersCache()</code> does not expose this internal L1 telemetry option; raw composition is required to enable it.
+The <code>memory()</code> Store can emit <code>private_evicted</code> when an LRU entry with <code>usr:</code> scope is removed under entry or byte pressure. Its payload carries only a count and byte size—never a key, scope hash, or tag. <code>createWorkersCache()</code> accepts kernel telemetry, but does not expose a separate sink for its internal memory L1; raw composition is required to enable this event.
 
 ## Apply scope to rendered responses
 

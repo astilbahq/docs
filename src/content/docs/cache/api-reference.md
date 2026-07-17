@@ -24,7 +24,7 @@ const cache = createCache({
 })
 ~~~
 
-The raw constructor requires <code>namespace</code>, <code>clock</code>, and <code>rng</code>. A factory fill also requires <code>l2</code>; without it, the fill throws <code>NotImplementedError</code>. <code>createWorkersCache()</code> is the higher-level Workers constructor.
+The raw constructor requires <code>namespace</code>, <code>clock</code>, and <code>rng</code>. Construction performs no I/O; retention registration and Bus establishment are deferred until the first read or purge that needs them. A factory fill also requires <code>l2</code>; without it, the fill throws <code>NotImplementedError</code>. <code>createWorkersCache()</code> is the higher-level Workers constructor.
 
 ### <code>CacheConfig</code>
 
@@ -40,9 +40,9 @@ The raw constructor requires <code>namespace</code>, <code>clock</code>, and <co
 | <code>cdn</code> | <code>Cdn</code> | Declared L3 purge capability; not invoked by the current kernel. |
 | <code>lock</code> | <code>Lock</code> | Optional cross-instance fill lock. A read opts in with <code>lock: true</code>. |
 | <code>codec</code> | <code>Codec</code> | Value encoder and wire identity. Defaults to the built-in JSON round trip. |
-| <code>defaults</code> | <code>CacheDefaults</code> | Instance policy defaults. Several timing and unavailable-policy fields remain partial. |
+| <code>defaults</code> | <code>CacheDefaults</code> | Instance policy defaults. Timing fields remain partial; consistency and unavailable-policy fields are active. |
 | <code>telemetry</code> | <code>TelemetrySink \| TelemetryConfig</code> | Receives operational events. Hosted mode pseudonymizes string fields when a salt is present; configured delivery isolates sink failures and can call <code>onSinkError</code>. |
-| <code>takedownSensitive</code> | <code>boolean</code> | Selects the provisional unknown-as-error posture unless explicitly overridden. It currently continues as a miss rather than throwing. |
+| <code>takedownSensitive</code> | <code>boolean</code> | Makes unknown invalidation knowledge throw <code>UnknownTagError</code>. A <code>true</code> value here or in <code>defaults</code> activates the safety override; <code>false</code> at one level does not cancel <code>true</code> at the other. |
 | <code>dev</code> | <code>boolean</code> | Makes incompatible same-key singleflight calls fail loudly and guards request reads inside explicitly public factories. |
 
 ### <code>CacheDefaults</code>
@@ -51,15 +51,16 @@ The raw constructor requires <code>namespace</code>, <code>clock</code>, and <co
 | --- | --- |
 | <code>ttl</code> | Default freshness duration. Declared but not applied; elapsed expiry is unfinished. |
 | <code>grace</code> | Default stale window. Declared but not applied; elapsed grace is unfinished. |
-| <code>maxEntryRetention</code> | Maximum retention registered when a Registry is configured. It has no registration target without that driver. |
-| <code>consistency</code> | Declared default consistency. The current read path ignores it and defaults an omitted per-call option to eventual. |
-| <code>unknownPolicy</code> | Chooses <code>registry-check</code>, <code>miss</code>, or the provisional <code>error</code> posture for unknown invalidation knowledge. |
+| <code>maxEntryRetention</code> | Maximum retention registered lazily when a configured Registry is first used. It has no registration target without that driver. |
+| <code>consistency</code> | Default <code>eventual</code> or <code>strong</code> consistency. A per-call value wins; an omitted value otherwise resolves to eventual. |
+| <code>unknownPolicy</code> | Chooses <code>registry-check</code>, <code>miss</code>, or <code>error</code> for unknown invalidation knowledge. The error posture throws <code>UnknownTagError</code>. |
 | <code>staleIfError</code> | Replaces the default <code>isRetriableHttp()</code> failure classifier. |
 | <code>graceBackoff</code> | Declared retry backoff for grace behavior; not consumed today. |
 | <code>maxSyncLag</code> | Base cadence for the attached replication poller. Defaults to the Workers profile's 60 seconds when omitted. |
 | <code>acceptCodecs</code> | Additional stored codec identities the current Codec is allowed to decode. |
 | <code>heartbeatInterval</code> | Reader-side heartbeat interval used to derive the invalidation-silence threshold. The Workers factory defaults it to 30 seconds; the Coordinator deployment variable is configured separately. |
-| <code>onUnavailable</code> | Declares strong-read degradation to eventual; not consumed today. |
+| <code>onUnavailable</code> | With <code>"eventual"</code>, a failed strong Registry check degrades that call to eventual and emits <code>strong_degraded</code>. Otherwise the read throws <code>RegistryUnavailableError</code>. |
+| <code>takedownSensitive</code> | The defaults-level form of the unknown-as-error safety override. If either this value or the top-level value is <code>true</code>, it outranks <code>unknownPolicy</code> and unknown knowledge throws <code>UnknownTagError</code>. |
 
 ## Read or fill values
 
@@ -75,7 +76,7 @@ The raw constructor requires <code>namespace</code>, <code>clock</code>, and <co
 | <code>expireAll(guard)</code> | <code>Promise&lt;PurgeResult&gt;</code> | Declared with an explicit origin-load acknowledgement; currently throws <code>NotImplementedError</code>. |
 | <code>deleteAll(guard)</code> | <code>Promise&lt;PurgeResult&gt;</code> | Declared with an explicit origin-load acknowledgement; currently throws <code>NotImplementedError</code>. |
 | <code>collect()</code> | <code>RenderCollector</code> | Creates a scope-aware L3 dependency collector. React Router binds one per request so hits and fills contribute automatically. |
-| <code>explain(key)</code> | <code>Promise&lt;Explanation&gt;</code> | Witnesses the default-public key in L1 then L2, its stored identity, current local verdict and reader state, and any request-scoped attribution. A missing entry is a reportable result. |
+| <code>explain(key)</code> | <code>Promise&lt;Explanation&gt;</code> | Witnesses the default-public key in L1 then L2, its stored identity, current local verdict and reader state, and any request-scoped attribution. It distinguishes a present entry, proven absence, and a suppressed Store read failure. |
 
 ### Read option types
 
@@ -124,10 +125,10 @@ Related exports are <code>FactoryCtx</code>, <code>EntryFactoryCtx</code>, <code
 | <code>value</code> | The value, or <code>undefined</code> for a miss, skip, or negative entry. |
 | <code>skipped</code> | The entry factory called <code>skip()</code>. |
 | <code>stale</code> | The returned value was not fresh at this read's consistency level. |
-| <code>age</code> | Always zero while elapsed-time accounting is unfinished. |
+| <code>age</code> | Whole milliseconds since the served envelope's <code>bornMs</code> fill-start timestamp, measured with the injected Clock and clamped at zero. A miss or skip reports zero. This is observability, not TTL enforcement. |
 | <code>tier</code> | <code>l1</code>, <code>l2</code>, <code>origin</code>, or <code>miss</code>. The exported <code>Tier</code> union also declares <code>l1.5</code>, which is not emitted. |
 | <code>servedOnError</code> | Present when a classified transient failure reused a revalidated stale candidate. |
-| <code>durable</code> | On an origin result, whether shared L2 accepted the value or a newer durable entry won. Existing hit paths currently report <code>true</code> unconditionally. |
+| <code>durable</code> | Optional serve evidence. Every newly filled origin result reports whether L2 accepted the value or a newer durable entry won; an L2 hit reports <code>true</code>; a principal-scoped L1 hit reports <code>false</code>. A public or tenant L1 hit omits the field because that serve does not consult L2. |
 
 ## Invalidate values
 
@@ -206,6 +207,18 @@ interface Store {
 
 Calling <code>Store.set()</code> with <code>expirationTtl</code> on a clockless memory Store fails loudly instead of silently ignoring residency. The Cache kernel does not currently pass value TTL through as Store residency, so this behavior matters primarily to direct Store users and replication objects.
 
+Serving reads recognize the following structural rejection:
+
+~~~ts
+interface ClassifiedStoreReadFailure {
+  readonly code: "throttled" | "unavailable"
+  readonly retryable: boolean
+  readonly cause?: unknown
+}
+~~~
+
+The shape and its guard are deliberately not root exports, but classification is shape-based rather than <code>instanceof</code>-based. A custom Store can therefore reject <code>get()</code> with that exact shape; the bundled <code>cloudflareKV()</code> driver provides the covered implementation. A classified failure emits <code>store_read_suppressed</code> and acts as a tier miss, while any rejection without both a recognized <code>code</code> and boolean <code>retryable</code> propagates unchanged. <code>explain()</code> reports <code>read-failed</code> when a classified failure prevents it from proving either presence or absence.
+
 <code>CasOrder</code> contains <code>epoch</code> and <code>fence</code>. <code>CasRecord</code> adds an optimistic-concurrency <code>token</code>. <code>CasStore</code> declares <code>seed(key, order)</code>, <code>load(key)</code>, and <code>swap(key, expectedToken, next)</code>. It is an optional atomic compare-and-set capability for durable drivers; the current kernel does not consume it.
 
 ### Invalidation coordination
@@ -216,7 +229,7 @@ Calling <code>Store.set()</code> with <code>expirationTtl</code> on a clockless 
 | <code>RegistryAck</code> | Mutation acknowledgement containing the accepted epoch. |
 | <code>TagChange</code> | One tag's optional soft and hard watermark changes. |
 | <code>BusFrame</code> | A contiguous <code>fromEpoch</code> to <code>toEpoch</code> range of changes. |
-| <code>BusEvent</code> | <code>frame</code>, <code>gap</code>, <code>reset</code>, or <code>hello</code> event delivered to a subscriber. |
+| <code>BusEvent</code> | <code>frame</code>, <code>gap</code>, <code>reset</code>, <code>hello</code>, or <code>lost</code> event delivered to a subscriber. |
 | <code>Bus</code> | Subscribes the kernel to Bus events. The kernel validates continuity. |
 | <code>Subscription</code> | Handle with <code>close()</code>. |
 
@@ -237,7 +250,8 @@ The <code>Registry</code> contract exposes:
 - <code>{ kind: "frame", frame }</code> for a contiguous change frame;
 - <code>{ kind: "gap", head }</code> when delivery loss is known and the transport declares the minimum head the reader must reach;
 - <code>{ kind: "reset" }</code> when the transport is re-established;
-- <code>{ kind: "hello", head }</code> immediately after establishment, declaring the live channel's current head.
+- <code>{ kind: "hello", head }</code> immediately after establishment, declaring the live channel's current head;
+- <code>{ kind: "lost" }</code> when a live transport is unavailable, whether it never established or was later lost.
 
 ### Other capabilities
 
@@ -261,7 +275,8 @@ See [Driver implementations](/docs/cache/drivers-and-status/) for available impl
 | <code>Watermark</code> | Monotone <code>softEpoch</code> and <code>hardEpoch</code> for a tag. |
 | <code>TagKnowledge</code> | Either known watermarks with a verified <code>throughEpoch</code>, or <code>{ known: false }</code>. |
 | <code>Validity</code> | Validation result: <code>fresh</code>, <code>stale</code>, <code>dead</code>, or <code>unknown</code>. |
-| <code>UnknownPolicy</code> | <code>registry-check</code>, <code>miss</code>, or the provisional <code>error</code> policy. |
+| <code>UnknownPolicy</code> | <code>registry-check</code>, <code>miss</code>, or the throwing <code>error</code> policy. |
+| <code>ChannelState</code> | Reader-observed live-channel state: <code>never-established</code>, <code>established</code>, or <code>lost</code>. |
 | <code>Scope</code> | Explicit <code>public</code> or tenant scope. An omitted scope may derive a principal-local storage class. |
 | <code>Tier</code> | Result tier: <code>l1</code>, declared <code>l1.5</code>, <code>l2</code>, <code>origin</code>, or <code>miss</code>. |
 
@@ -293,10 +308,10 @@ See [Driver implementations](/docs/cache/drivers-and-status/) for available impl
 | <code>L3Budget</code> | Optional <code>maxBytes</code> and <code>maxTags</code> limits. |
 | <code>L3Emission</code> | Eligibility, emitted cache tags, and optional ineligibility reason. |
 | <code>L3Ineligibility</code> | <code>late-tag</code>, <code>budget</code>, <code>scope</code>, or <code>scope-unreadable</code>. |
-| <code>Explanation</code> | Discriminated present or absent witness returned by <code>explain()</code>. |
+| <code>Explanation</code> | Three-arm <code>kind</code>-discriminated witness returned by <code>explain()</code>: <code>present</code>, <code>absent</code>, or <code>read-failed</code>. |
 | <code>ExplainIdentity</code> | Stored tags, scope evidence, birth epoch, TTL evidence, and entry kind. |
 | <code>ExplainVerdict</code> | Current local validity plus the soft and hard epochs behind it. |
-| <code>ExplainReaderState</code> | Applied epoch, suspicion state, and terminal recovery state. |
+| <code>ExplainReaderState</code> | Applied epoch, suspicion state, terminal recovery state, and <code>ChannelState</code>. |
 | <code>ExplainScope</code>, <code>ExplainTtl</code> | Readable-versus-unreadable scope and stored-versus-not-stored TTL evidence. |
 | <code>ExplainedDependency</code>, <code>ExplainDependencyScope</code> | Request-scoped render attribution and its scope evidence. |
 
@@ -304,7 +319,7 @@ The collector and React Router header integration are implemented. The CDN purge
 
 <code>RenderCollector.dependsOn(tag, { l3? })</code> records a render-only dependency with no managed scope claim. Setting <code>l3: false</code> excludes its tag from emission, timing, and budget checks. <code>commitHeaders({ maxBytes?, maxTags? })</code> returns an <code>L3Emission</code>. Automatically recorded hits and fills carry scope evidence; any non-public or unreadable scope makes the emission ineligible and empty.
 
-<code>explain(key)</code> probes L1 then L2 without hydrating L1, live-checking the Registry, or resynchronizing the reader. It addresses the default public canonical key because the signature has no scope input. The present arm contains <code>identity</code> and <code>verdict</code>; both arms contain <code>key</code>, <code>tier</code>, <code>reader</code>, and optional request-scoped <code>requestDependencies</code>. Current entries report TTL as <code>{ kind: "not-stored" }</code>.
+<code>explain(key)</code> probes L1 then L2 without hydrating L1, live-checking the Registry, or resynchronizing the reader. It addresses the default public canonical key because the signature has no scope input. Every arm contains <code>key</code>, <code>reader</code>, and optional request-scoped <code>requestDependencies</code>. The <code>present</code> arm adds <code>tier</code>, <code>identity</code>, and <code>verdict</code>; the proven <code>absent</code> arm reports <code>tier: "miss"</code>; <code>read-failed</code> has no tier or identity because at least one Store did not answer and no other tier supplied the entry. Current entries report TTL as <code>{ kind: "not-stored" }</code>.
 
 ## HTTP failures and errors
 
@@ -323,7 +338,8 @@ The collector and React Router header integration are implemented. The CDN purge
 | <code>InvalidDurationError</code> | <code>duration()</code> received a non-positive, non-finite, fractional-millisecond, or unsafe computed duration. |
 | <code>FactorySettledError</code> | A retained factory context declared tags after its factory promise settled. Carries the offending key. |
 | <code>NotImplementedError</code> | A declared preview surface was called before implementation. |
-| <code>RegistryUnavailableError</code> | Intended strong-read Registry failure. Exported but not emitted by the current path. |
+| <code>RegistryUnavailableError</code> | A strong Registry check failed and the call was not configured to degrade to eventual. |
+| <code>UnknownTagError</code> | Unknown invalidation knowledge reached the <code>error</code> posture. Carries the affected user tags. |
 
 ## Telemetry
 
@@ -333,6 +349,7 @@ The collector and React Router header integration are implemented. The CDN purge
 | <code>TelemetrySink</code> | Function receiving each emitted event. |
 | <code>TelemetryEventName</code> | Union of all values in the event catalog. |
 | <code>TELEMETRY_EVENTS</code> | Public event-name catalog for kernel, memory, React Router, and Cloudflare events, including reserved names. |
+| <code>StrongDegradedReason</code> | Current reason union for <code>strong_degraded</code>: <code>registry_unreachable</code>. |
 | <code>SinkErrorHook</code> | Optional observer for a sink failure that built-in delivery swallowed. |
 | <code>TelemetryConfig</code> | Sink plus optional <code>hosted</code> flag, project <code>salt</code>, and <code>onSinkError</code>. |
 
@@ -344,18 +361,19 @@ Import these names from <code>@astilba/cache/cloudflare</code>. The subpath reso
 
 | Export | Purpose and current boundary |
 | --- | --- |
-| <code>createWorkersCache(config)</code> | Composes a Workers Clock and Rng, bounded memory L1, KV L2, named Coordinator Registry, and redialing Bus. |
-| <code>WorkersCacheConfig</code> | Requires <code>name</code>, <code>kv</code>, and <code>coordinator</code>; accepts optional <code>CacheDefaults</code> overrides. |
+| <code>createWorkersCache(config)</code> | Composes a Workers Clock and Rng, bounded memory L1, KV L2, named Coordinator Registry, lazily redialed Bus, and a request-driven recovery carrier. Construction performs no I/O. |
+| <code>WorkersCacheConfig</code> | Requires <code>name</code>, <code>kv</code>, and <code>coordinator</code>; accepts optional <code>defaults</code>, kernel <code>telemetry</code>, and <code>takedownSensitive</code>. |
 | <code>Coordinator</code> | Durable Object class the Worker must export and bind with a SQLite migration. Its environment requires <code>REGISTRY_KV</code> and accepts Registry heartbeat and snapshot tuning variables. |
 | <code>cloudflareKV(namespace)</code> | Builds the Cloudflare KV Store driver. |
-| <code>doRegistry(stub, regId?)</code> | Builds the thin Coordinator RPC Registry. The Registry ID must match the named Durable Object identity. |
+| <code>doRegistry(source, regId?)</code> | Builds the thin Coordinator RPC Registry from a stub or a thunk that mints one. The Registry ID must match the named Durable Object identity. |
+| <code>StubSource</code> | A Coordinator stub or a zero-argument stub factory. Use the thunk form when the Registry outlives a request. |
 | <code>doBus(dial, options)</code> | Builds a mechanism-only WebSocket Bus client. It reports closure but does not reconnect itself. |
 | <code>Dial</code> | Function returning a compatible client socket synchronously or asynchronously. |
 | <code>DoBusOptions</code> | Requires <code>regId</code> and accepts an <code>onClose</code> status callback. |
 | <code>DoBusCloseInfo</code> | Close code, reason, and whether the client initiated the closure. |
-| <code>redialingDoBus(dial, options)</code> | Wraps <code>doBus()</code> with jittered exponential reconnection. |
-| <code>RedialOptions</code> | Registry identity, injected Rng, and optional close callback, scheduler, base delay, and jitter fraction. |
-| <code>Scheduler</code> | Injectable delayed-redial seam; the default uses platform timers. |
+| <code>redialingDoBus(dial, options)</code> | Wraps <code>doBus()</code> with jittered exponential reconnection whose due attempts are performed by request-time ticks, never platform timers. |
+| <code>RedialOptions</code> | Registry identity, injected Rng, and optional close callback, base delay, and jitter fraction. |
+| <code>RedialingBusHandle</code> | A Bus with <code>tick(nowMs)</code>; a due tick performs one lazy redial and otherwise does nothing. |
 | <code>InvalidRegistryNameError</code> | A named Coordinator identity violates the lowercase <code>[a-z0-9._-]</code>, 1–64-character Registry grammar. |
 
 See [Cloudflare Workers](/docs/cache/cloudflare-workers/) for the binding relationship and operational limits.
@@ -372,11 +390,11 @@ Import these names from <code>@astilba/cache/react-router</code>. React and Reac
 | <code>cacheContext</code> | Typed Router context key. Loaders and actions read the request's Cache with <code>context.get(cacheContext)</code>. |
 | <code>currentRequest()</code> | Returns the current AsyncLocalStorage-backed <code>RequestContext</code>, or <code>undefined</code> outside the middleware frame. |
 | <code>POLL_TICK_FAILED</code> | The <code>"poll_tick_failed"</code> telemetry event name emitted when out-of-band recovery work rejects. |
-| <code>TICK_MIN_INTERVAL_MS</code> | One-second minimum between request-piggyback ticks for the same Cache instance. |
+| <code>TICK_MIN_INTERVAL_MS</code> | One-second minimum between middleware request-entry ticks for the same Cache instance. |
 | <code>L3_INELIGIBLE</code> | The <code>"l3_ineligible"</code> event name emitted once for a demoted managed response. |
 | <code>L3_BUDGET_DEFAULT</code> | Default 16 KB and 1,000-occurrence response-tag budget. |
 
-The adapter requires <code>nodejs_als</code> on Cloudflare Workers. It preserves an application-authored cache policy for eligible public renders, emits deduplicated user tags, and forces private posture for unsafe renders. It never writes <code>public</code> or <code>s-maxage</code>. See [React Router](/docs/cache/react-and-server-apps/).
+On Cloudflare Workers, the package requires a compatibility date of 2024-09-23 or later and the <code>nodejs_compat</code> flag: the root uses <code>node:crypto</code>, and that flag also supplies the AsyncLocalStorage support used by this adapter. <code>nodejs_als</code> alone is insufficient. The middleware preserves an application-authored cache policy for eligible public renders, emits deduplicated user tags, and forces private posture for unsafe renders. It never writes <code>public</code> or <code>s-maxage</code>. See [React Router](/docs/cache/react-and-server-apps/).
 
 ## Export boundary
 

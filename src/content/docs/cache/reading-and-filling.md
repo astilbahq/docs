@@ -45,11 +45,11 @@ if (!entry.skipped && entry.value !== undefined) {
 | <code>tier</code> | <code>l1</code>, <code>l2</code>, <code>origin</code>, or <code>miss</code>. <code>l1.5</code> exists in the type but is not emitted by the current implementation. |
 | <code>stale</code> | The returned value was not fresh at this read's consistency level. |
 | <code>servedOnError</code> | A classified transient failure reused a stale candidate after serve-time revalidation. |
-| <code>durable</code> | On an origin result, whether the fill reached shared L2 or a newer durable entry won arbitration. Existing read hits currently report <code>true</code> even for an L1-only entry; treat hit durability metadata as provisional. |
+| <code>durable</code> | Optional evidence from this serve. Every newly filled origin result reports <code>true</code> or <code>false</code>; an L2 hit reports <code>true</code>; a principal-scoped L1 hit reports <code>false</code>. A public or tenant L1 hit omits the field because that serve does not consult L2. |
 | <code>skipped</code> | The entry-form factory called <code>ctx.skip()</code>; nothing was stored. |
-| <code>age</code> | Always <code>0</code> for now; elapsed-time accounting is unfinished. |
+| <code>age</code> | Whole milliseconds since the served envelope's <code>bornMs</code> fill-start timestamp, measured by the injected Clock and clamped at zero. A miss or skip reports zero. |
 
-On a newly filled origin result, <code>durable: false</code> does not mean the factory failed. It can mean the value was confined to L1 by scope, no L1 existed to retain that private value, or a classified transient L2 write failure was suppressed so the caller could still use the result. The current hit path does not preserve that distinction and reports <code>true</code>; do not use hit-level <code>durable</code> as proof of shared persistence yet.
+Every newly filled origin result includes <code>durable</code>. A <code>false</code> value does not mean the factory failed: it can mean the value was confined to L1 by scope, no L1 existed to retain that private value, or a classified transient L2 write failure was suppressed so the caller could still use the result. Only a later hit can omit <code>durable</code>; that absence is different from <code>false</code> because the current serve cannot prove either outcome. Treat <code>entry.durable === true</code> as positive evidence and compare explicitly with <code>false</code> only when you need to distinguish known non-durability from an unknown answer.
 
 ## Follow the fill lifecycle
 
@@ -61,6 +61,12 @@ On a newly filled origin result, <code>durable: false</code> does not mean the f
 6. **Write by scope.** Shared scopes may reach L2; principal-derived values are L1-only. A successful fill hydrates L1 when one is configured.
 
 When the bounded attempts still leave no servable value, <code>getOrSet()</code> throws <code>FencedError</code>. <code>getOrSetEntry()</code> reports a non-durable miss instead.
+
+A Store read has its own failure boundary. A structurally classified <code>throttled</code> or <code>unavailable</code> read emits <code>store_read_suppressed</code> and behaves as a miss for serving, allowing another tier or the factory to supply the value. An unclassified read error propagates unchanged. L1 can therefore absorb an L2 outage for keys already present locally; without such an L1 hit, repeated calls may refill while L2 remains unavailable.
+
+:::caution[Protect origin during an L2 outage]
+The current kernel has no circuit breaker or origin-load backoff for suppressed Store reads. Before production use, applications must provide their own origin concurrency limits, load shedding, and alert thresholds, and should retain the bounded L1 supplied by the Workers factory. The package remains unreleased partly because these operating thresholds have not yet been established through deployed measurements.
+:::
 
 A strong, coordinated miss live-checks the canonical key and namespace tags plus the caller-declared tags before the first factory attempt. That check anchors the fill at the Registry's current global epoch before origin work begins. Factory-discovered tags join the final stored set and the write-back fence; a hard purge delivered for one of them during the fill can fence and retry the result, even though that tag was not individually available to the pre-factory check.
 
@@ -103,7 +109,7 @@ The built-in codec is a plain JSON round trip. Use JSON-representable values onl
 ## Current boundaries
 
 :::caution[Time is not enforced yet]
-Per-call and default TTL and grace values do not currently expire entries by elapsed time. Stored envelopes use zero timing fields, <code>age</code> remains zero, and a declared <code>notFoundTtl</code> opts into a negative write without enforcing the requested duration.
+Per-call and default TTL and grace values do not currently expire entries by elapsed time. Stored envelopes use zero TTL and grace fields, and a declared <code>notFoundTtl</code> opts into a negative write without enforcing the requested duration. Entry <code>age</code> is measured from the served envelope's <code>bornMs</code> fill-start timestamp, but that observation does not make timing policy active.
 :::
 
 A soft-stale eventual read currently awaits a best-effort refresh, then still returns the stale value for that call. The planned background adoption and retry lifecycle is not implemented, so this path does not yet provide background stale-while-revalidate latency.
