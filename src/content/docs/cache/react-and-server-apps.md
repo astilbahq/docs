@@ -3,7 +3,7 @@ title: React Router
 description: Provide Astilba Cache to React Router v8 loaders and actions while carrying server request identity safely.
 ---
 
-The current source exposes server middleware at <code>@astilba/cache/react-router</code>. It puts a Cache instance into React Router's typed request context, carries an application-derived identity frame, drives background recovery ticks, and turns value-cache dependencies into scope-safe response tags.
+The current source exposes server middleware at <code>@astilba/cache/react-router</code>. It puts a Cache instance into React Router's typed request context, carries an application-derived identity frame, adopts background recovery work into the request lifecycle, and turns value-cache dependencies into scope-safe response tags.
 
 :::caution[Server adapter, source preview]
 This is a React Router v8 server integration. It is not a browser cache, a client data-fetching library, or a released package. The source adapter has unit and real Vite build coverage, but the npm package and production support policy do not exist yet.
@@ -18,13 +18,13 @@ This is a React Router v8 server integration. It is not a browser cache, a clien
 | API route or backend service | Yes, through a runtime-owned Cache instance | Cache is ordinary server-side TypeScript. |
 | Client Component or browser-only SPA | No | Browser request state and component lifecycles need a client data library. |
 
-Build the Cache instance once for the server runtime. On Cloudflare, use <code>createWorkersCache()</code> as shown in [Cloudflare Workers](/docs/cache/cloudflare-workers/).
+Build the Cache instance once for the server runtime. On Cloudflare, use <code>createWorkersCache()</code> as shown in [Cloudflare Workers](/docs/cache/cloudflare-workers/). That factory is safe at module scope: construction performs no I/O, and Coordinator handles plus the Bus connection are acquired lazily inside requests.
 
 ## Register the root middleware
 
 React Router v8 enables middleware by default and removes the flag. A React Router v7 application must first enable <code>future.v8_middleware</code> as described in the [v7 upgrade guide](https://reactrouter.com/upgrading/v7#futurev8_middleware). This adapter targets v8; register <code>cacheMiddleware()</code> in the root route module as described by the current [middleware guide](https://reactrouter.com/how-to/middleware):
 
-~~~tsx title="root.tsx"
+~~~tsx title="root.tsx (Cloudflare Workers)"
 import { waitUntil } from "cloudflare:workers"
 import type { MiddlewareFunction } from "react-router"
 
@@ -94,23 +94,27 @@ export async function action({ context, params, request }: Route.ActionArgs) {
 }
 ~~~
 
-## Enable AsyncLocalStorage on Workers
+## Enable Workers compatibility
 
-The adapter uses <code>AsyncLocalStorage</code> to make <code>currentRequest()</code> available throughout the request's async call tree. On Cloudflare Workers, enable the narrow compatibility flag:
+The adapter uses <code>AsyncLocalStorage</code> to make <code>currentRequest()</code> available throughout the request's async call tree. The root package also uses <code>node:crypto</code>, so Cloudflare Workers must enable:
 
 ~~~jsonc title="wrangler.jsonc (merge into your existing config)"
 {
-  "compatibility_flags": ["nodejs_als"]
+  // Minimum for nodejs_compat v2; use your project's current date.
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": ["nodejs_compat"]
 }
 ~~~
 
-You do not need the broader <code>nodejs_compat</code> flag for this adapter.
+<code>nodejs_compat</code> supplies both requirements when the Worker's compatibility date is 2024-09-23 or later, as required by Cloudflare's [Node.js compatibility guide](https://developers.cloudflare.com/workers/runtime-apis/nodejs/). The narrower <code>nodejs_als</code> flag alone does not provide <code>node:crypto</code> and cannot boot the package.
 
 ## Keep recovery work off the response path
 
 At request start, the middleware asks the cache's replication poller whether a tick is due. It does not await that work before running loaders. Passing Cloudflare's <code>waitUntil</code> function allows an in-flight tick to continue after the response returns; Cloudflare documents that lifecycle in its [Context API guide](https://developers.cloudflare.com/workers/runtime-apis/context/#waituntil).
 
 The adapter limits ticks to at most one per second per Cache instance. The poller's longer baseline, retry, and backoff schedules still decide whether a tick performs I/O. A failed tick is swallowed so it cannot fail the user's response; provide a <code>telemetry</code> sink if you need to observe <code>poll_tick_failed</code> events. <code>onSinkError</code> observes a telemetry sink that throws or rejects without allowing that failure to escape either.
+
+<code>createWorkersCache()</code> also starts a best-effort recovery tick from value reads, so plain Workers applications recover without React Router. The middleware remains useful because it starts work at request entry and can adopt it with <code>waitUntil</code>. Neither path awaits recovery before continuing the user's request.
 
 Without <code>waitUntil</code>, the tick is still started but is only best effort after the response lifecycle ends. Recovery does not become unsafe—the read path remains fail closed—but future requests may pay more live-check or refill work.
 

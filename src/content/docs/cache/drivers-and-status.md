@@ -13,7 +13,7 @@ Application developers can begin with [Cache fundamentals](/docs/cache/core-conc
 | --- | --- |
 | <code>Store</code> | Key/value I/O for local L1, shared L2, and replication-mirror objects. An optional <code>ReadKind</code> lets a driver choose different read-cache policy for a mutable pointer and immutable deltas or snapshots. |
 | <code>Registry</code> | The authoritative record used for live tag checks and soft or hard mutations. Its <code>regId</code> scopes recovery objects. |
-| <code>Bus</code> | Delivers ordered frames plus reset, hello, and gap signals. The kernel—not the transport—validates continuity. |
+| <code>Bus</code> | Delivers ordered frames plus reset, hello, gap, and lost signals. The kernel—not the transport—validates continuity and records channel state. |
 | <code>Lock</code> | Optional cross-isolate exclusion with a monotone fence token. |
 | <code>Codec</code> | Value encoding plus a wire identity checked before decode. |
 | <code>Cdn</code> | Planned edge-purge queue boundary; not wired today. |
@@ -33,7 +33,9 @@ interface Store {
 }
 ~~~
 
-Classified writes use the structural <code>StoreWriteError</code> shape. <code>throttled</code> and <code>unavailable</code> failures may leave a successful fill at <code>durable: false</code>; <code>too_large</code> is permanent and propagates rather than truncating the value.
+Classified writes use the public structural <code>StoreWriteError</code> shape. <code>throttled</code> and <code>unavailable</code> failures may leave a successful fill at <code>durable: false</code>; <code>too_large</code> is permanent and propagates rather than truncating the value.
+
+Serving-path reads also recognize structural <code>throttled</code> and <code>unavailable</code> failures, but that read-error shape is intentionally internal rather than a root export. A classified failure emits <code>store_read_suppressed</code> and acts as a tier miss; an unclassified error propagates unchanged. In <code>explain()</code>, the same classified failure becomes <code>read-failed</code> when no other tier finds the entry, preserving the distinction between “nothing stored” and “Store did not answer.”
 
 ## Check each implementation
 
@@ -41,15 +43,15 @@ Classified writes use the structural <code>StoreWriteError</code> shape. <code>t
 | --- | --- | --- |
 | Portable kernel and contracts | Implemented | Deterministic invariant, scenario, unit, and conformance lanes cover the public read, fill, invalidation, scope, codec, recovery, and failure behavior. |
 | <code>memory()</code> | Implemented root export | Per-instance LRU Store with <code>maxEntries</code> and UTF-8 <code>maxBytes</code> limits. With an injected Clock it also honors Store-level <code>expirationTtl</code>. |
-| <code>cloudflareKV()</code> | Public source preview | KV-backed Store with metadata round trips, a 25 MiB value ceiling, write classification, 60-second minimum write residency, and intent-specific mirror read-cache hints. |
+| <code>cloudflareKV()</code> | Public source preview | KV-backed Store with metadata round trips, a 25 MiB value ceiling, read and write classification, 60-second minimum write residency, and intent-specific mirror read-cache hints. |
 | <code>Coordinator</code> | Public source preview | SQLite-backed Durable Object host for Registry RPC, a replayable command journal, coalesced flush alarms, mirror deltas and snapshots, and WebSocket fan-out. |
-| <code>doRegistry()</code> | Public source preview | Thin Registry RPC client scoped to the named Coordinator. It passes the Registry contract under workerd. |
+| <code>doRegistry()</code> | Public source preview | Thin Registry RPC client scoped to the named Coordinator. It accepts either a stub or a per-use stub thunk and passes the Registry contract under workerd. |
 | <code>doBus()</code> | Public source preview | Mechanism-only WebSocket Bus client with wire validation, Registry identity checks, and close reporting. |
-| <code>redialingDoBus()</code> | Public source preview | Reconnects the DO Bus with injected jitter and exponential backoff capped at 300 seconds. |
+| <code>redialingDoBus()</code> | Public source preview | Schedules DO Bus reconnection with injected jitter and exponential backoff capped at 300 seconds; a due <code>tick(nowMs)</code> performs the redial without a platform timer. |
 | Replication reader | Implemented kernel path | Replays contiguous deltas, escalates persistent holes to a pointer-blessed snapshot, replays the tail, and remains fail closed on corrupt or unfillable chains. |
 | Replication poller | Implemented internal seam | Runs baseline pointer observation, bounded recovery retries, snapshot escalation, and failure backoff from externally supplied ticks. |
-| <code>createWorkersCache()</code> | Public source preview | Composes the Workers Clock/Rng, memory L1, KV L2, named Coordinator Registry, and redialing Bus. |
-| React Router middleware | Public source preview | Supplies Cache through typed Router context, carries request identity, fires request-piggyback poll ticks, collects served dependencies, emits eligible <code>Cache-Tag</code> headers, and demotes unsafe responses. |
+| <code>createWorkersCache()</code> | Public source preview | Composes the Workers Clock/Rng, memory L1, KV L2, lazily minted named Coordinator Registry handles, tick-redialed Bus, and an unawaited read-triggered recovery carrier. Construction performs no I/O. |
+| React Router middleware | Public source preview | Supplies Cache through typed Router context, carries request identity, starts request-entry poll ticks with optional <code>waitUntil</code> adoption, collects served dependencies, emits eligible <code>Cache-Tag</code> headers, and demotes unsafe responses. |
 | Redis, production Lock, and CDN drivers | Not implemented | Contracts exist, but no package subpaths or production implementations are present. |
 
 “Public source preview” means the symbol is present in the package export map and publish configuration, not that consumers can install it. npm still has no <code>@astilba/cache</code> package.
@@ -70,21 +72,23 @@ See Cloudflare's [reduced minimum cacheTtl announcement](https://developers.clou
 
 The Coordinator can refresh an idle pointer through <code>REGISTRY_HEARTBEAT_MS</code>. This is disabled unless the deployment sets the variable. The Workers factory independently defaults its reader heartbeat interval to 30 seconds, so matching the Coordinator value is an operator action, not an automatic handshake.
 
+Workers deployments must use a compatibility date of 2024-09-23 or later and enable <code>nodejs_compat</code>. The root package uses <code>node:crypto</code>, and that flag also supplies the AsyncLocalStorage support needed by React Router. <code>nodejs_als</code> alone is insufficient.
+
 See [Cloudflare Workers](/docs/cache/cloudflare-workers/) for the binding and migration example.
 
 ## Know the recovery scheduling model
 
 The kernel poller contains no timer. A runtime hands it ticks so portable code never reads ambient time or schedules work.
 
-The React Router adapter fires a tick at request start, at most once per second per Cache instance, and does not await it on the response path. The poller itself applies the longer baseline cadence and bounded retry schedule. Failed tick work is swallowed and can emit <code>poll_tick_failed</code> telemetry.
+The Workers factory fires an unawaited tick from <code>getOrSet()</code> or <code>getOrSetEntry()</code>, at most once per second per Cache instance. That carrier first performs any due Bus redial, then offers the same instant to the poller. The React Router adapter additionally fires a tick at request start and can pass it to <code>waitUntil</code>. The shared poller applies its longer baseline cadence and bounded retry schedule, so multiple offers do not imply duplicate I/O. Failed tick work is swallowed and can emit <code>poll_tick_failed</code> telemetry.
 
-A runtime that does not use the React Router adapter still has reactive recovery: a suspect read performs one bounded fast resync attempt. It does not receive proactive baseline polls unless another driver calls the internal tick seam.
+A raw runtime that uses neither the Workers factory nor React Router still has reactive recovery: a suspect read performs one bounded fast resync attempt. It does not receive proactive baseline polls unless its embedding drives the internal tick seam.
 
 ## Keep the release boundary visible
 
 The Workers path still needs work before a production release:
 
-- elapsed TTL, grace, age, and negative-entry expiry;
+- elapsed TTL, grace, and negative-entry expiry—entry age is measured, but it does not enforce timing policy;
 - Coordinator journal checkpointing and truncation;
 - a CDN purge queue and completion promises that track real acceptance—the response adapter now emits safe tags, but does not deliver purges;
 - a production Lock driver and the deferred Redis/Valkey path;
