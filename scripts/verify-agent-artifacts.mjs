@@ -22,6 +22,7 @@ import {
   GLOBAL_SECURITY_HEADERS,
 } from "../src/docs/security.ts";
 import { createDocsSitemapLastModified } from "../src/docs/sitemap.ts";
+import { DOCS_BASE_PATH, docsUrl, withDocsBase } from "../src/docs/urls.ts";
 import {
   createContentSecurityPolicy,
   getInlineScriptHashes,
@@ -37,6 +38,8 @@ if (!siteValue) {
 
 const site = new URL(siteValue);
 const dist = resolve(process.cwd(), "dist");
+const toArtifactPath = (path) => path.replace(/^\/+/, "");
+const docsArtifact = (path) => toArtifactPath(withDocsBase(path));
 
 const collectFiles = async (directory) => {
   const entries = await readdir(directory, { withFileTypes: true });
@@ -202,35 +205,35 @@ const getFrontmatterString = (
 };
 
 const requiredArtifacts = [
-  ".well-known/api-catalog",
-  ".well-known/agent-skills/astilba-cache-docs/SKILL.md",
-  ".well-known/agent-skills/index.json",
-  ".well-known/mcp/catalog.json",
-  ".well-known/mcp/server-card.json",
+  docsArtifact("/.well-known/api-catalog"),
+  docsArtifact("/.well-known/agent-skills/astilba-cache-docs/SKILL.md"),
+  docsArtifact("/.well-known/agent-skills/index.json"),
+  docsArtifact("/.well-known/mcp/catalog.json"),
+  docsArtifact("/.well-known/mcp/server-card.json"),
   "_headers",
-  "agent-setup/prompt.md",
+  docsArtifact("/agent-setup/prompt.md"),
   CONTENT_SECURITY_POLICY_ASSET_PATH.slice(1),
-  "_llms-txt/astilba-cache.txt",
-  "_mcp/docs.json",
-  "agents/llms-txt.md",
-  "agents/llms-txt/index.html",
-  "agents/mcp.md",
-  "agents/mcp/index.html",
-  "cache.md",
-  "cache/index.html",
-  "cache/overview.md",
-  "cache/overview/index.html",
-  "index.md",
-  "index.html",
-  "llms-full.txt",
-  "llms-small.txt",
-  "llms.txt",
-  "mcp/server-card",
-  "pagefind/pagefind.js",
-  "robots.txt",
-  "sitemap-0.xml",
-  "sitemap-index.xml",
-  "sitemap.xml",
+  docsArtifact("/_llms-txt/astilba-cache.txt"),
+  docsArtifact("/_mcp/docs.json"),
+  docsArtifact("/agents/llms-txt.md"),
+  docsArtifact("/agents/llms-txt/index.html"),
+  docsArtifact("/agents/mcp.md"),
+  docsArtifact("/agents/mcp/index.html"),
+  docsArtifact("/cache.md"),
+  docsArtifact("/cache/index.html"),
+  docsArtifact("/cache/overview.md"),
+  docsArtifact("/cache/overview/index.html"),
+  docsArtifact("/index.md"),
+  docsArtifact("/index.html"),
+  docsArtifact("/llms-full.txt"),
+  docsArtifact("/llms-small.txt"),
+  docsArtifact("/llms.txt"),
+  docsArtifact("/mcp/server-card"),
+  docsArtifact("/pagefind/pagefind.js"),
+  docsArtifact("/robots.txt"),
+  docsArtifact("/sitemap-0.xml"),
+  docsArtifact("/sitemap-index.xml"),
+  docsArtifact("/sitemap.xml"),
 ];
 
 const artifacts = new Map();
@@ -321,106 +324,114 @@ assertExact(
   []
 );
 
-assertHeaderValues(headerRules, "/*", "Content-Signal", [contentSignal]);
+assertHeaderValues(headerRules, `${DOCS_BASE_PATH}/*`, "Content-Signal", [
+  contentSignal,
+]);
 
 for (const [name, value] of Object.entries(GLOBAL_SECURITY_HEADERS)) {
-  assertHeaderValues(headerRules, "/*", name, [value]);
+  assertHeaderValues(headerRules, `${DOCS_BASE_PATH}/*`, name, [value]);
 }
 
-assertHeaderValues(headerRules, "/*", "Content-Security-Policy", [
-  expectedContentSecurityPolicy,
-]);
+assertHeaderValues(
+  headerRules,
+  `${DOCS_BASE_PATH}/*`,
+  "Content-Security-Policy",
+  [expectedContentSecurityPolicy]
+);
 assertExact(
   contentSecurityPolicyArtifact,
   "generated Worker Content-Security-Policy",
   artifacts.get(contentSecurityPolicyArtifact),
   `${expectedContentSecurityPolicy}\n`
 );
-assertHeaderValues(headerRules, "/_astro/*", "Cache-Control", [
+assertHeaderValues(headerRules, withDocsBase("/_astro/*"), "Cache-Control", [
   "public, max-age=31536000, immutable",
 ]);
 assertHeaderValues(
   headerRules,
-  "/agent-setup/prompt.md",
-  "Access-Control-Allow-Origin",
-  ["*"]
-);
-assertHeaderValues(headerRules, "/agent-setup/prompt.md", "Cache-Control", [
-  "public, max-age=3600",
-]);
-assertHeaderValues(
-  headerRules,
-  "/agent-setup/prompt.md",
-  "X-Content-Type-Options",
-  ["nosniff"]
-);
-assertHeaderValues(headerRules, "/agent-setup/prompt.md", "X-Robots-Tag", [
-  "noindex",
-]);
-assertHeaderValues(
-  headerRules,
-  "/.well-known/agent-skills/*",
+  withDocsBase("/agent-setup/prompt.md"),
   "Access-Control-Allow-Origin",
   ["*"]
 );
 assertHeaderValues(
   headerRules,
-  "/.well-known/agent-skills/*",
+  withDocsBase("/agent-setup/prompt.md"),
   "Cache-Control",
   ["public, max-age=3600"]
 );
 assertHeaderValues(
   headerRules,
-  "/.well-known/agent-skills/index.json",
+  withDocsBase("/agent-setup/prompt.md"),
+  "X-Content-Type-Options",
+  ["nosniff"]
+);
+assertHeaderValues(
+  headerRules,
+  withDocsBase("/agent-setup/prompt.md"),
+  "X-Robots-Tag",
+  ["noindex"]
+);
+assertHeaderValues(
+  headerRules,
+  withDocsBase("/.well-known/agent-skills/*"),
+  "Access-Control-Allow-Origin",
+  ["*"]
+);
+assertHeaderValues(
+  headerRules,
+  withDocsBase("/.well-known/agent-skills/*"),
+  "Cache-Control",
+  ["public, max-age=3600"]
+);
+assertHeaderValues(
+  headerRules,
+  withDocsBase("/.well-known/agent-skills/index.json"),
   "Content-Type",
   ["application/json; charset=utf-8"]
 );
 assertHeaderValues(
   headerRules,
-  "/.well-known/api-catalog",
+  API_CATALOG_PATH,
   "Access-Control-Allow-Origin",
   ["*"]
 );
-assertHeaderValues(headerRules, "/.well-known/api-catalog", "Content-Type", [
+assertHeaderValues(headerRules, API_CATALOG_PATH, "Content-Type", [
   'application/linkset+json; profile="https://www.rfc-editor.org/info/rfc9727"',
 ]);
-assertHeaderValues(headerRules, "/.well-known/api-catalog", "Link", [
+assertHeaderValues(headerRules, API_CATALOG_PATH, "Link", [
   API_CATALOG_LINK_VALUE,
 ]);
 assertHeaderValues(
   headerRules,
-  "/.well-known/mcp/*",
+  withDocsBase("/.well-known/mcp/*"),
   "Access-Control-Allow-Origin",
   ["*"]
 );
-assertHeaderValues(headerRules, "/.well-known/mcp/*", "Cache-Control", [
-  "public, max-age=3600",
+assertHeaderValues(
+  headerRules,
+  withDocsBase("/.well-known/mcp/*"),
+  "Cache-Control",
+  ["public, max-age=3600"]
+);
+assertHeaderValues(headerRules, MCP_CATALOG_PATH, "Content-Type", [
+  "application/json; charset=utf-8",
+]);
+assertHeaderValues(headerRules, MCP_COMPATIBILITY_CARD_PATH, "Content-Type", [
+  "application/json; charset=utf-8",
 ]);
 assertHeaderValues(
   headerRules,
-  "/.well-known/mcp/catalog.json",
-  "Content-Type",
-  ["application/json; charset=utf-8"]
-);
-assertHeaderValues(
-  headerRules,
-  "/.well-known/mcp/server-card.json",
-  "Content-Type",
-  ["application/json; charset=utf-8"]
-);
-assertHeaderValues(
-  headerRules,
-  "/mcp/server-card",
+  MCP_SERVER_CARD_PATH,
   "Access-Control-Allow-Origin",
   ["*"]
 );
-assertHeaderValues(headerRules, "/mcp/server-card", "Content-Type", [
+assertHeaderValues(headerRules, MCP_SERVER_CARD_PATH, "Content-Type", [
   "application/mcp-server-card+json",
 ]);
 for (const discoveryPattern of [
-  "/.well-known/api-catalog",
-  "/.well-known/mcp/*",
-  "/mcp/server-card",
+  API_CATALOG_PATH,
+  withDocsBase("/.well-known/mcp/*"),
+  MCP_SERVER_CARD_PATH,
 ]) {
   assertHeaderValues(
     headerRules,
@@ -441,15 +452,24 @@ for (const discoveryPattern of [
     "nosniff",
   ]);
 }
-assertHeaderValues(headerRules, "/_mcp/docs.json", "Cache-Control", [
-  "public, max-age=3600",
-]);
-assertHeaderValues(headerRules, "/_mcp/docs.json", "Content-Type", [
-  "application/json; charset=utf-8",
-]);
-assertHeaderValues(headerRules, "/_mcp/docs.json", "X-Content-Type-Options", [
-  "nosniff",
-]);
+assertHeaderValues(
+  headerRules,
+  withDocsBase("/_mcp/docs.json"),
+  "Cache-Control",
+  ["public, max-age=3600"]
+);
+assertHeaderValues(
+  headerRules,
+  withDocsBase("/_mcp/docs.json"),
+  "Content-Type",
+  ["application/json; charset=utf-8"]
+);
+assertHeaderValues(
+  headerRules,
+  withDocsBase("/_mcp/docs.json"),
+  "X-Content-Type-Options",
+  ["nosniff"]
+);
 
 const contentSignals = headerRules.flatMap(
   (rule) => rule.headers.get("content-signal") ?? []
@@ -458,13 +478,15 @@ assertExact("_headers", "Content-Signal values", contentSignals, [
   contentSignal,
 ]);
 
-const skillArtifact = ".well-known/agent-skills/astilba-cache-docs/SKILL.md";
+const skillArtifact = docsArtifact(
+  "/.well-known/agent-skills/astilba-cache-docs/SKILL.md"
+);
 const skill = artifacts.get(skillArtifact);
 const skillDigest = `sha256:${createHash("sha256")
   .update(skill)
   .digest("hex")}`;
 const skillsIndex = JSON.parse(
-  artifacts.get(".well-known/agent-skills/index.json")
+  artifacts.get(docsArtifact("/.well-known/agent-skills/index.json"))
 );
 assertExact(
   ".well-known/agent-skills/index.json",
@@ -485,27 +507,25 @@ assertExact(
   }
 );
 assertIncludes(skillArtifact, skill, "# Astilba Cache documentation");
-assertIncludes(
-  skillArtifact,
-  skill,
-  "https://docs.astilba.com/cache/api-status.md"
-);
-assertIncludes(skillArtifact, skill, "https://docs.astilba.com/mcp");
+assertIncludes(skillArtifact, skill, docsUrl("/cache/api-status.md"));
+assertIncludes(skillArtifact, skill, docsUrl("/mcp"));
 
-const pageUrl = new URL("/cache/overview/", site).href;
-const markdownUrl = new URL("/cache/overview.md", site).href;
-const cacheHomeUrl = new URL("/cache/", site).href;
-const cacheHomeMarkdownUrl = new URL("/cache.md", site).href;
-const homeUrl = new URL("/", site).href;
-const homeMarkdownUrl = new URL("/index.md", site).href;
-const llmsUrl = new URL("/llms.txt", site).href;
-const cacheSetUrl = new URL("/_llms-txt/astilba-cache.txt", site).href;
-const mcpUrl = new URL("/mcp", site).href;
+const pageUrl = docsUrl("/cache/overview/");
+const markdownUrl = docsUrl("/cache/overview.md");
+const cacheHomeUrl = docsUrl("/cache/");
+const cacheHomeMarkdownUrl = docsUrl("/cache.md");
+const homeUrl = docsUrl("/");
+const homeMarkdownUrl = docsUrl("/index.md");
+const llmsUrl = docsUrl("/llms.txt");
+const cacheSetUrl = docsUrl("/_llms-txt/astilba-cache.txt");
+const mcpUrl = docsUrl("/mcp");
 const apiCatalogUrl = new URL(API_CATALOG_PATH, site).href;
 const mcpCatalogUrl = new URL(MCP_CATALOG_PATH, site).href;
 const mcpServerCardUrl = new URL(MCP_SERVER_CARD_PATH, site).href;
-const sitemapUrl = new URL("/sitemap.xml", site).href;
-const sitemap = artifacts.get("sitemap.xml");
+const sitemapUrl = docsUrl("/sitemap.xml");
+const agentSetupInstruction = `Fetch ${docsUrl("/agent-setup/prompt.md")} and follow its instructions.`;
+const sitemapArtifact = docsArtifact("/sitemap.xml");
+const sitemap = artifacts.get(sitemapArtifact);
 const expectedLastModified = createDocsSitemapLastModified();
 const sitemapEntries = [...sitemap.matchAll(/<url>([\s\S]*?)<\/url>/g)].map(
   (match) => {
@@ -674,14 +694,15 @@ assertExact(
   []
 );
 
-const mcpCorpus = parseDocsCorpus(JSON.parse(artifacts.get("_mcp/docs.json")));
+const mcpCorpusArtifact = docsArtifact("/_mcp/docs.json");
+const mcpCorpus = parseDocsCorpus(JSON.parse(artifacts.get(mcpCorpusArtifact)));
 
 const sortMcpResources = (left, right) => {
-  if (left.markdownPath === "/index.md") {
+  if (left.markdownPath === withDocsBase("/index.md")) {
     return -1;
   }
 
-  if (right.markdownPath === "/index.md") {
+  if (right.markdownPath === withDocsBase("/index.md")) {
     return 1;
   }
 
@@ -689,20 +710,26 @@ const sortMcpResources = (left, right) => {
 };
 const expectedMcpResources = mcpResources.toSorted(sortMcpResources);
 assertExact(
-  "_mcp/docs.json",
+  mcpCorpusArtifact,
   "public resource corpus",
   mcpCorpus.pages,
   expectedMcpResources
 );
 
-const llmsIndex = artifacts.get("llms.txt");
-assertIncludes("llms.txt", llmsIndex, cacheSetUrl);
-assertIncludes("llms.txt", llmsIndex, "Cache is an unreleased preview");
-assertIncludes("llms.txt", llmsIndex, mcpUrl);
-assertIncludes("llms-full.txt", artifacts.get("llms-full.txt"), "# MCP Server");
-assertIncludes("llms-full.txt", artifacts.get("llms-full.txt"), mcpUrl);
+const llmsArtifact = docsArtifact("/llms.txt");
+const llmsIndex = artifacts.get(llmsArtifact);
+assertIncludes(llmsArtifact, llmsIndex, cacheSetUrl);
+assertIncludes(llmsArtifact, llmsIndex, "Cache is an unreleased preview");
+assertIncludes(llmsArtifact, llmsIndex, mcpUrl);
+const llmsFullArtifact = docsArtifact("/llms-full.txt");
+assertIncludes(
+  llmsFullArtifact,
+  artifacts.get(llmsFullArtifact),
+  "# MCP Server"
+);
+assertIncludes(llmsFullArtifact, artifacts.get(llmsFullArtifact), mcpUrl);
 
-const cacheSet = artifacts.get("_llms-txt/astilba-cache.txt");
+const cacheSet = artifacts.get(docsArtifact("/_llms-txt/astilba-cache.txt"));
 const firstCacheHeading = cacheSet.match(/^# .+$/m)?.[0];
 
 if (firstCacheHeading !== "# Cache") {
@@ -711,100 +738,101 @@ if (firstCacheHeading !== "# Cache") {
   );
 }
 
-const html = artifacts.get("cache/overview/index.html");
+const html = artifacts.get(docsArtifact("/cache/overview/index.html"));
 assertLink(html, "alternate", markdownUrl);
 assertLink(html, "describedby", llmsUrl);
 
-const homeHtml = artifacts.get("index.html");
+const homeHtml = artifacts.get(docsArtifact("/index.html"));
 assertLink(homeHtml, "alternate", homeMarkdownUrl);
 assertLink(homeHtml, "describedby", llmsUrl);
 assertLink(homeHtml, "api-catalog", apiCatalogUrl);
 
-const cacheHomeHtml = artifacts.get("cache/index.html");
+const cacheHomeArtifact = docsArtifact("/cache/index.html");
+const cacheHomeHtml = artifacts.get(cacheHomeArtifact);
 assertLink(cacheHomeHtml, "alternate", cacheHomeMarkdownUrl);
 assertLink(cacheHomeHtml, "describedby", llmsUrl);
 
-const mcpUsageHtml = artifacts.get("agents/mcp/index.html");
-assertLink(mcpUsageHtml, "alternate", new URL("/agents/mcp.md", site).href);
+const mcpUsageHtml = artifacts.get(docsArtifact("/agents/mcp/index.html"));
+assertLink(mcpUsageHtml, "alternate", docsUrl("/agents/mcp.md"));
 assertLink(mcpUsageHtml, "api-catalog", apiCatalogUrl);
-const mcpUsageMarkdown = artifacts.get("agents/mcp.md");
-assertIncludes("agents/mcp.md", mcpUsageMarkdown, "# MCP Server");
-assertIncludes("agents/mcp.md", mcpUsageMarkdown, mcpUrl);
-assertIncludes("agents/mcp.md", mcpUsageMarkdown, mcpCatalogUrl);
-assertIncludes("agents/mcp.md", mcpUsageMarkdown, mcpServerCardUrl);
+const mcpUsageArtifact = docsArtifact("/agents/mcp.md");
+const mcpUsageMarkdown = artifacts.get(mcpUsageArtifact);
+assertIncludes(mcpUsageArtifact, mcpUsageMarkdown, "# MCP Server");
+assertIncludes(mcpUsageArtifact, mcpUsageMarkdown, mcpUrl);
+assertIncludes(mcpUsageArtifact, mcpUsageMarkdown, mcpCatalogUrl);
+assertIncludes(mcpUsageArtifact, mcpUsageMarkdown, mcpServerCardUrl);
 
-const llmsUsageHtml = artifacts.get("agents/llms-txt/index.html");
-assertLink(
-  llmsUsageHtml,
-  "alternate",
-  new URL("/agents/llms-txt.md", site).href
+const llmsUsageArtifact = docsArtifact("/agents/llms-txt.md");
+const llmsUsageHtml = artifacts.get(
+  docsArtifact("/agents/llms-txt/index.html")
 );
-const llmsUsageMarkdown = artifacts.get("agents/llms-txt.md");
-assertIncludes("agents/llms-txt.md", llmsUsageMarkdown, "# LLMs.txt");
-assertIncludes("agents/llms-txt.md", llmsUsageMarkdown, llmsUrl);
-assertIncludes("agents/llms-txt.md", llmsUsageMarkdown, mcpUrl);
+assertLink(llmsUsageHtml, "alternate", docsUrl("/agents/llms-txt.md"));
+const llmsUsageMarkdown = artifacts.get(llmsUsageArtifact);
+assertIncludes(llmsUsageArtifact, llmsUsageMarkdown, "# LLMs.txt");
+assertIncludes(llmsUsageArtifact, llmsUsageMarkdown, llmsUrl);
+assertIncludes(llmsUsageArtifact, llmsUsageMarkdown, mcpUrl);
 assertIncludes(
-  "agents/llms-txt.md",
+  llmsUsageArtifact,
   llmsUsageMarkdown,
-  new URL("/cache/overview.md", site).href
+  docsUrl("/cache/overview.md")
 );
-assertIncludes(
-  "agents/llms-txt.md",
-  llmsUsageMarkdown,
-  "Fetch https://docs.astilba.com/agent-setup/prompt.md and follow its instructions."
-);
+assertIncludes(llmsUsageArtifact, llmsUsageMarkdown, agentSetupInstruction);
 
-assertIncludes("agents/mcp.md", mcpUsageMarkdown, "## Try it");
-assertIncludes("agents/mcp.md", mcpUsageMarkdown, "## Troubleshooting");
-assertIncludes(
-  "agents/mcp.md",
-  mcpUsageMarkdown,
-  "Fetch https://docs.astilba.com/agent-setup/prompt.md and follow its instructions."
-);
+assertIncludes(mcpUsageArtifact, mcpUsageMarkdown, "## Try it");
+assertIncludes(mcpUsageArtifact, mcpUsageMarkdown, "## Troubleshooting");
+assertIncludes(mcpUsageArtifact, mcpUsageMarkdown, agentSetupInstruction);
 
-const homeMarkdown = artifacts.get("index.md");
+const homeArtifact = docsArtifact("/index.md");
+const homeMarkdown = artifacts.get(homeArtifact);
 assertIncludes(
-  "index.md",
+  homeArtifact,
   homeMarkdown,
   `canonical: ${JSON.stringify(homeUrl)}`
 );
-assertIncludes("index.md", homeMarkdown, "# Overview");
+assertIncludes(homeArtifact, homeMarkdown, "# Overview");
 
-const cacheHomeMarkdown = artifacts.get("cache.md");
+const cacheHomeMarkdownArtifact = docsArtifact("/cache.md");
+const cacheHomeMarkdown = artifacts.get(cacheHomeMarkdownArtifact);
 assertIncludes(
-  "cache.md",
+  cacheHomeMarkdownArtifact,
   cacheHomeMarkdown,
   `canonical: ${JSON.stringify(cacheHomeUrl)}`
 );
-assertIncludes("cache.md", cacheHomeMarkdown, "# Cache");
-assertIncludes("cache.md", cacheHomeMarkdown, "/cache/overview/");
-
-const agentSetupPrompt = artifacts.get("agent-setup/prompt.md");
+assertIncludes(cacheHomeMarkdownArtifact, cacheHomeMarkdown, "# Cache");
 assertIncludes(
-  "agent-setup/prompt.md",
+  cacheHomeMarkdownArtifact,
+  cacheHomeMarkdown,
+  withDocsBase("/cache/overview/")
+);
+
+const agentSetupArtifact = docsArtifact("/agent-setup/prompt.md");
+const agentSetupPrompt = artifacts.get(agentSetupArtifact);
+assertIncludes(
+  agentSetupArtifact,
   agentSetupPrompt,
   "# Set up Astilba documentation"
 );
-assertIncludes("agent-setup/prompt.md", agentSetupPrompt, mcpUrl);
+assertIncludes(agentSetupArtifact, agentSetupPrompt, mcpUrl);
 assertIncludes(
-  "agent-setup/prompt.md",
+  agentSetupArtifact,
   agentSetupPrompt,
   "astilba-cache-docs/SKILL.md"
 );
 assertIncludes(
-  "agent-setup/prompt.md",
+  agentSetupArtifact,
   agentSetupPrompt,
   "unreleased source preview"
 );
 
-const markdown = artifacts.get("cache/overview.md");
+const overviewArtifact = docsArtifact("/cache/overview.md");
+const markdown = artifacts.get(overviewArtifact);
 assertIncludes(
-  "cache/overview.md",
+  overviewArtifact,
   markdown,
   `canonical: ${JSON.stringify(pageUrl)}`
 );
 assertIncludes(
-  "cache/overview.md",
+  overviewArtifact,
   markdown,
   "For React applications, “server-side” means"
 );
@@ -819,37 +847,35 @@ for (const field of [
   "lifecycle",
   "source",
 ]) {
-  assertIncludes("cache/overview.md", markdown, `${field}: `);
+  assertIncludes(overviewArtifact, markdown, `${field}: `);
 }
 
 assertIncludes(
-  "cache/overview.md",
+  overviewArtifact,
   markdown,
   'source: "https://github.com/astilbahq/docs/blob/main/src/content/docs/cache/overview.md"'
 );
 
-const robots = artifacts.get("robots.txt");
-assertExact("robots.txt", "directives", robots.trimEnd().split("\n"), [
+const robotsArtifact = docsArtifact("/robots.txt");
+const robots = artifacts.get(robotsArtifact);
+assertExact(robotsArtifact, "directives", robots.trimEnd().split("\n"), [
   "User-agent: *",
   `Content-Signal: ${contentSignal}`,
-  "Allow: /",
+  `Allow: ${withDocsBase("/")}`,
   "",
   `Sitemap: ${sitemapUrl}`,
 ]);
 
-const sitemapIndex = artifacts.get("sitemap-index.xml");
-assertIncludes(
-  "sitemap-index.xml",
-  sitemapIndex,
-  new URL("/sitemap-0.xml", site).href
-);
+const sitemapIndexArtifact = docsArtifact("/sitemap-index.xml");
+const sitemapIndex = artifacts.get(sitemapIndexArtifact);
+assertIncludes(sitemapIndexArtifact, sitemapIndex, docsUrl("/sitemap-0.xml"));
 assertExact(
-  "sitemap.xml",
+  sitemapArtifact,
   "single-file sitemap content",
   sitemap,
-  artifacts.get("sitemap-0.xml")
+  artifacts.get(docsArtifact("/sitemap-0.xml"))
 );
-assertIncludes("sitemap.xml", sitemap, pageUrl);
+assertIncludes(sitemapArtifact, sitemap, pageUrl);
 
 console.log(
   `[agent-artifacts] Verified ${requiredArtifacts.length} production artifacts for ${site.origin}.`

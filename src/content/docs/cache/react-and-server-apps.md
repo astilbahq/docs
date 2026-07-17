@@ -18,7 +18,7 @@ This is a React Router v8 server integration. It is not a browser cache, a clien
 | API route or backend service | Yes, through a runtime-owned Cache instance | Cache is ordinary server-side TypeScript. |
 | Client Component or browser-only SPA | No | Browser request state and component lifecycles need a client data library. |
 
-Build the Cache instance once for the server runtime. On Cloudflare, use <code>createWorkersCache()</code> as shown in [Cloudflare Workers](/cache/cloudflare-workers/).
+Build the Cache instance once for the server runtime. On Cloudflare, use <code>createWorkersCache()</code> as shown in [Cloudflare Workers](/docs/cache/cloudflare-workers/).
 
 ## Register the root middleware
 
@@ -134,4 +134,4 @@ Automatic render collection does not remove the need for <code>request: currentR
 
 The adapter exports <code>L3_BUDGET_DEFAULT</code> and <code>L3_INELIGIBLE</code> alongside the poll constants. <code>CacheMiddlewareOptions</code> accepts <code>l3Budget</code>, <code>telemetry</code>, and <code>onSinkError</code> in addition to <code>cache</code>, identity mapping, and <code>waitUntil</code>.
 
-The response-tag path does not purge a CDN. See [Cache HTTP responses](/cache/response-caching/) for the complete safety and budget model, [Control cache sharing](/cache/scopes-and-privacy/) for value storage, [Consistency and resilience](/cache/consistency-and-resilience/) for recovery behavior, and [Implementation status](/cache/api-status/) for current gaps.
+The response-tag path does not purge a CDN. See [Cache HTTP responses](/docs/cache/response-caching/) for the complete safety and budget model, [Control cache sharing](/docs/cache/scopes-and-privacy/) for value storage, [Consistency and resilience](/docs/cache/consistency-and-resilience/) for recovery behavior, and [Implementation status](/docs/cache/api-status/) for current gaps.

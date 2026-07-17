@@ -5,7 +5,7 @@ description: Mark dependent values stale, make them unreadable, or invalidate on
 
 In Astilba Cache, tags describe what a value depends on. Invalidation advances tag watermarks, so readers can reject matching entries without scanning or deleting every stored value.
 
-The application changes its source of truth; Cache only changes whether stored representations may be served. See [Cache fundamentals](/cache/core-concepts/) for keys, tags, Registry, and Bus.
+The application changes its source of truth; Cache only changes whether stored representations may be served. See [Cache fundamentals](/docs/cache/core-concepts/) for keys, tags, Registry, and Bus.
 
 ## Choose soft or hard invalidation
 
@@ -106,12 +106,12 @@ The purge verbs require a <code>Registry</code>. For reads to observe coordinate
 
 The source Workers factory wires the Coordinator Registry, redialing Durable Object Bus, and KV mirror. The CDN path and real purge-completion promises are still not implemented.
 
-When React Router render collection is active, a served entry's stored user tags can also become a <code>Cache-Tag</code> response header. Scope and budget checks run before emission, and reserved tags are filtered. This response tagging does not make the CDN purge path operational; see [Cache HTTP responses](/cache/response-caching/).
+When React Router render collection is active, a served entry's stored user tags can also become a <code>Cache-Tag</code> response header. Scope and budget checks run before emission, and reserved tags are filtered. This response tagging does not make the CDN purge path operational; see [Cache HTTP responses](/docs/cache/response-caching/).
 
 ## Related
 
-- [How Cache works](/cache/how-it-works/) follows invalidation through live delivery and recovery.
-- [Consistency and resilience](/cache/consistency-and-resilience/) explains how reads treat stale or unknown knowledge.
-- [Read and cache values](/cache/reading-and-filling/) explains the complete factory lifecycle.
-- [Cache HTTP responses](/cache/response-caching/) distinguishes stored dependencies from response emission.
-- [Implementation status](/cache/api-status/) records the current purge-result and selector limitations.
+- [How Cache works](/docs/cache/how-it-works/) follows invalidation through live delivery and recovery.
+- [Consistency and resilience](/docs/cache/consistency-and-resilience/) explains how reads treat stale or unknown knowledge.
+- [Read and cache values](/docs/cache/reading-and-filling/) explains the complete factory lifecycle.
+- [Cache HTTP responses](/docs/cache/response-caching/) distinguishes stored dependencies from response emission.
+- [Implementation status](/docs/cache/api-status/) records the current purge-result and selector limitations.

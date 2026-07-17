@@ -1,6 +1,16 @@
-# Astilba public documentation
+# Astilba public web
 
-This repository contains the public documentation experience for Astilba products.
+This repository contains Astilba's public web presence as two independently deployed
+workspaces on one canonical origin:
+
+- `site/` owns `astilba.com`, including the brand home, truthful product pages, global
+  sitemap/robots/LLM discovery, and the exact `/docs` → `/docs/` redirect.
+- the root Starlight application owns `astilba.com/docs/*`, including authored Markdown,
+  Pagefind, MCP, Agent Skills, and documentation-specific discovery.
+
+Read `PRODUCT.md` before changing the public interface. Keep the deployment boundary: the
+apex shell must not absorb Starlight, and the docs Worker must not answer unrelated apex
+paths.
 
 ## Content boundaries
 
@@ -12,6 +22,13 @@ This repository contains the public documentation experience for Astilba product
 
 ## Information architecture
 
+- `site/src/pages/` owns only live public surfaces. Do not add pricing, Console, changelog,
+  blog, or speculative product routes before those destinations exist.
+- `site/src/styles/global.css` carries the public shell's role-based expression of the same
+  Astilba visual system; it must preserve theme state through the shared `starlight-theme`
+  key.
+- `site/worker/` owns the exact `/docs` canonicalization only. `/docs/*` belongs to the docs
+  Worker Route.
 - Starlight owns the global shell and the underlying responsive-navigation, search, and theme behavior.
 - `src/components/DocsSidebar.tsx` owns the Base UI product/version menus, recursive collapsibles, and desktop session persistence.
 - `src/components/PageActions.tsx` owns the Base UI per-page Markdown actions. Keep the rest of the documentation shell server-rendered unless an interaction genuinely requires another island.
@@ -51,7 +68,7 @@ This repository contains the public documentation experience for Astilba product
 - Package manager: pnpm.
 - Framework: Astro with Starlight.
 - Styling: Panda CSS for Astilba-owned components, plus modular Starlight compatibility CSS.
-- `pnpm dev` starts the local site.
+- `pnpm dev` starts documentation locally; `pnpm --dir site dev` starts the apex shell.
 - `pnpm panda:codegen` regenerates the ignored typed styling bindings after Panda configuration changes.
 - `pnpm lint` runs Ultracite's Oxlint and Oxfmt checks over the JavaScript, TypeScript, and supported configuration surface. Authored Markdown, Astro, CSS, generated files, and vendored material retain their specialized formatters.
 - `pnpm lint:fix` applies the safe automatic lint and formatting fixes; inspect its diff before committing.
@@ -59,7 +76,9 @@ This repository contains the public documentation experience for Astilba product
 - `pnpm test` runs focused Vitest coverage for the documentation model and generated destinations.
 - `pnpm knip` checks for unused files, exports, and dependencies.
 - `pnpm test:browser` builds the production site and runs Chromium and axe coverage. Install Chromium once with `pnpm test:browser:install`.
-- `pnpm verify` runs the complete local verification sequence against the already-installed browser.
-- `pnpm build` produces the static site and Pagefind search index.
+- `pnpm --dir site test:browser` covers the apex shell in desktop and mobile Chromium with axe.
+- `pnpm verify` runs both applications' complete local verification sequences against the already-installed browser.
+- `pnpm build` produces the docs assets and Pagefind index; `pnpm --dir site build:production`
+  produces the apex assets and global discovery files.
 - A successful `main` verification deploys the static build through the GitHub `production` environment. Pull requests must never receive deployment credentials.
 - Keep dependency versions exact.

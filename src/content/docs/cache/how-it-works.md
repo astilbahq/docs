@@ -3,7 +3,7 @@ title: How Cache works
 description: Follow one value through storage, invalidation, recovery, and a safe refill.
 ---
 
-Astilba Cache separates the path that stores values from the path that decides whether those values are still legal to serve. If L1, L2, Registry, or Bus are unfamiliar, read [Cache fundamentals](/cache/core-concepts/) first.
+Astilba Cache separates the path that stores values from the path that decides whether those values are still legal to serve. If L1, L2, Registry, or Bus are unfamiliar, read [Cache fundamentals](/docs/cache/core-concepts/) first.
 
 | Plane | Components | Responsibility |
 | --- | --- | --- |
@@ -51,7 +51,7 @@ The React Router middleware binds one render collector to each request. When Cac
 3. An eligible public render receives a deduplicated <code>Cache-Tag</code> header containing user tags; reserved key and namespace tags stay internal.
 4. The middleware preserves an application-authored shared-cache policy only for an eligible public render and never creates one. The privacy and timing/budget gates above override any shared policy and force <code>Cache-Control: private</code>. Without an application policy, the middleware also defaults to private.
 
-This connects value dependencies to a shared-response purge vocabulary, but the current <code>Cdn</code> path does not send the purge. See [Cache HTTP responses](/cache/response-caching/).
+This connects value dependencies to a shared-response purge vocabulary, but the current <code>Cdn</code> path does not send the purge. See [Cache HTTP responses](/docs/cache/response-caching/).
 
 ## What “unknown” means
 
@@ -69,8 +69,8 @@ The invalidation ordering above is active. Elapsed-time expiry is not: TTL, grac
 
 ## Related
 
-- [Runtime architecture](/cache/architecture/) maps these operations to the supplied capability contracts.
-- [Cache fundamentals](/cache/core-concepts/) provides the plain-language vocabulary.
-- [Invalidate cached data](/cache/tags-and-invalidation/) explains soft and hard mutations from the caller's side.
-- [Consistency and resilience](/cache/consistency-and-resilience/) covers live checks and stale-on-error behavior.
-- [Inspect cache behavior](/cache/observability/) shows the same entry and reader state as a point-in-time witness.
+- [Runtime architecture](/docs/cache/architecture/) maps these operations to the supplied capability contracts.
+- [Cache fundamentals](/docs/cache/core-concepts/) provides the plain-language vocabulary.
+- [Invalidate cached data](/docs/cache/tags-and-invalidation/) explains soft and hard mutations from the caller's side.
+- [Consistency and resilience](/docs/cache/consistency-and-resilience/) covers live checks and stale-on-error behavior.
+- [Inspect cache behavior](/docs/cache/observability/) shows the same entry and reader state as a point-in-time witness.

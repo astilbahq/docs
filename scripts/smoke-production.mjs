@@ -1,12 +1,18 @@
 import { GLOBAL_SECURITY_HEADERS } from "../src/docs/security.ts";
+import {
+  ASTILBA_ORIGIN,
+  LEGACY_DOCS_ORIGIN,
+  docsUrl,
+  withDocsBase,
+} from "../src/docs/urls.ts";
 
-const CANONICAL_ORIGIN = "https://docs.astilba.com";
-const HTML_PATH = "/cache/overview/";
-const MARKDOWN_PATH = "/cache/overview.md";
-const MCP_PATH = "/mcp";
+const CANONICAL_ORIGIN = ASTILBA_ORIGIN;
+const HTML_PATH = withDocsBase("/cache/overview/");
+const MARKDOWN_PATH = withDocsBase("/cache/overview.md");
+const MCP_PATH = withDocsBase("/mcp");
 const MCP_PROTOCOL_VERSION = "2025-11-25";
-const ROBOTS_PATH = "/robots.txt";
-const SITEMAP_PATH = "/sitemap.xml";
+const ROBOTS_PATH = withDocsBase("/robots.txt");
+const SITEMAP_PATH = withDocsBase("/sitemap.xml");
 const SITEMAP_URL = `${CANONICAL_ORIGIN}${SITEMAP_PATH}`;
 const USER_AGENT = "astilba-docs-production-smoke/1.0";
 
@@ -246,7 +252,7 @@ const checkHtml = async () => {
   requireHeaderIncludes(
     response,
     "Link",
-    '</cache/overview.md>; rel="alternate"',
+    `<${MARKDOWN_PATH}>; rel="alternate"`,
     "HTML page"
   );
   requireGlobalSecurityHeaders(response, "HTML page");
@@ -320,7 +326,9 @@ const checkDirectMarkdown = async () => {
 };
 
 const checkMissingMarkdown = async () => {
-  const response = await request("/cache/production-smoke-missing.md");
+  const response = await request(
+    withDocsBase("/cache/production-smoke-missing.md")
+  );
 
   if (response.status !== 404) {
     throw new Error(
@@ -339,7 +347,7 @@ const checkMissingMarkdown = async () => {
 };
 
 const checkDiscovery = async () => {
-  const response = await request("/.well-known/api-catalog");
+  const response = await request(withDocsBase("/.well-known/api-catalog"));
   requireStatus(response, "API catalog");
   requireHeaderIncludes(
     response,
@@ -370,7 +378,7 @@ const checkSitemap = async () => {
     !sitemap.includes(
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
     ) ||
-    !sitemap.includes(`<loc>${CANONICAL_ORIGIN}/</loc>`) ||
+    !sitemap.includes(`<loc>${docsUrl("/")}</loc>`) ||
     !/<lastmod>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z<\/lastmod>/.test(
       sitemap
     )
@@ -433,6 +441,35 @@ const checkFingerprintAsset = async (asset) => {
   }
 
   requireGlobalSecurityHeaders(response, "fingerprinted asset");
+  await response.body?.cancel();
+};
+
+const checkLegacyRedirect = async () => {
+  if (site.origin !== CANONICAL_ORIGIN) {
+    return;
+  }
+
+  const response = await fetch(
+    `${LEGACY_DOCS_ORIGIN}/cache/overview/?from=production-smoke`,
+    {
+      headers: { "User-Agent": USER_AGENT },
+      redirect: "manual",
+      signal: AbortSignal.timeout(requestTimeoutMs),
+    }
+  );
+
+  if (response.status !== 308) {
+    throw new Error(
+      `[production-smoke] legacy documentation URL returned HTTP ${response.status}.`
+    );
+  }
+
+  requireHeaderEquals(
+    response,
+    "Location",
+    `${docsUrl("/cache/overview/")}?from=production-smoke`,
+    "legacy documentation redirect"
+  );
   await response.body?.cancel();
 };
 
@@ -551,8 +588,7 @@ const checkMcp = async () => {
   if (
     !Array.isArray(results) ||
     !results.some(
-      (result) =>
-        result?.uri === `${CANONICAL_ORIGIN}/cache/tags-and-invalidation.md`
+      (result) => result?.uri === docsUrl("/cache/tags-and-invalidation.md")
     )
   ) {
     throw new Error(
@@ -571,6 +607,7 @@ const runChecks = async () => {
     checkSitemap(),
     checkRobots(),
     checkFingerprintAsset(asset),
+    checkLegacyRedirect(),
     checkMcp(),
   ]);
   const failure = results.find((result) => result.status === "rejected");

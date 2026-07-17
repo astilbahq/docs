@@ -3,10 +3,10 @@ title: API reference
 description: Reference the root, Cloudflare, and React Router exports in the current @astilba/cache source snapshot.
 ---
 
-This page documents the complete root export surface and the two public adapter subpaths in the current source snapshot. Start with the [overview](/cache/overview/) or [local quickstart](/cache/quickstart/) if you are learning the library; use this page when you need an exact method, option, result field, or driver contract.
+This page documents the complete root export surface and the two public adapter subpaths in the current source snapshot. Start with the [overview](/docs/cache/overview/) or [local quickstart](/docs/cache/quickstart/) if you are learning the library; use this page when you need an exact method, option, result field, or driver contract.
 
 :::caution[Unreleased and unevenly implemented]
-<code>@astilba/cache</code> is not published to npm. Some declarations describe intended behavior that still throws or remains inert. Each section calls out important boundaries; [Implementation status](/cache/api-status/) is the authoritative implementation ledger.
+<code>@astilba/cache</code> is not published to npm. Some declarations describe intended behavior that still throws or remains inert. Each section calls out important boundaries; [Implementation status](/docs/cache/api-status/) is the authoritative implementation ledger.
 :::
 
 ## Create a cache
@@ -150,7 +150,7 @@ Related exports are <code>FactoryCtx</code>, <code>EntryFactoryCtx</code>, <code
 | <code>flushed({ timeout? })</code> | Intended durable, Bus, and mirror-acceptance completion. Resolves immediately today. |
 | <code>edgePurged({ timeout? })</code> | Intended CDN-acceptance completion. Resolves immediately without a CDN purge today. |
 
-See [Invalidate cached data](/cache/tags-and-invalidation/) for safe mutation order and [Implementation status](/cache/api-status/) before using completion fields operationally.
+See [Invalidate cached data](/docs/cache/tags-and-invalidation/) for safe mutation order and [Implementation status](/docs/cache/api-status/) before using completion fields operationally.
 
 ## Build tags and durations
 
@@ -251,7 +251,7 @@ The <code>Registry</code> contract exposes:
 | <code>Cdn</code> | Accepts a set of tags and a <code>CdnMode</code>. Declared but not called today. |
 | <code>CdnMode</code> | CDN acceptance request: <code>enqueue</code>, <code>await</code>, or <code>block</code>. |
 
-See [Driver implementations](/cache/drivers-and-status/) for available implementations.
+See [Driver implementations](/docs/cache/drivers-and-status/) for available implementations.
 
 ## Consistency and stored data
 
@@ -358,7 +358,7 @@ Import these names from <code>@astilba/cache/cloudflare</code>. The subpath reso
 | <code>Scheduler</code> | Injectable delayed-redial seam; the default uses platform timers. |
 | <code>InvalidRegistryNameError</code> | A named Coordinator identity violates the lowercase <code>[a-z0-9._-]</code>, 1–64-character Registry grammar. |
 
-See [Cloudflare Workers](/cache/cloudflare-workers/) for the binding relationship and operational limits.
+See [Cloudflare Workers](/docs/cache/cloudflare-workers/) for the binding relationship and operational limits.
 
 ## React Router adapter exports
 
@@ -376,7 +376,7 @@ Import these names from <code>@astilba/cache/react-router</code>. React and Reac
 | <code>L3_INELIGIBLE</code> | The <code>"l3_ineligible"</code> event name emitted once for a demoted managed response. |
 | <code>L3_BUDGET_DEFAULT</code> | Default 16 KB and 1,000-occurrence response-tag budget. |
 
-The adapter requires <code>nodejs_als</code> on Cloudflare Workers. It preserves an application-authored cache policy for eligible public renders, emits deduplicated user tags, and forces private posture for unsafe renders. It never writes <code>public</code> or <code>s-maxage</code>. See [React Router](/cache/react-and-server-apps/).
+The adapter requires <code>nodejs_als</code> on Cloudflare Workers. It preserves an application-authored cache policy for eligible public renders, emits deduplicated user tags, and forces private posture for unsafe renders. It never writes <code>public</code> or <code>s-maxage</code>. See [React Router](/docs/cache/react-and-server-apps/).
 
 ## Export boundary
 
@@ -384,4 +384,4 @@ The publish configuration contains four supported doors: the root entry point, <
 
 The source workspace also exposes <code>@astilba/cache/registry</code> so its test harness and Coordinator can share the state machine. The publish configuration deliberately omits it; applications must not import that source-only subpath.
 
-For implementation gaps, inert fields, and integration availability, continue to [Implementation status](/cache/api-status/).
+For implementation gaps, inert fields, and integration availability, continue to [Implementation status](/docs/cache/api-status/).

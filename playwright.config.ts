@@ -24,7 +24,7 @@ export default defineConfig({
     command: `pnpm exec wrangler dev --local --ip 127.0.0.1 --port ${port}`,
     reuseExistingServer: false,
     timeout: 120_000,
-    url: baseURL,
+    url: `${baseURL}/docs/`,
   },
   projects: [
     {

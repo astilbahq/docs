@@ -5,7 +5,7 @@ description: See which Cache drivers and runtime adapters exist in current sourc
 
 Astilba Cache keeps its semantics behind small contracts, then implements platform I/O at adapter boundaries. This page separates an implemented source driver from a released, supported integration.
 
-Application developers can begin with [Cache fundamentals](/cache/core-concepts/). Runtime authors and production-readiness reviewers should use this page together with [Implementation status](/cache/api-status/).
+Application developers can begin with [Cache fundamentals](/docs/cache/core-concepts/). Runtime authors and production-readiness reviewers should use this page together with [Implementation status](/docs/cache/api-status/).
 
 ## Understand the driver model
 
@@ -70,7 +70,7 @@ See Cloudflare's [reduced minimum cacheTtl announcement](https://developers.clou
 
 The Coordinator can refresh an idle pointer through <code>REGISTRY_HEARTBEAT_MS</code>. This is disabled unless the deployment sets the variable. The Workers factory independently defaults its reader heartbeat interval to 30 seconds, so matching the Coordinator value is an operator action, not an automatic handshake.
 
-See [Cloudflare Workers](/cache/cloudflare-workers/) for the binding and migration example.
+See [Cloudflare Workers](/docs/cache/cloudflare-workers/) for the binding and migration example.
 
 ## Know the recovery scheduling model
 
@@ -95,10 +95,10 @@ The integration Worker and React Router fixture prove runtime wiring and build c
 
 ## Related
 
-- [Runtime architecture](/cache/architecture/) shows how these capabilities compose around one Cache instance.
-- [Cloudflare Workers](/cache/cloudflare-workers/) provides the current factory and binding walkthrough.
-- [React Router](/cache/react-and-server-apps/) explains request context and poll ticks.
-- [Cache HTTP responses](/cache/response-caching/) explains automatic render collection and header behavior.
-- [Inspect cache behavior](/cache/observability/) covers driver and adapter telemetry.
-- [API reference](/cache/api-reference/) lists the root and adapter exports.
-- [Implementation status](/cache/api-status/) lists kernel-level limitations independent of a driver.
+- [Runtime architecture](/docs/cache/architecture/) shows how these capabilities compose around one Cache instance.
+- [Cloudflare Workers](/docs/cache/cloudflare-workers/) provides the current factory and binding walkthrough.
+- [React Router](/docs/cache/react-and-server-apps/) explains request context and poll ticks.
+- [Cache HTTP responses](/docs/cache/response-caching/) explains automatic render collection and header behavior.
+- [Inspect cache behavior](/docs/cache/observability/) covers driver and adapter telemetry.
+- [API reference](/docs/cache/api-reference/) lists the root and adapter exports.
+- [Implementation status](/docs/cache/api-status/) lists kernel-level limitations independent of a driver.

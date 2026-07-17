@@ -4,13 +4,14 @@ import { MCP_SERVER_INFO } from "../../src/docs/agent-discovery";
 import { docsProducts } from "../../src/docs/catalog";
 import { parseDocsCorpus } from "../../src/docs/mcp-corpus";
 import { siteDocsPages } from "../../src/docs/site-pages";
+import { ASTILBA_ORIGIN, docsUrl, withDocsBase } from "../../src/docs/urls";
 import {
   handleDocsMcpRequest,
   readDoc,
   searchDocs,
 } from "../../worker/docs-mcp";
 
-const docsOrigin = "https://docs.astilba.com";
+const docsOrigin = ASTILBA_ORIGIN;
 
 const getSitePageFixture = (
   id: string
@@ -80,7 +81,9 @@ const createCorpusValue = () => ({
       product.versions.flatMap((version) =>
         version.sections.flatMap((section) =>
           section.items.map((page) => {
-            const markdownPath = `/${version.basePath}/${page.slug}.md`;
+            const markdownPath = withDocsBase(
+              `/${version.basePath}/${page.slug}.md`
+            );
             const isOverview = page.slug === "overview";
             const isInvalidation = page.slug === "tags-and-invalidation";
             const content = isOverview
@@ -90,7 +93,7 @@ const createCorpusValue = () => ({
                 : `# ${page.label}\n\nPublic Cache documentation for ${page.label}.`;
 
             return {
-              canonicalUrl: `${docsOrigin}/${version.basePath}/${page.slug}/`,
+              canonicalUrl: docsUrl(`/${version.basePath}/${page.slug}/`),
               content,
               description: isInvalidation
                 ? "Invalidate related cached values with tags."
@@ -118,7 +121,7 @@ const createAssets = () => {
       input instanceof Request ? input.url : input.toString()
     );
 
-    if (url.pathname === "/_mcp/docs.json") {
+    if (url.pathname === withDocsBase("/_mcp/docs.json")) {
       return new Response(corpus, {
         headers: { "Content-Type": "application/json; charset=utf-8" },
       });
@@ -146,7 +149,7 @@ const createRpcRequest = (
     protocolVersion?: string;
   } = {}
 ) =>
-  new Request(`${docsOrigin}/mcp`, {
+  new Request(docsUrl("/mcp"), {
     body: JSON.stringify({
       id: options.id ?? 1,
       jsonrpc: "2.0",
@@ -169,13 +172,13 @@ describe("generated MCP corpus", () => {
     const corpus = parseDocsCorpus(value);
 
     expect(corpus.pages).toHaveLength(value.pages.length);
-    expect(corpus.pages[0]?.uri).toBe(`${docsOrigin}/index.md`);
+    expect(corpus.pages[0]?.uri).toBe(`${docsOrigin}/docs/index.md`);
   });
 
   it("rejects metadata that differs from the typed catalog", () => {
     const value = createCorpusValue();
     const overview = value.pages.find(
-      (page) => page.markdownPath === "/cache/overview.md"
+      (page) => page.markdownPath === "/docs/cache/overview.md"
     );
 
     if (!overview || !("productId" in overview)) {
@@ -217,7 +220,7 @@ describe("generated MCP corpus", () => {
   it("requires the complete catalogue metadata tuple on product pages", () => {
     const value = createCorpusValue();
     const overview = value.pages.find(
-      (page) => page.markdownPath === "/cache/overview.md"
+      (page) => page.markdownPath === "/docs/cache/overview.md"
     );
 
     if (!overview || !("productId" in overview)) {
@@ -242,7 +245,7 @@ describe("generated MCP corpus", () => {
   it("rejects version metadata on an unversioned product home", () => {
     const value = createCorpusValue();
     const cacheHome = value.pages.find(
-      (page) => page.markdownPath === "/cache.md"
+      (page) => page.markdownPath === "/docs/cache.md"
     );
 
     if (!cacheHome) {
@@ -263,7 +266,7 @@ describe("generated MCP corpus", () => {
   it("rejects empty and overlong catalogue metadata", () => {
     const emptyMetadata = createCorpusValue();
     const emptyOverview = emptyMetadata.pages.find(
-      (page) => page.markdownPath === "/cache/overview.md"
+      (page) => page.markdownPath === "/docs/cache/overview.md"
     );
 
     if (!emptyOverview || !("productId" in emptyOverview)) {
@@ -275,7 +278,7 @@ describe("generated MCP corpus", () => {
 
     const overlongMetadata = createCorpusValue();
     const overlongOverview = overlongMetadata.pages.find(
-      (page) => page.markdownPath === "/cache/overview.md"
+      (page) => page.markdownPath === "/docs/cache/overview.md"
     );
 
     if (!overlongOverview || !("productId" in overlongOverview)) {
@@ -306,16 +309,16 @@ describe("generated MCP corpus", () => {
   it("rejects site-wide resources outside the explicit allowlist", () => {
     const value = createCorpusValue();
     const sitePage = value.pages.find(
-      ({ markdownPath }) => markdownPath === "/agents/mcp.md"
+      ({ markdownPath }) => markdownPath === "/docs/agents/mcp.md"
     );
 
     if (!sitePage) {
       throw new Error("Missing site-wide MCP fixture.");
     }
 
-    sitePage.canonicalUrl = `${docsOrigin}/agents/private/`;
-    sitePage.markdownPath = "/agents/private.md";
-    sitePage.uri = `${docsOrigin}/agents/private.md`;
+    sitePage.canonicalUrl = `${docsOrigin}/docs/agents/private/`;
+    sitePage.markdownPath = "/docs/agents/private.md";
+    sitePage.uri = `${docsOrigin}/docs/agents/private.md`;
 
     expect(() => parseDocsCorpus(value)).toThrow(
       "is not present in the public documentation catalog"
@@ -341,7 +344,7 @@ describe("generated MCP corpus", () => {
     expect(results[0]).toMatchObject({
       productId: "cache",
       title: "Invalidate cached data",
-      uri: `${docsOrigin}/cache/tags-and-invalidation.md`,
+      uri: `${docsOrigin}/docs/cache/tags-and-invalidation.md`,
       versionId: "unreleased",
     });
     expect(
@@ -358,7 +361,7 @@ describe("generated MCP corpus", () => {
     ).toMatchObject({
       productId: "cache",
       title: "Cache",
-      uri: `${docsOrigin}/cache.md`,
+      uri: `${docsOrigin}/docs/cache.md`,
       versionId: null,
     });
   });
@@ -368,7 +371,7 @@ describe("generated MCP corpus", () => {
     const result = readDoc(corpus, {
       limit: 2,
       offset: 0,
-      uri: "/cache/overview.md",
+      uri: "/docs/cache/overview.md",
     });
 
     expect(result).toMatchObject({
@@ -380,25 +383,25 @@ describe("generated MCP corpus", () => {
       readDoc(corpus, { uri: "https://example.com/private.md" })
     ).toBeUndefined();
     expect(
-      readDoc(corpus, { uri: `${docsOrigin}/cache/overview/?draft=1` })
+      readDoc(corpus, { uri: `${docsOrigin}/docs/cache/overview/?draft=1` })
     ).toBeUndefined();
     expect(
       readDoc(corpus, {
         offset: 10_000,
-        uri: `${docsOrigin}/cache/overview.md`,
+        uri: `${docsOrigin}/docs/cache/overview.md`,
       })
     ).toBeUndefined();
     expect(
       readDoc(corpus, {
         offset: 2,
-        uri: `${docsOrigin}/cache/overview.md`,
+        uri: `${docsOrigin}/docs/cache/overview.md`,
       })
     ).toBeUndefined();
     expect(
       readDoc(corpus, {
         limit: 1,
         offset: 1,
-        uri: `${docsOrigin}/cache/overview.md`,
+        uri: `${docsOrigin}/docs/cache/overview.md`,
       })
     ).toMatchObject({
       content: "😀",
@@ -481,7 +484,7 @@ describe("documentation MCP transport", () => {
     );
     expect(resourcesBody.result.resources[0]).toMatchObject({
       mimeType: "text/markdown",
-      uri: `${docsOrigin}/index.md`,
+      uri: `${docsOrigin}/docs/index.md`,
     });
     expect(fetch).toHaveBeenCalledTimes(1);
 
@@ -498,7 +501,7 @@ describe("documentation MCP transport", () => {
         createRpcRequest("tools/call", {
           arguments: {
             limit: 8,
-            uri: `${docsOrigin}/cache/overview.md`,
+            uri: `${docsOrigin}/docs/cache/overview.md`,
           },
           name: "read_doc",
         }),
@@ -519,12 +522,12 @@ describe("documentation MCP transport", () => {
 
     expect(searchBody.result.structuredContent.results[0]).toMatchObject({
       title: "Invalidate cached data",
-      uri: `${docsOrigin}/cache/tags-and-invalidation.md`,
+      uri: `${docsOrigin}/docs/cache/tags-and-invalidation.md`,
     });
     expect(readBody.result.structuredContent).toMatchObject({
       offset: 0,
       returnedChars: 8,
-      uri: `${docsOrigin}/cache/overview.md`,
+      uri: `${docsOrigin}/docs/cache/overview.md`,
     });
     expect(fetch).toHaveBeenCalledTimes(1);
     expect(limit).toHaveBeenCalledTimes(5);
@@ -536,7 +539,7 @@ describe("documentation MCP transport", () => {
   it("charges an additional unit for direct resource reads", async () => {
     const { assets } = createAssets();
     const { limit, rateLimiter } = createRateLimiter();
-    const overviewUri = `${docsOrigin}/cache/overview.md`;
+    const overviewUri = `${docsOrigin}/docs/cache/overview.md`;
     const response = await handleDocsMcpRequest(
       createRpcRequest("resources/read", { uri: overviewUri }),
       assets,
@@ -600,7 +603,7 @@ describe("documentation MCP transport", () => {
     const { assets } = createAssets();
     const { limit, rateLimiter } = createRateLimiter();
     const response = await handleDocsMcpRequest(
-      new Request(`${docsOrigin}/mcp`, {
+      new Request(`${docsOrigin}/docs/mcp`, {
         body: JSON.stringify([
           { id: 1, jsonrpc: "2.0", method: "ping" },
           { id: 2, jsonrpc: "2.0", method: "resources/list" },
@@ -631,14 +634,14 @@ describe("documentation MCP transport", () => {
     const { assets } = createAssets();
     const { limit, rateLimiter } = createRateLimiter();
     const response = await handleDocsMcpRequest(
-      new Request(`${docsOrigin}/mcp`, {
+      new Request(`${docsOrigin}/docs/mcp`, {
         body: JSON.stringify([
           { id: 1, jsonrpc: "2.0", method: "ping" },
           {
             id: 2,
             jsonrpc: "2.0",
             method: "resources/read",
-            params: { uri: `${docsOrigin}/cache/overview.md` },
+            params: { uri: `${docsOrigin}/docs/cache/overview.md` },
           },
           {
             id: 3,
@@ -673,7 +676,7 @@ describe("documentation MCP transport", () => {
     const { assets, fetch } = createAssets();
     const { limit, rateLimiter } = createRateLimiter();
     const response = await handleDocsMcpRequest(
-      new Request(`${docsOrigin}/mcp`, {
+      new Request(`${docsOrigin}/docs/mcp`, {
         body: JSON.stringify([
           { id: 1, jsonrpc: "2.0", method: "ping" },
           { id: 2, jsonrpc: "2.0", method: "ping" },
@@ -757,7 +760,7 @@ describe("documentation MCP transport", () => {
         throw new Error("body must not be read");
       },
     });
-    const request = new Request(`${docsOrigin}/mcp`, {
+    const request = new Request(`${docsOrigin}/docs/mcp`, {
       body,
       duplex: "half",
       headers: { "CF-Connecting-IP": "203.0.113.9" },
@@ -833,7 +836,7 @@ describe("documentation MCP transport", () => {
     try {
       const response = await handleDocsMcpRequest(
         createRpcRequest("resources/read", {
-          uri: `${docsOrigin}/cache/overview.md`,
+          uri: `${docsOrigin}/docs/cache/overview.md`,
         }),
         assets,
         rateLimiter
@@ -868,7 +871,7 @@ describe("documentation MCP transport", () => {
         throw new Error("stream failed");
       },
     });
-    const request = new Request(`${docsOrigin}/mcp`, {
+    const request = new Request(`${docsOrigin}/docs/mcp`, {
       body,
       duplex: "half",
       headers: {
@@ -929,7 +932,7 @@ describe("documentation MCP transport", () => {
     const { assets } = createAssets();
     const { rateLimiter } = createRateLimiter();
     const preflight = await handleDocsMcpRequest(
-      new Request(`${docsOrigin}/mcp`, {
+      new Request(`${docsOrigin}/docs/mcp`, {
         headers: { Origin: docsOrigin },
         method: "OPTIONS",
       }),
@@ -937,7 +940,7 @@ describe("documentation MCP transport", () => {
       rateLimiter
     );
     const getResponse = await handleDocsMcpRequest(
-      new Request(`${docsOrigin}/mcp`),
+      new Request(`${docsOrigin}/docs/mcp`),
       assets,
       rateLimiter
     );

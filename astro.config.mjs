@@ -14,9 +14,9 @@ import {
   addDocsSitemapLastModified,
   createDocsSitemapLastModified,
 } from "./src/docs/sitemap.ts";
+import { ASTILBA_ORIGIN, DOCS_BASE_PATH, docsUrl } from "./src/docs/urls.ts";
 
 // starlight-llms-txt needs the deployed origin to generate canonical links.
-const DEPLOYED_DOCS_ORIGIN = "https://docs.astilba.com";
 const siteValue = process.env.ASTILBA_DOCS_SITE;
 const siteUrl = siteValue ? new URL(siteValue) : undefined;
 
@@ -37,9 +37,9 @@ if (
   );
 }
 
-if (siteUrl && siteUrl.origin !== DEPLOYED_DOCS_ORIGIN) {
+if (siteUrl && siteUrl.origin !== ASTILBA_ORIGIN) {
   throw new Error(
-    `ASTILBA_DOCS_SITE must use the canonical deployed origin ${DEPLOYED_DOCS_ORIGIN}.`
+    `ASTILBA_DOCS_SITE must use the canonical deployed origin ${ASTILBA_ORIGIN}.`
   );
 }
 
@@ -76,7 +76,7 @@ const publishSingleSitemap = {
       const childLocations = [
         ...sitemapIndex.matchAll(/<loc>([^<]+)<\/loc>/g),
       ].map((match) => match[1]);
-      const expectedChild = new URL("/sitemap-0.xml", site).href;
+      const expectedChild = docsUrl("/sitemap-0.xml");
 
       if (childLocations.length !== 1 || childLocations[0] !== expectedChild) {
         throw new Error(
@@ -102,6 +102,8 @@ const docsPageOrder = docsProducts.flatMap((product) =>
 const sitePageOrder = siteDocsPages.map(({ id }) => id);
 
 export default defineConfig({
+  base: DOCS_BASE_PATH,
+  outDir: "./dist/docs",
   site,
   integrations: [
     requireDocsSite,
@@ -120,7 +122,7 @@ export default defineConfig({
             {
               tag: "link",
               attrs: {
-                href: new URL("/sitemap.xml", site).href,
+                href: docsUrl("/sitemap.xml"),
                 rel: "sitemap",
               },
             },
@@ -165,7 +167,7 @@ export default defineConfig({
                 optionalLinks: [
                   {
                     label: "Astilba documentation MCP",
-                    url: `${DEPLOYED_DOCS_ORIGIN}/mcp`,
+                    url: docsUrl("/mcp"),
                     description:
                       "Read-only Streamable HTTP endpoint for searching and reading the published documentation corpus.",
                   },

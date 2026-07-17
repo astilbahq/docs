@@ -5,7 +5,7 @@ description: See how the portable Astilba Cache kernel composes storage, coordin
 
 Astilba Cache keeps cache semantics in a portable kernel and receives runtime capabilities through typed contracts. The kernel owns keys, scopes, tier order, decode safety, fill coordination, and invalidation decisions. A runtime supplies storage, coordination, time, randomness, scheduling, and any custom encoding.
 
-This page explains the runtime capability model. For application-level definitions and a smaller starting point, begin with [Cache fundamentals](/cache/core-concepts/) or the [local quickstart](/cache/quickstart/).
+This page explains the runtime capability model. For application-level definitions and a smaller starting point, begin with [Cache fundamentals](/docs/cache/core-concepts/) or the [local quickstart](/docs/cache/quickstart/).
 
 ## Capabilities at the boundary
 
@@ -32,7 +32,7 @@ These contracts keep the correctness rules independent of a storage vendor. They
 5. When the factory settles, Cache validates the union of call-level and factory-declared tags.
 6. Before write-back, Cache checks the final tag set for a conflicting hard invalidation, then writes only to tiers allowed by the resolved scope.
 
-See [Read and cache values](/cache/reading-and-filling/) for return metadata, singleflight compatibility, codec changes, and fill failures. See [How Cache works](/cache/how-it-works/) for the invalidation and recovery path around the same operation.
+See [Read and cache values](/docs/cache/reading-and-filling/) for return metadata, singleflight compatibility, codec changes, and fill failures. See [How Cache works](/docs/cache/how-it-works/) for the invalidation and recovery path around the same operation.
 
 ## Compose the current source preview
 
@@ -64,7 +64,7 @@ These combinations describe current main-branch source behavior. <code>@astilba/
 
 ## Related
 
-- [Driver implementations](/cache/drivers-and-status/) lists each contract and integration boundary.
-- [Consistency and resilience](/cache/consistency-and-resilience/) explains live checks, unknown knowledge, and stale-on-error policy.
-- [Cache HTTP responses](/cache/response-caching/) explains the render collector and response-header gate.
-- [Implementation status](/cache/api-status/) records incomplete and provisional surfaces.
+- [Driver implementations](/docs/cache/drivers-and-status/) lists each contract and integration boundary.
+- [Consistency and resilience](/docs/cache/consistency-and-resilience/) explains live checks, unknown knowledge, and stale-on-error policy.
+- [Cache HTTP responses](/docs/cache/response-caching/) explains the render collector and response-header gate.
+- [Implementation status](/docs/cache/api-status/) records incomplete and provisional surfaces.

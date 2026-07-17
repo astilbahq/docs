@@ -20,7 +20,7 @@ const sidebarInput = [
       {
         type: "link",
         label: "Overview",
-        href: "/cache/overview/",
+        href: "/docs/cache/overview/",
         isCurrent: true,
         badge: undefined,
         attrs: {
@@ -80,7 +80,7 @@ describe("documentation sidebar model", () => {
           {
             type: "link",
             label: "Reference",
-            href: "/cache/api-reference/",
+            href: "/docs/cache/api-reference/",
             isCurrent: false,
             badge: undefined,
             attrs: {},
@@ -91,25 +91,25 @@ describe("documentation sidebar model", () => {
   });
 
   it("describes known and unknown documentation contexts", () => {
-    const known = createDocsSidebarContext("/cache/overview/");
+    const known = createDocsSidebarContext("/docs/cache/overview/");
     const unknown = createDocsSidebarContext("/outside/");
 
     expect(known.product.label).toBe("Cache");
-    expect(known.product.href).toBe("/cache/");
+    expect(known.product.href).toBe("/docs/cache/");
     expect(known.product.options).toBeUndefined();
     expect(known.version?.label).toBe("Unreleased");
     expect(unknown.product.label).toBe("Cache");
-    expect(unknown.product.href).toBe("/cache/");
+    expect(unknown.product.href).toBe("/docs/cache/");
     expect(unknown.product.options).toBeUndefined();
 
-    const productHome = createDocsSidebarContext("/cache/");
-    expect(productHome.product.href).toBe("/cache/");
+    const productHome = createDocsSidebarContext("/docs/cache/");
+    expect(productHome.product.href).toBe("/docs/cache/");
     expect(productHome.version?.label).toBe("Unreleased");
   });
 
   it("adds global agent navigation independently of product context", () => {
-    const homeEntries = createSiteSidebarEntries("/");
-    const mcpEntries = createSiteSidebarEntries("/agents/mcp/");
+    const homeEntries = createSiteSidebarEntries("/docs/");
+    const mcpEntries = createSiteSidebarEntries("/docs/agents/mcp/");
     const homeGroup = homeEntries[0];
     const mcpGroup = mcpEntries[0];
 
@@ -128,14 +128,14 @@ describe("documentation sidebar model", () => {
       {
         type: "link",
         label: "LLMs.txt",
-        href: "/agents/llms-txt/",
+        href: "/docs/agents/llms-txt/",
         icon: "file-digit",
         isCurrent: false,
       },
       {
         type: "link",
         label: "MCP Server",
-        href: "/agents/mcp/",
+        href: "/docs/agents/mcp/",
         icon: "model-context-protocol",
         isCurrent: false,
       },

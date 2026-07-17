@@ -23,17 +23,17 @@ describe("agent discovery metadata", () => {
       mcpCatalog: MCP_CATALOG_PATH,
       serverCard: MCP_SERVER_CARD_PATH,
     }).toEqual({
-      apiCatalog: "/.well-known/api-catalog",
-      compatibilityCard: "/.well-known/mcp/server-card.json",
-      mcpCatalog: "/.well-known/mcp/catalog.json",
-      serverCard: "/mcp/server-card",
+      apiCatalog: "/docs/.well-known/api-catalog",
+      compatibilityCard: "/docs/.well-known/mcp/server-card.json",
+      mcpCatalog: "/docs/.well-known/mcp/catalog.json",
+      serverCard: "/docs/mcp/server-card",
     });
     expect(MCP_SERVER_INFO).toEqual({
       description: "Search and read Astilba's public product documentation.",
       name: "com.astilba/docs",
       title: "Astilba documentation",
       version: "0.1.0",
-      websiteUrl: "https://docs.astilba.com/agents/mcp/",
+      websiteUrl: "https://astilba.com/docs/agents/mcp/",
     });
   });
 

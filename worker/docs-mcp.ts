@@ -9,18 +9,24 @@ import {
   MCP_SERVER_INSTRUCTIONS,
 } from "../src/docs/agent-discovery.ts";
 import {
-  DOCS_ORIGIN,
   type DocsCorpus,
   type DocsCorpusPage,
   MAX_CORPUS_CHARS,
   MAX_DOCUMENT_CHARS,
   parseDocsCorpus,
 } from "../src/docs/mcp-corpus.ts";
+import {
+  ASTILBA_ORIGIN,
+  LEGACY_DOCS_ORIGIN,
+  withDocsBase,
+} from "../src/docs/urls.ts";
 
 export const DOCS_MCP_PATH = MCP_ENDPOINT_PATH;
 
-const DOCS_HOSTNAME = new URL(DOCS_ORIGIN).hostname;
-const CORPUS_PATH = "/_mcp/docs.json";
+const DOCS_HOSTNAMES = new Set(
+  [ASTILBA_ORIGIN, LEGACY_DOCS_ORIGIN].map((origin) => new URL(origin).hostname)
+);
+const CORPUS_PATH = withDocsBase("/_mcp/docs.json");
 const STRUCTURED_TOOL_RESULTS_VERSION = "2025-06-18";
 const MAX_LEGACY_BATCH_MESSAGES = 16;
 const MAX_REQUEST_BYTES = 256_000;
@@ -304,13 +310,13 @@ const findPage = (
   let url: URL;
 
   try {
-    url = new URL(reference, `${DOCS_ORIGIN}/`);
+    url = new URL(reference, `${ASTILBA_ORIGIN}/`);
   } catch {
     return undefined;
   }
 
   if (
-    url.origin !== DOCS_ORIGIN ||
+    url.origin !== ASTILBA_ORIGIN ||
     url.username ||
     url.password ||
     url.search ||
@@ -630,7 +636,7 @@ const getAllowedOrigin = (request: Request): string | undefined => {
   }
 
   const isDocsHost =
-    requestUrl.hostname === DOCS_HOSTNAME &&
+    DOCS_HOSTNAMES.has(requestUrl.hostname) &&
     (requestUrl.protocol === "https:" || requestUrl.protocol === "http:");
   const isLoopbackDevelopmentOrigin =
     requestUrl.protocol === "http:" &&

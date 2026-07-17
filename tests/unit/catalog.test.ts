@@ -27,8 +27,8 @@ describe("documentation catalog", () => {
     expect(version.id).toBe("unreleased");
     expect(page.key).toBe("overview");
     expect(cache.repositoryUrl).toBe("https://github.com/astilbahq/cache");
-    expect(getProductHomeHref(cache)).toBe("/cache/");
-    expect(getPageHref(version, page)).toBe("/cache/overview/");
+    expect(getProductHomeHref(cache)).toBe("/docs/cache/");
+    expect(getPageHref(version, page)).toBe("/docs/cache/overview/");
   });
 
   it("organizes Cache pages by reader intent", () => {
@@ -83,7 +83,7 @@ describe("documentation catalog", () => {
   });
 
   it("finds a page with or without surrounding slashes", () => {
-    const withSlashes = findDocsContext("/cache/quickstart/");
+    const withSlashes = findDocsContext("/docs/cache/quickstart/");
     const withoutSlashes = findDocsContext("cache/quickstart");
 
     expect(withSlashes?.page.key).toBe("quickstart");
@@ -92,11 +92,13 @@ describe("documentation catalog", () => {
   });
 
   it("finds product context on the stable product home", () => {
-    const context = findDocsProductContext("/cache/");
+    const context = findDocsProductContext("/docs/cache/");
+    const relativeContext = findDocsProductContext("/cache/");
 
     expect(context?.product.id).toBe("cache");
     expect(context?.version.id).toBe("unreleased");
-    expect(findDocsContext("/cache/")).toBeUndefined();
+    expect(relativeContext).toEqual(context);
+    expect(findDocsContext("/docs/cache/")).toBeUndefined();
   });
 
   it("requires an exact canonical product-home path", () => {
@@ -238,10 +240,10 @@ describe("documentation catalog", () => {
     const version = getDefaultVersion(cache);
 
     expect(getVersionPageHref(cache, version, "api-reference")).toBe(
-      "/cache/api-reference/"
+      "/docs/cache/api-reference/"
     );
     expect(getVersionPageHref(cache, version, "missing-page")).toBe(
-      "/cache/overview/"
+      "/docs/cache/overview/"
     );
   });
 

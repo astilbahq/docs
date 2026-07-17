@@ -12,11 +12,11 @@ Astilba Cache is not available from npm and has no supported production installa
 
 ## Products
 
-### [Cache](/cache/)
+### [Cache](/docs/cache/)
 
 A portable server-side TypeScript cache with explicit invalidation, resilience, and privacy boundaries.
 
-Start with the [overview](/cache/overview/), run the [local quickstart](/cache/quickstart/), or inspect the source adapters for [Cloudflare Workers](/cache/cloudflare-workers/) and [React Router](/cache/react-and-server-apps/).
+Start with the [overview](/docs/cache/overview/), run the [local quickstart](/docs/cache/quickstart/), or inspect the source adapters for [Cloudflare Workers](/docs/cache/cloudflare-workers/) and [React Router](/docs/cache/react-and-server-apps/).
 
 ## Sponsors
 
@@ -24,6 +24,6 @@ Astilba is currently independently funded. Sponsorship helps keep its libraries,
 
 ## For agents
 
-Fetch the [agent setup prompt](/agent-setup/prompt.md) to connect a supported coding agent to Astilba's public documentation tools. The prompt configures documentation access only; it does not install Cache.
+Fetch the [agent setup prompt](/docs/agent-setup/prompt.md) to connect a supported coding agent to Astilba's public documentation tools. The prompt configures documentation access only; it does not install Cache.
 
-Use the public [MCP server](/agents/mcp/) directly to search and read the same published Markdown corpus through a read-only protocol endpoint.
+Use the public [MCP server](/docs/agents/mcp/) directly to search and read the same published Markdown corpus through a read-only protocol endpoint.

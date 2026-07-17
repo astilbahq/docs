@@ -3,6 +3,7 @@ import { css } from "../../styled-system/css";
 import { findDocsContext } from "../docs/catalog";
 import { findSiteDocsPage } from "../docs/site-pages";
 import { getDocsSourceUrl } from "../docs/source";
+import { withDocsBase } from "../docs/urls";
 import { PageActions } from "./PageActions";
 
 const { entry } = Astro.locals.starlightRoute;
@@ -12,7 +13,8 @@ const docsContext = findDocsContext(Astro.url.pathname);
 const sitePage = findSiteDocsPage(entry.id);
 const isProductHome = sitePage?.presentation === "product-home";
 const sourceUrl = getDocsSourceUrl(entry.filePath, entry.id);
-const markdownPath = sitePage?.markdownPath ?? `/${entry.id}.md`;
+const markdownPath =
+  sitePage?.markdownPath ?? withDocsBase(`/${entry.id}.md`);
 const showPageActions = Boolean(
   docsContext ||
     (sitePage && sitePage.id !== "index" && !isProductHome)

@@ -6,6 +6,11 @@ import {
   GLOBAL_SECURITY_HEADERS,
 } from "../src/docs/security";
 import { siteDocsPages } from "../src/docs/site-pages";
+import {
+  ASTILBA_ORIGIN,
+  LEGACY_DOCS_ORIGIN,
+  withDocsBase,
+} from "../src/docs/urls";
 import { DOCS_MCP_PATH, handleDocsMcpRequest } from "./docs-mcp";
 
 const MARKDOWN_MEDIA_TYPE = "text/markdown";
@@ -22,7 +27,7 @@ const PAGE_MARKDOWN_ENTRIES = [
           (page) =>
             [
               getPageHref(version, page),
-              `/${version.basePath}/${page.slug}.md`,
+              withDocsBase(`/${version.basePath}/${page.slug}.md`),
             ] as const
         )
       )
@@ -36,17 +41,17 @@ const CANONICAL_SITE_PATHS = new Set(
 const VERSION_ROOT_REDIRECTS = new Map<string, string>(
   docsProducts.flatMap((product) =>
     product.versions.flatMap((version) => {
-      const canonicalRoot = `/${version.basePath}/`;
+      const canonicalRoot = withDocsBase(`/${version.basePath}/`);
 
       if (CANONICAL_SITE_PATHS.has(canonicalRoot)) {
-        return [[`/${version.basePath}`, canonicalRoot] as const];
+        return [[withDocsBase(`/${version.basePath}`), canonicalRoot] as const];
       }
 
       const target = getPageHref(version, getDefaultPage(product, version));
 
       return [
-        [`/${version.basePath}`, target] as const,
-        [`/${version.basePath}/`, target] as const,
+        [withDocsBase(`/${version.basePath}`), target] as const,
+        [withDocsBase(`/${version.basePath}/`), target] as const,
       ];
     })
   )
@@ -105,7 +110,7 @@ const addGlobalSecurityHeaders = (response: Response): Response => {
 };
 
 const getPageDiscoveryLink = (markdownPath: string): string =>
-  `<${markdownPath}>; rel="alternate"; type="text/markdown", </llms.txt>; rel="describedby"; type="text/plain", ${API_CATALOG_LINK_VALUE}`;
+  `<${markdownPath}>; rel="alternate"; type="text/markdown", <${withDocsBase("/llms.txt")}>; rel="describedby"; type="text/plain", ${API_CATALOG_LINK_VALUE}`;
 
 const addCanonicalPageDiscovery = (
   response: Response,
@@ -549,6 +554,20 @@ export const handleRequest = async (
   assets: Fetcher,
   mcpRateLimiter?: RateLimit
 ): Promise<Response> => {
+  const requestUrl = new URL(request.url);
+
+  if (requestUrl.origin === LEGACY_DOCS_ORIGIN) {
+    const location = new URL(withDocsBase(requestUrl.pathname), ASTILBA_ORIGIN);
+    location.search = requestUrl.search;
+
+    return addGlobalSecurityHeaders(
+      new Response(null, {
+        headers: { Location: location.href },
+        status: 308,
+      })
+    );
+  }
+
   const response = await routeRequest(request, assets, mcpRateLimiter);
   let securedResponse: Response;
 

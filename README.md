@@ -1,6 +1,20 @@
-# Astilba documentation
+# Astilba public web
 
-The public documentation site for Astilba products, built with Astro Starlight.
+The public site and documentation for Astilba products. A small Astro shell owns
+`astilba.com`; the Astro Starlight application owns `astilba.com/docs/*` through a narrow
+Cloudflare Worker Route.
+
+## Repository surfaces
+
+| Workspace | Public surface | Responsibility |
+|---|---|---|
+| `site/` | `/`, `/cache`, global discovery | Brand/product shell, truthful lifecycle copy, global sitemap and agent entry points |
+| repository root | `/docs/*` | Starlight documentation, Markdown negotiation, Pagefind, MCP, and product-specific discovery |
+
+Both applications share the same typography, near-monochrome palette, warm signal accent,
+theme storage key, and public content boundary. They deploy independently so static docs
+assets remain isolated from the brand shell and a visual change cannot broaden the docs
+Worker's route.
 
 The structure borrows TanStack's useful multi-library context and Better Auth's concise, task-focused writing, while keeping documentation navigation free of sponsor rails, ads, and duplicated marketing links.
 
@@ -30,7 +44,8 @@ The structure borrows TanStack's useful multi-library context and Better Auth's 
 
 ```bash
 pnpm install
-pnpm dev
+pnpm dev                 # documentation
+pnpm --dir site dev      # apex shell
 ```
 
 Installation generates Panda's ignored `styled-system/` bindings. Run `pnpm panda:codegen` after changing `panda.config.ts`; the dev and build commands extract component styles automatically. The local site runs at `http://localhost:4321` by default.
@@ -52,40 +67,45 @@ pnpm verify
 
 Development and type checks do not require a deployed origin. Production builds do: `ASTILBA_DOCS_SITE` must be the public HTTP or HTTPS origin, with no path, so canonical links and generated agent resources cannot silently point at the wrong host.
 
-`pnpm verify` regenerates Panda bindings, runs Ultracite's Oxlint and Oxfmt checks, checks generated Worker binding types plus Astro and TypeScript, runs focused Vitest coverage, checks unused code and dependencies with Knip, builds and validates the Wrangler bundle without uploading it, and drives the production Worker in Chromium with Playwright and axe. The browser suite covers Markdown negotiation, WebMCP registration, Pagefind, mobile navigation, persisted sidebar state, themes, page actions, raw Markdown routes, and representative light/dark/overlay accessibility states. Install Chromium once per machine with `pnpm test:browser:install`.
+`pnpm verify` regenerates Panda bindings, runs Ultracite's Oxlint and Oxfmt checks, checks both Astro applications and their Workers, runs focused Vitest coverage, checks both workspaces with Knip, validates both Wrangler bundles without uploading them, and drives both production builds in Chromium with axe. The suites cover the apex shell, mobile menu and overflow, theme continuity, truthful lifecycle copy, Markdown negotiation, WebMCP, Pagefind, docs navigation, page actions, and representative light/dark/overlay accessibility states. Install Chromium once per machine with `pnpm test:browser:install`.
 
-The production build creates the Pagefind search index, validates internal links, and then verifies the deployed artifact set in `dist/`. Run `pnpm preview` to inspect that build locally.
+The production build creates the Pagefind search index, validates internal links, and then verifies the deployed artifact set under `dist/docs/`, together with the root `dist/_headers` file consumed by Cloudflare Static Assets. Run `pnpm preview` to inspect that build locally.
 
 Repository automation also runs Actionlint, Zizmor, CodeQL analysis for the application and Actions workflows, dependency review, a complete-lockfile OSV scan, and Conventional Commit PR-title validation. Renovate keeps exact package and immutable workflow pins current on a weekly cadence, groups routine updates, and holds major updates in the Dependency Dashboard for approval. Lockfile maintenance, zero-major packages, Wrangler, and GitHub Actions always require a maintainer merge.
 
 ## Deployment
 
-The production site is configured for [Cloudflare Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/) at `docs.astilba.com`. Astro generates every HTML and Markdown representation at build time. A small Worker entry point handles content negotiation by serving those existing Markdown assets when a canonical page receives an explicit `Accept: text/markdown`; it does not convert content at request time.
+The production site is configured for [Cloudflare Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/) at `astilba.com/docs/`. Astro uses `/docs` as its base and writes every HTML and Markdown representation beneath `dist/docs/`. A small Worker entry point handles content negotiation by serving those existing Markdown assets when a canonical page receives an explicit `Accept: text/markdown`; it does not convert content at request time.
 
-Selective Worker-first routing covers the root, canonical trailing-slash page URLs, direct `.md` assets, and the exact `/mcp` protocol endpoint. The Markdown route verifies the static response before attaching its UTF-8 media type, so an unknown `.md` URL keeps the HTML 404 response. Pagefind, JavaScript, CSS, fonts, images, and non-Markdown well-known artifacts remain on the free static-asset path; the explicit `!/_astro/*` exclusion keeps fingerprinted assets out of the Worker path. Canonical page, direct Markdown, and MCP requests count toward the Workers request allowance, and Cloudflare does not fall back to static delivery after that allowance is exhausted. Monitor Worker invocations. If the account plan exposes per-product usage notifications, configure a Workers request threshold that alerts the team well before the Free plan's 100,000-request daily limit. Otherwise use external monitoring, or move the project to Workers Paid before traffic can approach that limit. If neither is acceptable, remove or redesign Worker-first Markdown handling rather than accepting Cloudflare Error 1027 responses across those routes.
+The Worker route covers `astilba.com/docs/*`. Fingerprinted assets, generated corpora, Pagefind, security data, robots files, and sitemaps are served asset-first; page requests, Markdown negotiation, and the exact `/docs/mcp` protocol endpoint run through the Worker. An unknown `.md` URL keeps the HTML 404 response. The retired `docs.astilba.com` hostname is not a Worker target: Cloudflare redirects it path-for-path to the canonical `/docs` mount before origin routing.
 
 Validate the generated assets and Wrangler configuration without uploading anything:
 
 ```bash
 pnpm deploy:dry-run
+pnpm --dir site deploy:dry-run
 ```
 
-For an intentional fallback outside the normal production workflow, build and deploy manually to the configured Worker and custom domain:
+For an intentional fallback outside the normal production workflow, deploy the apex first and
+then the docs route with credentials that carry the least possible account scope:
 
 ```bash
+pnpm --dir site deploy
+pnpm --dir site smoke:production
 pnpm deploy
+pnpm smoke:all
 ```
 
-`wrangler.jsonc` is the deployment source of truth. Its Custom Domain route lets Cloudflare own the `docs.astilba.com` DNS record and certificate rather than proxying an external origin. Wrangler also uploads private source maps so production exceptions resolve to the original TypeScript without publishing those maps as site assets.
+`wrangler.jsonc` is the deployment source of truth. Its only production target mounts the docs Worker at `astilba.com/docs/*`; the legacy hostname remains outside that Worker deployment. Wrangler also uploads private source maps so production exceptions resolve to the original TypeScript without publishing those maps as site assets.
 
 The production build also derives a Content Security Policy from the exact inline scripts Astro and Starlight emit. Arbitrary inline JavaScript and inline event handlers remain blocked; same-origin executable assets and the narrow WebAssembly evaluation capability required by Pagefind are allowed. Starlight and Expressive Code still require inline styles, so that exception is deliberately limited to `style-src`. Static-asset-first routes receive the policy from `_headers`; Worker-first HTML reads the same generated policy asset and attaches it directly, as required by Cloudflare's routing model. Both paths also apply a Permissions Policy that denies a curated set of unused browser capabilities while explicitly preserving same-origin clipboard and WebMCP access, plus a strict-origin referrer policy. The artifact verifier, Worker tests, browser suite, and production smoke test all fail if these policies are missing or stop matching the built site.
 
-GitHub Actions automatically deploys after the verification job succeeds on `main`. Verification builds the production `dist/` once, validates it with Wrangler and the browser suite, and uploads it as an immutable GitHub artifact with a SHA-256 digest. The deployment job downloads that exact artifact by ID, requires successful digest verification, and runs Wrangler without rebuilding Astro. Hidden generated paths such as `.well-known/` are deliberately included.
+GitHub Actions automatically deploys after the verification job succeeds on `main`. Verification builds each production surface once, validates both with Wrangler and their browser suites, and uploads separate immutable apex and docs artifacts with SHA-256 digests. The deployment job downloads those exact artifacts by ID, requires successful digest verification, deploys the apex before the `/docs/*` route, and runs Wrangler without rebuilding Astro. Hidden generated paths such as `docs/.well-known/` are deliberately included.
 
-Immediately before Wrangler runs, the deployment job checks that its verified revision is still the current `origin/main`; rerunning an older workflow cannot replace a newer deployment. A bounded production smoke test then checks canonical HTML, negotiated UTF-8 Markdown, a fingerprinted asset's immutable cache policy, and an MCP initialize/search exchange. The same read-only smoke test runs hourly and on demand through the **Production smoke** workflow, or locally with:
+Immediately before Wrangler runs, the deployment job checks that its verified revision is still the current `origin/main`; rerunning an older workflow cannot replace a newer deployment. It smoke-tests the apex before changing the docs route, then tests the complete public web. The bounded checks cover root security and discovery, truthful product lifecycle copy, exact `/docs` canonicalization, docs HTML, negotiated UTF-8 Markdown, a fingerprinted asset's immutable cache policy, and an MCP initialize/search exchange. The same read-only pair runs hourly and on demand through the **Production smoke** workflow, or locally with:
 
 ```bash
-pnpm smoke:production
+pnpm smoke:all
 ```
 
 The `production` environment scopes `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN`; pull requests can validate Wrangler but cannot access those credentials or deploy. Actions receive read-only repository access by default and cannot approve pull requests. Main-branch protections require the complete verification matrix for administrators as well as other contributors, while CODEOWNERS routes production-path changes to the responsible maintainer. An independent human-approval gate still requires a second eligible repository reviewer and must not be enabled in a way that deadlocks deployments. Cloudflare recommends a custom API token restricted to Workers editing for the Astilba account.
@@ -112,9 +132,9 @@ A rollback immediately creates the active deployment but does not roll back Clou
 
 The homepage and each catalogued documentation page have sibling `.md` representations. Product pages include YAML provenance for their canonical page, product, documentation version, lifecycle, and public source file. HTML pages advertise that representation with `rel="alternate"`, point to the site-wide `llms.txt` index with `rel="describedby"`, and return the authored Markdown at the same canonical URL when a client explicitly requests `text/markdown`.
 
-Production builds also create `llms-small.txt`, `llms-full.txt`, a Cache-specific document set under `_llms-txt/`, `robots.txt`, the sitemap, and a digest-verified Agent Skills discovery index under `.well-known/agent-skills/`. The Cache skill teaches agents to consult the public corpus and preserve its unreleased boundary; it does not embed private product material.
+Production builds also create `/docs/llms-small.txt`, `/docs/llms-full.txt`, a Cache-specific document set under `/docs/_llms-txt/`, `/docs/robots.txt`, the documentation sitemap, and a digest-verified Agent Skills discovery index under `/docs/.well-known/agent-skills/`. The Cache skill teaches agents to consult the public corpus and preserve its unreleased boundary; it does not embed private product material.
 
-The same public build generates a bounded corpus for the stateless MCP endpoint at `https://docs.astilba.com/mcp`. Every published Markdown page is a fixed resource, while `search_docs` and `read_doc` provide read-only compatibility for clients whose resource support is limited. Every accepted POST consumes one unit from a Cloudflare-native per-source-IP, per-colo rate limit; tool calls and resource reads consume an additional unit because they perform the expensive operations. This is an abuse guard rather than a per-user quota: clients behind shared egress share capacity, and requests without Cloudflare's edge address use one anonymous fallback. MCP failures emit structured, searchable error events, while production logs and traces are independently sampled at 10% and 1%. The Worker accepts no arbitrary URL, account state, or private handbook content, and creates a fresh MCP server and transport for every request.
+The same public build generates a bounded corpus for the stateless MCP endpoint at `https://astilba.com/docs/mcp`. Every published Markdown page is a fixed resource, while `search_docs` and `read_doc` provide read-only compatibility for clients whose resource support is limited. Every accepted POST consumes one unit from a Cloudflare-native per-source-IP, per-colo rate limit; tool calls and resource reads consume an additional unit because they perform the expensive operations. This is an abuse guard rather than a per-user quota: clients behind shared egress share capacity, and requests without Cloudflare's edge address use one anonymous fallback. MCP failures emit structured, searchable error events, while production logs and traces are independently sampled at 10% and 1%. The Worker accepts no arbitrary URL, account state, or private handbook content, and creates a fresh MCP server and transport for every request.
 
 Machine-readable discovery includes an RFC 9727 API catalog, the current experimental MCP catalog and Server Card, and a separate compatibility card for clients that still probe the earlier well-known path. A concise public MCP guide explains the endpoint and its limits. Build verification checks every document, target URL, media type, cache policy, CORS policy, and RFC 8288 link relation before deployment.
 

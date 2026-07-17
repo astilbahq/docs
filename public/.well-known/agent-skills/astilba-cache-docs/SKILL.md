@@ -9,11 +9,11 @@ Use this skill when a question concerns Astilba Cache's current public API, beha
 
 ## Read the public sources
 
-1. When the client supports remote Streamable HTTP MCP, connect to the public, read-only endpoint at `https://docs.astilba.com/mcp`. Use `search_docs` to find focused pages and read the linked Markdown resources; `read_doc` provides bounded chunks when the client does not expose resources directly.
-2. Otherwise, start with the [Cache document set](https://docs.astilba.com/_llms-txt/astilba-cache.txt) when the question spans several topics.
+1. When the client supports remote Streamable HTTP MCP, connect to the public, read-only endpoint at `https://astilba.com/docs/mcp`. Use `search_docs` to find focused pages and read the linked Markdown resources; `read_doc` provides bounded chunks when the client does not expose resources directly.
+2. Otherwise, start with the [Cache document set](https://astilba.com/docs/_llms-txt/astilba-cache.txt) when the question spans several topics.
 3. When the question is focused, follow the relevant canonical page link in that document set and use the page-specific Markdown alternate it advertises.
-4. Check [API status](https://docs.astilba.com/cache/api-status.md) before making any claim about availability, completeness, installation, runtime adapters, time-based behavior, or production use.
-5. Use [API reference](https://docs.astilba.com/cache/api-reference.md) for exact exported names, parameters, return fields, and driver contracts.
+4. Check [API status](https://astilba.com/docs/cache/api-status.md) before making any claim about availability, completeness, installation, runtime adapters, time-based behavior, or production use.
+5. Use [API reference](https://astilba.com/docs/cache/api-reference.md) for exact exported names, parameters, return fields, and driver contracts.
 
 ## Keep the release boundary explicit
 

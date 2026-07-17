@@ -20,7 +20,7 @@ Astilba Cache stores the result of expensive server-side work so later calls can
 | Evaluate a Cloudflare Workers integration | The source includes a Workers factory, KV driver, Coordinator Durable Object, live Bus, recovery poller, and React Router middleware. |
 | Add a supported production cache today | Not yet. The package, elapsed-time behavior, operational measurements, and release process must complete first. |
 
-For React applications, “server-side” means code such as a route loader, server action, API route, or Server Component—not code running in the browser. The current framework adapter targets React Router v8 on the server; see [React Router](/cache/react-and-server-apps/).
+For React applications, “server-side” means code such as a route loader, server action, API route, or Server Component—not code running in the browser. The current framework adapter targets React Router v8 on the server; see [React Router](/docs/cache/react-and-server-apps/).
 
 ## Start with one value
 
@@ -42,7 +42,7 @@ const product = await cache.getOrSet({
 
 On a miss, Cache runs <code>loadProduct()</code>, stores its result, and returns it. On a usable hit, it returns the stored value without running the factory.
 
-The portable constructor makes you supply storage, a clock, and a random source. The [local quickstart](/cache/quickstart/) shows that explicit wiring. On Workers, <code>createWorkersCache()</code> supplies those platform capabilities and composes the current Cloudflare drivers for you.
+The portable constructor makes you supply storage, a clock, and a random source. The [local quickstart](/docs/cache/quickstart/) shows that explicit wiring. On Workers, <code>createWorkersCache()</code> supplies those platform capabilities and composes the current Cloudflare drivers for you.
 
 ## Add only what you need
 
@@ -89,11 +89,11 @@ Cache does not update your source of truth. Change the database or upstream serv
 
 | You want to… | Start with | Continue with |
 | --- | --- | --- |
-| Decide whether the preview fits | This overview | [Implementation status](/cache/api-status/) |
-| Run the smallest current-source example | [Local quickstart](/cache/quickstart/) | [Read and cache values](/cache/reading-and-filling/) |
-| Evaluate the runtime adapters | [Cloudflare Workers](/cache/cloudflare-workers/) | [React Router](/cache/react-and-server-apps/) if it is your server framework |
-| Add application cache behavior | [Read and cache values](/cache/reading-and-filling/) | [Invalidate cached data](/cache/tags-and-invalidation/) and [Control cache sharing](/cache/scopes-and-privacy/) |
-| Tag rendered responses safely | [React Router](/cache/react-and-server-apps/) | [Cache HTTP responses](/cache/response-caching/) |
-| Diagnose a value or event | [Inspect cache behavior](/cache/observability/) | [API reference](/cache/api-reference/) |
-| Understand the correctness model | [Cache fundamentals](/cache/core-concepts/) | [How Cache works](/cache/how-it-works/) and [Consistency and resilience](/cache/consistency-and-resilience/) |
-| Inspect capability and export details | [Runtime architecture](/cache/architecture/) | [Driver implementations](/cache/drivers-and-status/) and [API reference](/cache/api-reference/) |
+| Decide whether the preview fits | This overview | [Implementation status](/docs/cache/api-status/) |
+| Run the smallest current-source example | [Local quickstart](/docs/cache/quickstart/) | [Read and cache values](/docs/cache/reading-and-filling/) |
+| Evaluate the runtime adapters | [Cloudflare Workers](/docs/cache/cloudflare-workers/) | [React Router](/docs/cache/react-and-server-apps/) if it is your server framework |
+| Add application cache behavior | [Read and cache values](/docs/cache/reading-and-filling/) | [Invalidate cached data](/docs/cache/tags-and-invalidation/) and [Control cache sharing](/docs/cache/scopes-and-privacy/) |
+| Tag rendered responses safely | [React Router](/docs/cache/react-and-server-apps/) | [Cache HTTP responses](/docs/cache/response-caching/) |
+| Diagnose a value or event | [Inspect cache behavior](/docs/cache/observability/) | [API reference](/docs/cache/api-reference/) |
+| Understand the correctness model | [Cache fundamentals](/docs/cache/core-concepts/) | [How Cache works](/docs/cache/how-it-works/) and [Consistency and resilience](/docs/cache/consistency-and-resilience/) |
+| Inspect capability and export details | [Runtime architecture](/docs/cache/architecture/) | [Driver implementations](/docs/cache/drivers-and-status/) and [API reference](/docs/cache/api-reference/) |

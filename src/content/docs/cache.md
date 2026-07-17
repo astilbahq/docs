@@ -12,6 +12,6 @@ Astilba Cache stores the result of expensive server-side work so later calls can
 
 ## Explore Cache
 
-Start with the [overview](/cache/overview/), run the [local quickstart](/cache/quickstart/), or inspect the source integrations for [Cloudflare Workers](/cache/cloudflare-workers/) and [React Router](/cache/react-and-server-apps/).
+Start with the [overview](/docs/cache/overview/), run the [local quickstart](/docs/cache/quickstart/), or inspect the source integrations for [Cloudflare Workers](/docs/cache/cloudflare-workers/) and [React Router](/docs/cache/react-and-server-apps/).
 
-For the precise state of the public source, see [Implementation status](/cache/api-status/).
+For the precise state of the public source, see [Implementation status](/docs/cache/api-status/).

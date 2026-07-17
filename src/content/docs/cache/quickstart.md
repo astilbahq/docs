@@ -104,8 +104,8 @@ The current kernel refuses a factory fill without an L2 Store. The same small <c
 
 ## Move to a runtime integration
 
-- [Cloudflare Workers](/cache/cloudflare-workers/) replaces the manual clock, random source, and development Store with the current Workers factory and drivers.
-- [React Router](/cache/react-and-server-apps/) exposes that cache through server middleware and carries request identity to reads.
-- [Cache fundamentals](/cache/core-concepts/) explains the storage and invalidation vocabulary.
-- [Inspect cache behavior](/cache/observability/) shows how to inspect a cache value with <code>explain()</code> and configure event telemetry.
-- [Implementation status](/cache/api-status/) lists every incomplete or provisional surface.
+- [Cloudflare Workers](/docs/cache/cloudflare-workers/) replaces the manual clock, random source, and development Store with the current Workers factory and drivers.
+- [React Router](/docs/cache/react-and-server-apps/) exposes that cache through server middleware and carries request identity to reads.
+- [Cache fundamentals](/docs/cache/core-concepts/) explains the storage and invalidation vocabulary.
+- [Inspect cache behavior](/docs/cache/observability/) shows how to inspect a cache value with <code>explain()</code> and configure event telemetry.
+- [Implementation status](/docs/cache/api-status/) lists every incomplete or provisional surface.

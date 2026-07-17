@@ -1,16 +1,18 @@
 import { SUPPORTED_PROTOCOL_VERSIONS } from "@modelcontextprotocol/sdk/types.js";
 
-import { DOCS_ORIGIN } from "./mcp-corpus.ts";
+import { docsUrl, withDocsBase } from "./urls.ts";
 
-export const API_CATALOG_PATH = "/.well-known/api-catalog";
+export const API_CATALOG_PATH = withDocsBase("/.well-known/api-catalog");
 export const API_CATALOG_LINK_VALUE = `<${API_CATALOG_PATH}>; rel="api-catalog"; type="application/linkset+json"`;
-export const MCP_CATALOG_PATH = "/.well-known/mcp/catalog.json";
-export const MCP_COMPATIBILITY_CARD_PATH = "/.well-known/mcp/server-card.json";
-export const MCP_ENDPOINT_PATH = "/mcp";
-export const MCP_SERVER_CARD_PATH = "/mcp/server-card";
-const MCP_USAGE_PATH = "/agents/mcp/";
+export const MCP_CATALOG_PATH = withDocsBase("/.well-known/mcp/catalog.json");
+export const MCP_COMPATIBILITY_CARD_PATH = withDocsBase(
+  "/.well-known/mcp/server-card.json"
+);
+export const MCP_ENDPOINT_PATH = withDocsBase("/mcp");
+export const MCP_SERVER_CARD_PATH = withDocsBase("/mcp/server-card");
+const MCP_USAGE_PATH = withDocsBase("/agents/mcp/");
 
-const absoluteUrl = (path: string): string => new URL(path, DOCS_ORIGIN).href;
+const absoluteUrl = (path: string): string => docsUrl(path);
 
 export const MCP_SERVER_INFO = Object.freeze({
   description: "Search and read Astilba's public product documentation.",

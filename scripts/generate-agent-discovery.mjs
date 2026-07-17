@@ -11,7 +11,7 @@ import {
   MCP_COMPATIBILITY_CARD_PATH,
   MCP_SERVER_CARD_PATH,
 } from "../src/docs/agent-discovery.ts";
-import { DOCS_ORIGIN } from "../src/docs/mcp-corpus.ts";
+import { ASTILBA_ORIGIN } from "../src/docs/urls.ts";
 
 const siteValue = process.env.ASTILBA_DOCS_SITE;
 let site;
@@ -24,7 +24,7 @@ try {
 
 if (
   !site ||
-  site.origin !== DOCS_ORIGIN ||
+  site.origin !== ASTILBA_ORIGIN ||
   site.username ||
   site.password ||
   site.pathname !== "/" ||
@@ -32,7 +32,7 @@ if (
   site.hash
 ) {
   throw new Error(
-    `[agent-discovery] ASTILBA_DOCS_SITE must use the canonical origin ${DOCS_ORIGIN}.`
+    `[agent-discovery] ASTILBA_DOCS_SITE must use the canonical origin ${ASTILBA_ORIGIN}.`
   );
 }
 

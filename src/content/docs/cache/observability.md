@@ -109,4 +109,4 @@ The <code>memory()</code> driver also accepts <code>telemetry</code> and <code>o
 
 <code>createWorkersCache()</code> currently fixes its internal L1 construction and exposes no telemetry option. To receive <code>private_evicted</code> from a memory L1, compose <code>createCache()</code> and <code>memory({ telemetry })</code> directly. Kernel telemetry and React Router middleware telemetry likewise remain separate options in the current preview.
 
-Continue with [Cache HTTP responses](/cache/response-caching/) for the response safety gate, [Control cache sharing](/cache/scopes-and-privacy/) for private storage rules, or [API reference](/cache/api-reference/) for the complete types.
+Continue with [Cache HTTP responses](/docs/cache/response-caching/) for the response safety gate, [Control cache sharing](/docs/cache/scopes-and-privacy/) for private storage rules, or [API reference](/docs/cache/api-reference/) for the complete types.
