@@ -94,6 +94,12 @@ describe("documentation sidebar model", () => {
     const known = createDocsSidebarContext("/docs/cache/overview/");
     const unknown = createDocsSidebarContext("/outside/");
 
+    expect(known.mode).toBe("product");
+    expect(unknown.mode).toBe("catalog");
+    if (known.mode !== "product" || unknown.mode !== "catalog") {
+      throw new Error("Expected product and catalog sidebar contexts.");
+    }
+
     expect(known.product.label).toBe("Cache");
     expect(known.product.href).toBe("/docs/cache/");
     expect(known.product.options).toMatchObject([
@@ -109,27 +115,55 @@ describe("documentation sidebar model", () => {
       },
     ]);
     expect(known.version?.label).toBe("Unreleased");
-    expect(unknown.product.label).toBe("Create");
-    expect(unknown.product.href).toBe("/docs/create/");
-    expect(unknown.product.options).toMatchObject([
+    expect(unknown.products).toMatchObject([
       {
+        label: "Create",
         href: "/docs/create/",
-        selected: true,
       },
       {
+        label: "Cache",
         href: "/docs/cache/",
-        selected: false,
       },
     ]);
 
     const productHome = createDocsSidebarContext("/docs/cache/");
+    expect(productHome.mode).toBe("product");
+    if (productHome.mode !== "product") {
+      throw new Error("Expected a product sidebar context.");
+    }
     expect(productHome.product.href).toBe("/docs/cache/");
     expect(productHome.version?.label).toBe("Unreleased");
 
     const createPage = createDocsSidebarContext("/docs/create/overview/");
+    expect(createPage.mode).toBe("product");
+    if (createPage.mode !== "product") {
+      throw new Error("Expected a product sidebar context.");
+    }
     expect(createPage.product.label).toBe("Create");
     expect(createPage.version?.label).toBe("0.1");
     expect(createPage.version?.meta).toBe("Latest");
+  });
+
+  it("uses direct product links outside a product context", () => {
+    const home = createDocsSidebarContext("/docs/");
+    const agentPage = createDocsSidebarContext("/docs/agents/mcp/");
+
+    expect(home).toMatchObject({
+      mode: "catalog",
+      products: [
+        {
+          ariaLabel: "Create documentation",
+          href: "/docs/create/",
+          label: "Create",
+        },
+        {
+          ariaLabel: "Cache documentation",
+          href: "/docs/cache/",
+          label: "Cache",
+        },
+      ],
+    });
+    expect(agentPage).toEqual(home);
   });
 
   it("adds global agent navigation independently of product context", () => {

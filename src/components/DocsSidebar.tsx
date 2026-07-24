@@ -162,43 +162,55 @@ const DocsContextMenu = ({ row }: { row: DocsContextRow }) => {
   );
 };
 
+const DocsContextLink = ({ row }: { row: DocsContextRow }) => (
+  <a
+    aria-label={row.ariaLabel}
+    className={cx(styles.contextControl, styles.contextLink)}
+    href={row.href}
+  >
+    <ContextRowContent row={row} />
+  </a>
+);
+
 const DocsContext = ({ context }: { context: DocsSidebarContextModel }) => (
   <div
     aria-label="Documentation context"
     className={styles.context}
     role="group"
   >
-    {context.product.options ? (
-      <DocsContextMenu row={context.product} />
-    ) : context.product.href ? (
-      <a
-        aria-label={context.product.ariaLabel}
-        className={cx(styles.contextControl, styles.contextLink)}
-        href={context.product.href}
-      >
-        <ContextRowContent row={context.product} />
-      </a>
+    {context.mode === "catalog" ? (
+      context.products.map((product) => (
+        <DocsContextLink key={product.href} row={product} />
+      ))
     ) : (
-      <div
-        aria-label={context.product.ariaLabel}
-        className={styles.contextControl}
-        role="group"
-      >
-        <ContextRowContent row={context.product} />
-      </div>
+      <>
+        {context.product.options ? (
+          <DocsContextMenu row={context.product} />
+        ) : context.product.href ? (
+          <DocsContextLink row={context.product} />
+        ) : (
+          <div
+            aria-label={context.product.ariaLabel}
+            className={styles.contextControl}
+            role="group"
+          >
+            <ContextRowContent row={context.product} />
+          </div>
+        )}
+        {context.version &&
+          (context.version.options ? (
+            <DocsContextMenu row={context.version} />
+          ) : (
+            <div
+              aria-label={context.version.ariaLabel}
+              className={styles.contextControl}
+              role="group"
+            >
+              <ContextRowContent row={context.version} />
+            </div>
+          ))}
+      </>
     )}
-    {context.version &&
-      (context.version.options ? (
-        <DocsContextMenu row={context.version} />
-      ) : (
-        <div
-          aria-label={context.version.ariaLabel}
-          className={styles.contextControl}
-          role="group"
-        >
-          <ContextRowContent row={context.version} />
-        </div>
-      ))}
   </div>
 );
 

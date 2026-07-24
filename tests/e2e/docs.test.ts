@@ -1412,19 +1412,26 @@ test("presents products and copies the agent setup prompt from the homepage", as
   await expect(pageTitle).toHaveCSS("font-weight", "500");
   const sidebar = page.locator("#starlight__sidebar");
   await expect(sidebar).toBeVisible();
-  const productMenu = sidebar.getByRole("button", {
-    name: "Choose product. Current product: Create",
-    exact: true,
-  });
-  await expect(productMenu).toBeVisible();
-  await productMenu.click();
-  await expect(page.getByRole("menuitem", { name: /Cache/ })).toHaveAttribute(
-    "href",
-    "/docs/cache/"
-  );
-  await page.keyboard.press("Escape");
   await expect(
-    sidebar.getByRole("button", { name: "AI for Agents", exact: true })
+    sidebar.getByRole("button", { name: /Choose product/ })
+  ).toHaveCount(0);
+  await expect(
+    sidebar.getByRole("link", {
+      name: "Create documentation",
+      exact: true,
+    })
+  ).toHaveAttribute("href", "/docs/create/");
+  await expect(
+    sidebar.getByRole("link", {
+      name: "Cache documentation",
+      exact: true,
+    })
+  ).toHaveAttribute("href", "/docs/cache/");
+  await expect(
+    sidebar.getByRole("button", {
+      name: "AI for Agents",
+      exact: true,
+    })
   ).toHaveAttribute("aria-expanded", "true");
   await expect(
     sidebar.getByRole("link", { name: "LLMs.txt", exact: true })

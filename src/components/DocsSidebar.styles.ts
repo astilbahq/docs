@@ -58,6 +58,7 @@ export const docsSidebarStyles = {
     },
   }),
   contextLink: css({
+    color: "link",
     cursor: "pointer",
     textDecoration: "none",
     "&:is(:hover, :focus-visible)": {

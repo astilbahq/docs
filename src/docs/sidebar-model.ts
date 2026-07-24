@@ -35,10 +35,25 @@ export interface DocsContextRow {
   status?: DocsBadge;
 }
 
-export interface DocsSidebarContextModel {
+type DocsCatalogContextRow = Omit<DocsContextRow, "href" | "options"> & {
+  href: string;
+  options?: never;
+};
+
+interface DocsSidebarCatalogContextModel {
+  mode: "catalog";
+  products: DocsCatalogContextRow[];
+}
+
+interface DocsSidebarProductContextModel {
+  mode: "product";
   product: DocsContextRow;
   version?: DocsContextRow;
 }
+
+export type DocsSidebarContextModel =
+  | DocsSidebarCatalogContextModel
+  | DocsSidebarProductContextModel;
 
 interface DocsSidebarEntryBase {
   badge?: DocsBadge;
@@ -233,40 +248,34 @@ export const createDocsSidebarContext = (
 ): DocsSidebarContextModel => {
   const pageContext = findDocsContext(pathname);
   const productContext = findDocsProductContext(pathname);
-  const selectedProductId = productContext?.product.id ?? docsProducts[0]?.id;
-  const productOptions = docsProducts.map((option) => ({
-    id: option.id,
-    label: option.label,
-    icon: option.icon,
-    selected: option.id === selectedProductId,
-    status: option.status,
-    href: getProductHomeHref(option),
-  }));
 
   if (!productContext) {
-    const product = docsProducts[0];
-
-    if (!product) {
+    if (docsProducts.length === 0) {
       throw new Error("At least one documentation product is required.");
     }
 
     return {
-      product: {
-        ariaLabel:
-          productOptions.length > 1
-            ? `Choose product. Current product: ${product.label}`
-            : `${product.label} documentation`,
+      mode: "catalog",
+      products: docsProducts.map((product) => ({
+        ariaLabel: `${product.label} documentation`,
         href: getProductHomeHref(product),
         icon: product.icon,
         label: product.label,
-        options: productOptions.length > 1 ? productOptions : undefined,
         status: product.status,
-      },
+      })),
     };
   }
 
   const { product, version } = productContext;
   const page = pageContext?.page ?? getDefaultPage(product, version);
+  const productOptions = docsProducts.map((option) => ({
+    id: option.id,
+    label: option.label,
+    icon: option.icon,
+    selected: option.id === product.id,
+    status: option.status,
+    href: getProductHomeHref(option),
+  }));
   const versionOptions = product.versions.map((option) => ({
     id: option.id,
     label: option.label,
@@ -277,6 +286,7 @@ export const createDocsSidebarContext = (
   }));
 
   return {
+    mode: "product",
     product: {
       ariaLabel:
         productOptions.length > 1
