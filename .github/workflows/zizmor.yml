@@ -21,9 +21,6 @@ jobs:
           persist-credentials: false
 
       - name: Audit workflows
-        uses: zizmorcore/zizmor-action@6599ee8b7a49aef6a770f63d261d214911a7ce02 # v0.6.0
+        uses: docker://ghcr.io/zizmorcore/zizmor:1.28.0@sha256:8e6b3e4fb74d1aa5d23e83ea369f386c66eced0d1fb944d32cd8b2aac100b00d
         with:
-          version: "1.28.0"
-          online-audits: false
-          min-severity: medium
-          advanced-security: false
+          args: --persona=regular --no-online-audits --min-severity=medium .
