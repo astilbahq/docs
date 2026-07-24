@@ -35,9 +35,14 @@ export interface DocsContextRow {
   status?: DocsBadge;
 }
 
+type DocsCatalogContextRow = Omit<DocsContextRow, "href" | "options"> & {
+  href: string;
+  options?: never;
+};
+
 interface DocsSidebarCatalogContextModel {
   mode: "catalog";
-  products: DocsContextRow[];
+  products: DocsCatalogContextRow[];
 }
 
 interface DocsSidebarProductContextModel {
