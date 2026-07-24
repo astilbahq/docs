@@ -233,6 +233,15 @@ export const createDocsSidebarContext = (
 ): DocsSidebarContextModel => {
   const pageContext = findDocsContext(pathname);
   const productContext = findDocsProductContext(pathname);
+  const selectedProductId = productContext?.product.id ?? docsProducts[0]?.id;
+  const productOptions = docsProducts.map((option) => ({
+    id: option.id,
+    label: option.label,
+    icon: option.icon,
+    selected: option.id === selectedProductId,
+    status: option.status,
+    href: getProductHomeHref(option),
+  }));
 
   if (!productContext) {
     const product = docsProducts[0];
@@ -243,10 +252,14 @@ export const createDocsSidebarContext = (
 
     return {
       product: {
-        ariaLabel: `${product.label} documentation`,
+        ariaLabel:
+          productOptions.length > 1
+            ? `Choose product. Current product: ${product.label}`
+            : `${product.label} documentation`,
         href: getProductHomeHref(product),
         icon: product.icon,
         label: product.label,
+        options: productOptions.length > 1 ? productOptions : undefined,
         status: product.status,
       },
     };
@@ -265,10 +278,14 @@ export const createDocsSidebarContext = (
 
   return {
     product: {
-      ariaLabel: `${product.label} documentation home`,
+      ariaLabel:
+        productOptions.length > 1
+          ? `Choose product. Current product: ${product.label}`
+          : `${product.label} documentation home`,
       href: getProductHomeHref(product),
       icon: product.icon,
       label: product.label,
+      options: productOptions.length > 1 ? productOptions : undefined,
       status: product.status,
     },
     version: {

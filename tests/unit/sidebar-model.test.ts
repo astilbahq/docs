@@ -96,15 +96,40 @@ describe("documentation sidebar model", () => {
 
     expect(known.product.label).toBe("Cache");
     expect(known.product.href).toBe("/docs/cache/");
-    expect(known.product.options).toBeUndefined();
+    expect(known.product.options).toMatchObject([
+      {
+        href: "/docs/create/",
+        label: "Create",
+        selected: false,
+      },
+      {
+        href: "/docs/cache/",
+        label: "Cache",
+        selected: true,
+      },
+    ]);
     expect(known.version?.label).toBe("Unreleased");
-    expect(unknown.product.label).toBe("Cache");
-    expect(unknown.product.href).toBe("/docs/cache/");
-    expect(unknown.product.options).toBeUndefined();
+    expect(unknown.product.label).toBe("Create");
+    expect(unknown.product.href).toBe("/docs/create/");
+    expect(unknown.product.options).toMatchObject([
+      {
+        href: "/docs/create/",
+        selected: true,
+      },
+      {
+        href: "/docs/cache/",
+        selected: false,
+      },
+    ]);
 
     const productHome = createDocsSidebarContext("/docs/cache/");
     expect(productHome.product.href).toBe("/docs/cache/");
     expect(productHome.version?.label).toBe("Unreleased");
+
+    const createPage = createDocsSidebarContext("/docs/create/overview/");
+    expect(createPage.product.label).toBe("Create");
+    expect(createPage.version?.label).toBe("0.1");
+    expect(createPage.version?.meta).toBe("Latest");
   });
 
   it("adds global agent navigation independently of product context", () => {

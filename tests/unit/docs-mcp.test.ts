@@ -29,6 +29,12 @@ const getSitePageFixture = (
         description: "A portable server-side TypeScript cache.",
         title: "Cache",
       };
+    case "create":
+      return {
+        content: "# Create\n\nExplore the public Create documentation.",
+        description: "A deterministic TypeScript project generator.",
+        title: "Create",
+      };
     case "agents/llms-txt":
       return {
         content: "# LLMs.txt\n\nChoose a generated documentation corpus.",
@@ -87,10 +93,10 @@ const createCorpusValue = () => ({
             const isOverview = page.slug === "overview";
             const isInvalidation = page.slug === "tags-and-invalidation";
             const content = isOverview
-              ? "A😀B Cache overview and storage boundaries."
+              ? `A😀B ${product.label} overview and public boundaries.`
               : isInvalidation
                 ? "# Invalidate cached data\n\nTag invalidation supports related values."
-                : `# ${page.label}\n\nPublic Cache documentation for ${page.label}.`;
+                : `# ${page.label}\n\nPublic ${product.label} documentation for ${page.label}.`;
 
             return {
               canonicalUrl: docsUrl(`/${version.basePath}/${page.slug}/`),

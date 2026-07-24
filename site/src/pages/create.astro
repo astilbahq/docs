@@ -1,0 +1,127 @@
+---
+import CreateProof from "../components/CreateProof.astro";
+import GuaranteeRows from "../components/GuaranteeRows.astro";
+import SiteLayout from "../layouts/SiteLayout.astro";
+
+const guarantees = [
+  {
+    guarantee: "The complete project is planned before Create writes it.",
+    boundary: "Invalid metadata, unsafe paths, and output collisions fail before publication.",
+  },
+  {
+    guarantee: "A partial staging tree never passes as a complete project.",
+    boundary: "Create publishes a new destination only after files, links, modes, and optional Git initialization succeed.",
+  },
+  {
+    guarantee: "Generated application code belongs to the project.",
+    boundary: "The manifest records seeded files as user-owned immediately; future tooling must not overwrite them.",
+  },
+  {
+    guarantee: "A recipe is a complete maintained contract.",
+    boundary: "Create keeps the catalog small instead of promising arbitrary, unverified feature combinations.",
+  },
+] as const;
+---
+
+<SiteLayout
+  current="create"
+  description="Astilba Create is a deterministic CLI for generating verified TypeScript projects from maintained recipes."
+  title="Astilba Create — Complete TypeScript project foundations"
+>
+  <section aria-labelledby="create-title" class="product-hero section-shell">
+    <div>
+      <p class="eyebrow">Astilba Create · Released</p>
+      <h1 id="create-title">Start with a complete project, not a pile of choices.</h1>
+      <p class="hero__lede">
+        Generate an independent TypeScript repository with pinned tooling, verification,
+        security workflows, and explicit ownership evidence from one maintained recipe.
+      </p>
+      <div class="action-row">
+        <a class="action action--primary" href="/docs/create/quickstart/">Create a project <span aria-hidden="true">↗</span></a>
+        <a class="action action--secondary" href="https://github.com/astilbahq/create" rel="noopener">View the source <span aria-hidden="true">↗</span></a>
+      </div>
+      <p class="release-line">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span><code>create-astilba</code> 0.1.0 · four recipe v1 contracts · public on npm</span>
+      </p>
+    </div>
+  </section>
+
+  <section aria-labelledby="fit-heading" class="section-shell ruled-section">
+    <div class="section-heading section-heading--compact">
+      <div>
+        <p class="eyebrow">01 · Fit</p>
+        <h2 id="fit-heading">One verified starting point</h2>
+      </div>
+    </div>
+    <div class="fit-grid">
+      <div>
+        <h3>Fits</h3>
+        <ul>
+          <li>TypeScript libraries with package-surface checks</li>
+          <li>React and Vite single-page applications</li>
+          <li>Statically rendered Astro sites</li>
+          <li>Cloudflare Worker services</li>
+          <li>Non-interactive project creation for agents and CI</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Does not fit</h3>
+        <ul>
+          <li>Merging generated files into an existing directory</li>
+          <li>Arbitrary framework and infrastructure combinations</li>
+          <li>Updating or repairing a generated repository</li>
+          <li>A programmatic generator API</li>
+          <li>Applying hosted GitHub or deployment settings</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="proof-heading" class="section-shell ruled-section proof-section">
+    <div class="section-heading section-heading--compact">
+      <div>
+        <p class="eyebrow">02 · Generation boundary</p>
+        <h2 id="proof-heading">Plan, validate, stage, publish</h2>
+      </div>
+    </div>
+    <p class="section-intro">
+      Create resolves one versioned recipe, validates the complete portable tree, and
+      stages it beside the destination before publication.
+    </p>
+    <CreateProof expanded />
+  </section>
+
+  <section aria-labelledby="guarantees-heading" class="section-shell ruled-section">
+    <div class="section-heading section-heading--compact">
+      <div>
+        <p class="eyebrow">03 · Guarantees and costs</p>
+        <h2 id="guarantees-heading">Failure is part of the contract</h2>
+      </div>
+    </div>
+    <GuaranteeRows rows={[...guarantees]} />
+  </section>
+
+  <section aria-labelledby="status-heading" class="section-shell ruled-section release-status">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">04 · Release state</p>
+        <h2 id="status-heading">The CLI and four recipes are released</h2>
+      </div>
+      <span class="lifecycle-badge">0.1.0 on npm</span>
+    </div>
+    <div class="status-grid">
+      <p><span>Interactive CLI</span><strong>Released</strong></p>
+      <p><span>Automation JSON</span><strong>Schema v1</strong></p>
+      <p><span>Recipe catalog</span><strong>Four recipe v1 contracts</strong></p>
+      <p><span>Project manifest</span><strong>Schema v1</strong></p>
+      <p><span>Programmatic API</span><strong>Not exported</strong></p>
+      <p><span>Update and doctor tooling</span><strong>Not shipped</strong></p>
+    </div>
+    <div class="section-actions">
+      <a href="/docs/create/overview/">Read the documentation <span aria-hidden="true">→</span></a>
+      <a href="/docs/create/release-and-support/">Release and support <span aria-hidden="true">→</span></a>
+      <a href="https://www.npmjs.com/package/create-astilba" rel="noopener">View the npm package <span aria-hidden="true">↗</span></a>
+    </div>
+  </section>
+</SiteLayout>

@@ -72,6 +72,13 @@ const requireHeaderIncludes = (response, name, expected, label) => {
   }
 };
 
+const requireHeaderEquals = (response, name, expected, label) => {
+  const actual = response.headers.get(name);
+  if (actual !== expected) {
+    throw new Error(`${label} returned unexpected ${name}: ${actual}`);
+  }
+};
+
 const requireBodyIncludes = (body, expected, label) => {
   if (!body.includes(expected)) {
     throw new Error(`${label} did not include ${expected}.`);
@@ -99,7 +106,16 @@ const run = async () => {
     'href="https://astilba.com/" rel="canonical"',
     "Homepage"
   );
-  requireBodyIncludes(home, "is not available on npm", "Homepage");
+  requireBodyIncludes(home, "create-astilba", "Homepage");
+  requireBodyIncludes(home, "Cache remains a development preview", "Homepage");
+
+  const createResponse = await request("/create/");
+  requireStatus(createResponse, 200, "Create page");
+  requireBodyIncludes(
+    await createResponse.text(),
+    "four recipe v1 contracts",
+    "Create page"
+  );
 
   const cacheResponse = await request("/cache/");
   requireStatus(cacheResponse, 200, "Cache page");
@@ -108,6 +124,67 @@ const run = async () => {
     "No npm package",
     "Cache page"
   );
+
+  const schemaResponse = await request("/schemas/create/v1.json");
+  requireStatus(schemaResponse, 200, "Create project manifest schema");
+  requireHeaderIncludes(
+    schemaResponse,
+    "Content-Type",
+    "application/schema+json",
+    "Create project manifest schema"
+  );
+  requireHeaderEquals(
+    schemaResponse,
+    "Access-Control-Allow-Origin",
+    "*",
+    "Create project manifest schema"
+  );
+  requireHeaderEquals(
+    schemaResponse,
+    "Cache-Control",
+    "public, max-age=3600",
+    "Create project manifest schema"
+  );
+  const schema = await schemaResponse.json();
+  if (
+    schema.$id !== "https://astilba.com/schemas/create/v1.json" ||
+    schema.properties?.schemaVersion?.const !== 1
+  ) {
+    throw new Error(
+      "Create project manifest schema must publish the v1 contract."
+    );
+  }
+
+  const llmsResponse = await request("/llms.txt");
+  requireStatus(llmsResponse, 200, "LLMs.txt");
+  requireHeaderIncludes(llmsResponse, "Content-Type", "text/plain", "LLMs.txt");
+  const llms = await llmsResponse.text();
+  requireBodyIncludes(
+    llms,
+    "[Create](https://astilba.com/create/)",
+    "LLMs.txt"
+  );
+  requireBodyIncludes(llms, "[Cache](https://astilba.com/cache/)", "LLMs.txt");
+
+  const skillsResponse = await request("/.well-known/agent-skills/index.json");
+  requireStatus(skillsResponse, 200, "Agent Skills discovery");
+  requireHeaderIncludes(
+    skillsResponse,
+    "Content-Type",
+    "application/json",
+    "Agent Skills discovery"
+  );
+  const discovery = await skillsResponse.json();
+  const skillNames = discovery.skills?.map(({ name }) => name);
+  if (
+    !Array.isArray(skillNames) ||
+    !skillNames.includes("astilba-create-docs") ||
+    !skillNames.includes("astilba-cache-docs")
+  ) {
+    throw new Error(
+      "Agent Skills discovery must publish the Create and Cache skills."
+    );
+  }
 
   const docsRedirect = await request("/docs");
   requireStatus(docsRedirect, 308, "Docs canonical redirect");
@@ -138,6 +215,14 @@ const run = async () => {
     await sitemapResponse.text(),
     "https://astilba.com/docs/sitemap.xml",
     "Sitemap index"
+  );
+
+  const siteSitemapResponse = await request("/sitemap-site.xml");
+  requireStatus(siteSitemapResponse, 200, "Site sitemap");
+  requireBodyIncludes(
+    await siteSitemapResponse.text(),
+    "<loc>https://astilba.com/create/</loc>",
+    "Site sitemap"
   );
 };
 

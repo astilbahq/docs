@@ -115,7 +115,8 @@ export default defineConfig({
     }),
     starlight({
       title: "Astilba",
-      description: "Documentation for Astilba infrastructure libraries.",
+      description:
+        "Documentation for Astilba infrastructure tools and libraries.",
       favicon: "/favicon.svg",
       head: site
         ? [
@@ -163,7 +164,7 @@ export default defineConfig({
           ? [
               starlightLlmsTxt({
                 details:
-                  "Astilba Cache is an unreleased preview without a supported installation path. Treat its examples as API previews, not setup instructions.",
+                  "Astilba Create 0.1.0 is released; Astilba Cache remains an unreleased preview. Check each product's release or implementation-status page before making availability claims.",
                 optionalLinks: [
                   {
                     label: "Astilba documentation MCP",
@@ -173,6 +174,12 @@ export default defineConfig({
                   },
                 ],
                 customSets: [
+                  {
+                    label: "Astilba Create",
+                    description:
+                      "Released documentation for the deterministic create-astilba CLI and its four supported recipe v1 contracts.",
+                    paths: ["create", "create/**"],
+                  },
                   {
                     label: "Astilba Cache",
                     description:

@@ -9,10 +9,12 @@ const requiredFiles = [
   "404.html",
   "_headers",
   "cache/index.html",
+  "create/index.html",
   "index.html",
   "llms.txt",
   "mcp/server-card",
   "robots.txt",
+  "schemas/create/v1.json",
   "site.js",
   "sitemap-site.xml",
   "sitemap.xml",
@@ -39,16 +41,27 @@ for (const path of requiredFiles) {
   }
 }
 
-const [home, cache, headers, robots, sitemap, skills, apiCatalog] =
-  await Promise.all([
-    readArtifact("index.html"),
-    readArtifact("cache/index.html"),
-    readArtifact("_headers"),
-    readArtifact("robots.txt"),
-    readArtifact("sitemap.xml"),
-    readArtifact(".well-known/agent-skills/index.json"),
-    readArtifact(".well-known/api-catalog"),
-  ]);
+const [
+  home,
+  cache,
+  create,
+  schema,
+  headers,
+  robots,
+  sitemap,
+  skills,
+  apiCatalog,
+] = await Promise.all([
+  readArtifact("index.html"),
+  readArtifact("cache/index.html"),
+  readArtifact("create/index.html"),
+  readArtifact("schemas/create/v1.json"),
+  readArtifact("_headers"),
+  readArtifact("robots.txt"),
+  readArtifact("sitemap.xml"),
+  readArtifact(".well-known/agent-skills/index.json"),
+  readArtifact(".well-known/api-catalog"),
+]);
 
 assertIncludes(home, 'href="https://astilba.com/" rel="canonical"', "Homepage");
 assertIncludes(
@@ -56,8 +69,16 @@ assertIncludes(
   'href="https://astilba.com/cache/" rel="canonical"',
   "Cache page"
 );
-assertIncludes(home, "is not available on npm", "Homepage");
+assertIncludes(home, "create-astilba", "Homepage");
+assertIncludes(home, "Cache remains a development preview", "Homepage");
 assertIncludes(cache, "No npm package", "Cache page");
+assertIncludes(
+  create,
+  'href="https://astilba.com/create/" rel="canonical"',
+  "Create page"
+);
+assertIncludes(create, "four recipe v1 contracts", "Create page");
+assertIncludes(create, "github.com/astilbahq/create", "Create page");
 assertIncludes(headers, "Content-Security-Policy:", "Static headers");
 assertIncludes(
   robots,
@@ -71,6 +92,11 @@ assertIncludes(
 );
 assertIncludes(
   skills,
+  '"url": "/docs/.well-known/agent-skills/astilba-create-docs/SKILL.md"',
+  "Agent Skills discovery"
+);
+assertIncludes(
+  skills,
   '"url": "/docs/.well-known/agent-skills/astilba-cache-docs/SKILL.md"',
   "Agent Skills discovery"
 );
@@ -80,9 +106,18 @@ assertIncludes(
   "API catalog"
 );
 
+const createSchema = JSON.parse(schema);
+if (
+  createSchema.$id !== "https://astilba.com/schemas/create/v1.json" ||
+  createSchema.properties?.schemaVersion?.const !== 1
+) {
+  throw new Error("Create schema must publish the v1 manifest contract.");
+}
+
 for (const [label, source] of [
   ["Homepage", home],
   ["Cache page", cache],
+  ["Create page", create],
 ]) {
   if (
     getAbsoluteAttributeUrls(source).some(

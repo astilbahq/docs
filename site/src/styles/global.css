@@ -486,7 +486,9 @@ h3 {
 }
 
 .execution-proof__result--hit,
-.execution-proof__result--miss {
+.execution-proof__result--miss,
+.execution-proof__result--ready,
+.execution-proof__result--safe {
   color: var(--signal);
 }
 
@@ -637,12 +639,12 @@ h3 {
   padding-inline: 0.25rem;
   border-block-end: 1px solid var(--border);
   text-decoration: none;
-  transition: background-color 160ms ease, padding 250ms var(--ease-out);
+  transition: background-color 160ms ease, color 160ms ease;
 }
 
 .format-list a:hover {
-  padding-inline: 0.75rem;
   background: var(--surface-hover);
+  color: var(--signal);
 }
 
 .format-list__label {

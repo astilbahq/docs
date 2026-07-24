@@ -14,6 +14,7 @@ Astilba publishes build-generated text files for language models and other clien
 | [`/docs/llms.txt`](https://astilba.com/docs/llms.txt) | The client needs a small index that links to the available documentation sets. |
 | [`/docs/llms-small.txt`](https://astilba.com/docs/llms-small.txt) | Context is limited and an abridged copy of the documentation is sufficient. |
 | [`/docs/llms-full.txt`](https://astilba.com/docs/llms-full.txt) | The client can accept the complete published documentation in one response. |
+| [`/docs/_llms-txt/astilba-create.txt`](https://astilba.com/docs/_llms-txt/astilba-create.txt) | The task concerns only Astilba Create and does not need site-wide material. |
 | [`/docs/_llms-txt/astilba-cache.txt`](https://astilba.com/docs/_llms-txt/astilba-cache.txt) | The task concerns only Astilba Cache and does not need site-wide material. |
 
 The generated files are snapshots of the current deployment. Fetch them again when current behavior or release status matters.
@@ -22,7 +23,9 @@ The generated files are snapshots of the current deployment. Fetch them again wh
 
 Every published documentation page is also available as Markdown. Replace the trailing slash in a documentation URL with `.md`:
 
-- [`/docs/cache/overview.md`](https://astilba.com/docs/cache/overview.md) — Cache overview and release context.
+- [`/docs/create/overview.md`](https://astilba.com/docs/create/overview.md) — Create overview and release context.
+- [`/docs/create/cli-reference.md`](https://astilba.com/docs/create/cli-reference.md) — Create command-line reference.
+- [`/docs/cache/overview.md`](https://astilba.com/docs/cache/overview.md) — Cache overview and preview context.
 - [`/docs/cache/api-reference.md`](https://astilba.com/docs/cache/api-reference.md) — Cache API reference.
 - [`/docs/agents/mcp.md`](https://astilba.com/docs/agents/mcp.md) — MCP Server connection and usage guide.
 

@@ -23,7 +23,7 @@ export const MCP_SERVER_INFO = Object.freeze({
 });
 
 export const MCP_SERVER_INSTRUCTIONS =
-  "Use search_docs to find relevant public pages, then read the linked resource or use read_doc for a bounded chunk. Check Implementation status before making release or availability claims. This server is public and read-only.";
+  "Use search_docs to find relevant public pages, then read the linked resource or use read_doc for a bounded chunk. Before making release or availability claims, use Create's Release and support page for Create claims and Cache's Implementation status page for Cache claims. This server is public and read-only.";
 
 export const MCP_ENDPOINT_URL = absoluteUrl(MCP_ENDPOINT_PATH);
 export const MCP_SERVER_CARD_URL = absoluteUrl(MCP_SERVER_CARD_PATH);
