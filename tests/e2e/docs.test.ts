@@ -1302,6 +1302,10 @@ test("persists desktop sidebar disclosure state across navigation", async ({
   page,
 }) => {
   await page.goto("/docs/cache/overview/");
+  await expect(page.locator("[data-docs-sidebar-root]")).not.toHaveAttribute(
+    "data-restoring",
+    ""
+  );
 
   const getStarted = page.getByRole("button", {
     name: "Get started",
