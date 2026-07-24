@@ -42,7 +42,7 @@ const guarantees = [
       </div>
       <p class="release-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <span>No npm package · no supported production setup</span>
+        <span>No npm package · Cache source is private · no supported production setup</span>
       </p>
     </div>
   </section>
@@ -61,7 +61,7 @@ const guarantees = [
           <li>Database queries and upstream API responses</li>
           <li>Related-value invalidation after mutations</li>
           <li>User or tenant data with explicit sharing rules</li>
-          <li>Portable Node, Bun, and edge-runtime integrations</li>
+          <li>A portable kernel tested on Node, Bun, and workerd</li>
         </ul>
       </div>
       <div>
@@ -84,8 +84,8 @@ const guarantees = [
       </div>
     </div>
     <p class="section-intro">
-      The current source can exercise the portable kernel with a bounded in-memory store.
-      Timing policy and production release gates remain incomplete.
+      The reviewed private source can exercise the portable kernel with a bounded
+      in-memory store. Timing policy and production release gates remain incomplete.
     </p>
     <ExecutionProof expanded />
   </section>
@@ -113,12 +113,13 @@ const guarantees = [
       <p><span>Driver contracts</span><strong>Implemented</strong></p>
       <p><span>Cloudflare path</span><strong>Source preview</strong></p>
       <p><span>React Router path</span><strong>Source preview</strong></p>
+      <p><span>Local chaos demo</span><strong>Source-only evidence app</strong></p>
       <p><span>Elapsed TTL and grace</span><strong>Incomplete</strong></p>
       <p><span>Public package</span><strong>Not released</strong></p>
     </div>
     <div class="section-actions">
       <a href="/docs/cache/api-status/">Read the complete implementation ledger <span aria-hidden="true">→</span></a>
-      <a href="https://github.com/astilbahq/cache" rel="noopener">Inspect the source <span aria-hidden="true">↗</span></a>
+      <a href="https://github.com/astilbahq/docs" rel="noopener">Inspect the docs source <span aria-hidden="true">↗</span></a>
     </div>
   </section>
 </SiteLayout>

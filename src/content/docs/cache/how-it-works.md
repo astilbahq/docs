@@ -22,7 +22,7 @@ The separation is deliberate. A fast storage hit is useful only if the reader ca
 6. **Close and fence the result.** The final stored tag set combines the call and factory declarations. Before write-back, Cache checks those tags for a hard purge delivered during the fill. If verified knowledge advanced, it can re-mint the birth epoch and refetch within a bounded three-attempt budget instead of publishing a born-dead value. If all attempts are fenced, the plain <code>getOrSet()</code> form fails closed with <code>FencedError</code>; <code>getOrSetEntry()</code> returns a non-durable miss.
 7. **Write by scope.** Shared public and tenant entries may reach L2. Principal-derived entries are L1-only. A successful fill also hydrates L1 when one is configured.
 
-Compatible foreground fills share one in-isolate promise. Cross-isolate exclusion is separate and opt-in through a <code>Lock</code> driver.
+Compatible foreground fills share one in-isolate promise. A successful shared fill or revalidated stale serve carries the served value and its evidence to callers waiting for that work. If the factory-running call had no stale candidate and shares only a classified transient failure, each waiting caller makes its own stale-on-error decision using the candidate from its earlier read and revalidates that candidate before serving it. Cross-isolate exclusion is separate and opt-in through a <code>Lock</code> driver.
 
 ## How invalidation travels
 

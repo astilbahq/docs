@@ -6,7 +6,7 @@ description: Understand what Astilba Cache does, where it runs, and whether it f
 Astilba Cache stores the result of expensive server-side work so later calls can reuse it. It is designed for TypeScript applications that read from databases, APIs, or other services and need explicit control over invalidation, failures, and who may share a cached value.
 
 :::caution[Development preview]
-<code>@astilba/cache</code> is not published to npm and has no supported production setup. The source tree contains publish-shaped Cloudflare Workers and React Router entry points, but elapsed TTL and grace periods are still not enforced and the full runtime path has not completed its release gates. These docs are a source-preview guide, not a release announcement.
+<code>@astilba/cache</code> is not published to npm and has no supported production setup. The Cache repository is not publicly accessible. The reviewed source snapshot contains publish-shaped Cloudflare Workers and React Router entry points, but elapsed TTL and grace periods are still not enforced and the full runtime path has not completed its release gates. These docs explain that snapshot; they are not a release announcement or download path.
 :::
 
 ## Decide whether Cache fits
@@ -42,7 +42,7 @@ const product = await cache.getOrSet({
 
 On a miss, Cache runs <code>loadProduct()</code>, stores its result, and returns it. On a usable hit, it returns the stored value without running the factory.
 
-The portable constructor makes you supply storage, a clock, and a random source. The [local quickstart](/docs/cache/quickstart/) shows that explicit wiring. On Workers, <code>createWorkersCache()</code> supplies those platform capabilities and composes the current Cloudflare drivers for you.
+The portable constructor makes you supply storage, a clock, and a random source. The [source walkthrough](/docs/cache/quickstart/) shows that explicit wiring. On Workers, <code>createWorkersCache()</code> supplies those platform capabilities and composes the current Cloudflare drivers for you.
 
 ## Add only what you need
 
@@ -82,8 +82,9 @@ Cache does not update your source of truth. Change the database or upstream serv
 | Correctness kernel | Implemented | Read, fill, scope, codec, resilience, and invalidation behavior is exercised by deterministic tests. |
 | Driver contracts | Implemented | Application and runtime integrations can implement the typed capability boundaries. |
 | Local memory Store | Implemented in source | <code>memory()</code> provides bounded, per-instance LRU storage and optional physical TTL when given a Clock. |
-| Cloudflare path | Public source preview | <code>./cloudflare</code> exports the Workers factory, KV, Coordinator, Registry, Bus, and tick-driven redial helpers; workerd integration tests cover the primary path. |
-| React Router path | Public source preview | <code>./react-router</code> exports server middleware, typed request context access, request-entry recovery lifecycle adoption, and scope-aware response-tag collection. |
+| Cloudflare path | Unreleased source preview | <code>./cloudflare</code> exports the Workers factory, KV, Coordinator, Registry, Bus, and tick-driven redial helpers; workerd integration tests cover the primary path. |
+| React Router path | Unreleased source preview | <code>./react-router</code> exports server middleware, typed request context access, request-entry recovery lifecycle adoption, and scope-aware response-tag collection. |
+| Local chaos demo | Source-only evidence app | An unpublished React Router app runs three demo-side binding failures against the real Workers composition without claiming production timing or an SLO. |
 | Public package | Not released | npm has no <code>@astilba/cache</code> package, so there is no supported installation or production deployment path. |
 
 ## Choose a path
@@ -91,8 +92,9 @@ Cache does not update your source of truth. Change the database or upstream serv
 | You want to… | Start with | Continue with |
 | --- | --- | --- |
 | Decide whether the preview fits | This overview | [Implementation status](/docs/cache/api-status/) |
-| Run the smallest current-source example | [Local quickstart](/docs/cache/quickstart/) | [Read and cache values](/docs/cache/reading-and-filling/) |
+| Review the smallest current-source example | [Source walkthrough](/docs/cache/quickstart/) | [Read and cache values](/docs/cache/reading-and-filling/) |
 | Evaluate the runtime adapters | [Cloudflare Workers](/docs/cache/cloudflare-workers/) | [React Router](/docs/cache/react-and-server-apps/) if it is your server framework |
+| Understand the local Workers failure evidence | [Cloudflare Workers](/docs/cache/cloudflare-workers/#understand-the-local-chaos-evidence) | [Implementation status](/docs/cache/api-status/) for the remaining measurement boundary |
 | Add application cache behavior | [Read and cache values](/docs/cache/reading-and-filling/) | [Invalidate cached data](/docs/cache/tags-and-invalidation/) and [Control cache sharing](/docs/cache/scopes-and-privacy/) |
 | Tag rendered responses safely | [React Router](/docs/cache/react-and-server-apps/) | [Cache HTTP responses](/docs/cache/response-caching/) |
 | Diagnose a value or event | [Inspect cache behavior](/docs/cache/observability/) | [API reference](/docs/cache/api-reference/) |

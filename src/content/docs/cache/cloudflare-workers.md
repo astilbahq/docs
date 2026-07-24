@@ -6,7 +6,7 @@ description: Compose the current Cache source with Cloudflare KV, a Coordinator 
 The current source exposes a Cloudflare entry point at <code>@astilba/cache/cloudflare</code>. Its <code>createWorkersCache()</code> factory combines the portable kernel with a bounded memory L1, Cloudflare KV L2, a Coordinator Durable Object, a live WebSocket Bus, and request-driven recovery behavior.
 
 :::caution[Implemented in source, not released]
-The subpath is part of the package's public source and publish configuration, and its primary path runs under workerd integration tests. The package is still absent from npm, elapsed TTL is incomplete, and the deployment has not completed its production-measurement and release gates.
+The subpath is part of the reviewed source snapshot and publish configuration, and its primary path runs under workerd integration tests. The package is still absent from npm, elapsed TTL is incomplete, and the deployment has not completed its production-measurement and release gates.
 :::
 
 ## See what the factory owns
@@ -77,9 +77,12 @@ The Worker must export <code>Coordinator</code>, bind that class as a SQLite-bac
     ]
   },
 
-  "migrations": [
-    { "tag": "v1", "new_sqlite_classes": ["Coordinator"] }
-  ],
+  "exports": {
+    "Coordinator": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  },
 
   "kv_namespaces": [
     { "binding": "CACHE_KV", "id": "<your-kv-namespace-id>" },
@@ -94,7 +97,7 @@ The Worker must export <code>Coordinator</code>, bind that class as a SQLite-bac
 
 Both KV bindings point to the same namespace. <code>CACHE_KV</code> is the L2 Store the reader sees; <code>REGISTRY_KV</code> is where the Coordinator writes replication pointers, deltas, and snapshots. If they point at different namespaces, the reader cannot recover from the mirror the Coordinator produced.
 
-New Durable Object classes use <code>new_sqlite_classes</code>. See Cloudflare's [Durable Object migration guide](https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/) before merging this into an existing migration history.
+New deployments should declare the class lifecycle in the top-level <code>exports</code> map. Cloudflare still supports the older <code>migrations</code> array with <code>new_sqlite_classes</code>, and current internal fixtures may still use it, but the two forms are mutually exclusive. Follow Cloudflare's [Durable Object class exports guide](https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/) before adapting an existing deployment.
 
 The <code>nodejs_compat</code> flag is required because the root package uses <code>node:crypto</code>. Use a compatibility date of 2024-09-23 or later, as required by Cloudflare's [Node.js compatibility guide](https://developers.cloudflare.com/workers/runtime-apis/nodejs/). The flag also supplies the AsyncLocalStorage support used by the React Router adapter. The narrower <code>nodejs_als</code> flag alone is not sufficient to boot the package.
 
@@ -138,6 +141,22 @@ The mutation reaches the authoritative Coordinator. Active isolates receive live
 
 Cloudflare KV failures use the same classified Store boundary as the kernel. A classified KV read failure emits <code>store_read_suppressed</code> and behaves as a miss for that tier. The factory's memory L1 absorbs the outage for values it already holds and for successful refills; without an L1, a sustained L2 outage could force every call back to origin.
 
+## Understand the local chaos evidence
+
+The reviewed source snapshot includes an unpublished React Router v8 app under <code>apps/demo</code>. It is not hosted or publicly downloadable. The app runs <code>createWorkersCache()</code> against local KV and Coordinator bindings, then places demo-owned wrappers between those bindings and the library. Cache itself has no fault-injection API.
+
+The app contains three scenes:
+
+| Scene | Injected fault | What to inspect |
+| --- | --- | --- |
+| Backend kill | The demo KV wrapper rejects every read and write. | A cold or missing L1 is required to exercise the failing KV path; a warm L1 can bypass KV. In an internal run, use a cold key or empty local state, or rely on the wrapper counters. Classified L2 reads become observable misses, successful origin work can refill L1, suppressed write-back remains non-durable, and <code>explain()</code> distinguishes <code>read-failed</code> from absence. |
+| Bus drop | The demo refuses future Coordinator WebSocket dials. | A reader created while the fault is armed reports <code>never-established</code> and emits <code>bus_dial_failed</code>. The fault does not sever an existing socket. A purge issued by the same reader is learned from its own acknowledgement, so the scene does not mislabel it as cross-isolate polling rescue. |
+| Bus and mirror loss (labelled “Registry outage” in the app) | The demo refuses future Bus dials and makes replication-mirror key reads fail. | Live Registry RPC remains available, and an already-established socket may remain connected. In the Vite development rig the channel was already <code>never-established</code>, so the scene removes both warm invalidation inputs there. Unknown knowledge follows the configured fail-closed posture and may pay for a live Registry check. |
+
+The Vite development rig uses <code>@cloudflare/vite-plugin</code>; the built rig launches the generated Worker through Wrangler. Both use Cloudflare's local Workers tooling and run Worker code in workerd through Miniflare. In the reviewed local evidence, the WebSocket hello did not complete in the Vite development rig, while the built Wrangler rig established the channel. Treat that as an observed rig difference, not a claim that Vite runs outside workerd.
+
+The internal app reduces <code>maxSyncLag</code> from the factory's 60-second baseline to five seconds so request-driven polling is watchable locally. It prints what happened beside what the configuration permits and asserts no timing or consistency SLO. No deployed measurements have been taken; those remain a release gate.
+
 ## Know the operational boundary
 
 The source path currently includes:
@@ -148,6 +167,7 @@ The source path currently includes:
 - reactive read-path recovery plus an out-of-band polling state machine;
 - a factory-owned request-driven carrier for plain Worker reads;
 - optional React Router lifecycle adoption of middleware ticks through <code>waitUntil</code>.
+- the source-only three-scene chaos evidence app described above.
 
 It does not yet provide:
 
@@ -156,6 +176,6 @@ It does not yet provide:
 - journal checkpointing and truncation for a long-lived Coordinator;
 - a production Lock or CDN purge driver;
 - an end-to-end CDN purge path, even though the React Router adapter now emits safe <code>Cache-Tag</code> headers;
-- the chaos demo and deployed consistency measurements that complete the Workers release path.
+- deployed consistency, propagation, caching, and production-threshold measurements that complete the Workers release path.
 
 Continue with [React Router](/docs/cache/react-and-server-apps/) if that is your server framework, [Cache HTTP responses](/docs/cache/response-caching/) for the response-tag safety model, [Driver implementations](/docs/cache/drivers-and-status/) for component-level status, or [Implementation status](/docs/cache/api-status/) for kernel limitations.

@@ -26,7 +26,7 @@ describe("documentation catalog", () => {
 
     expect(version.id).toBe("unreleased");
     expect(page.key).toBe("overview");
-    expect(cache.repositoryUrl).toBe("https://github.com/astilbahq/cache");
+    expect(cache.repositoryUrl).toBe("https://github.com/astilbahq/docs");
     expect(getProductHomeHref(cache)).toBe("/docs/cache/");
     expect(getPageHref(version, page)).toBe("/docs/cache/overview/");
   });
@@ -42,7 +42,12 @@ describe("documentation catalog", () => {
     ).toEqual([
       {
         label: "Get started",
-        pages: ["Overview", "Local quickstart"],
+        pages: [
+          "Overview",
+          "Implementation status",
+          "Source walkthrough",
+          "Cache fundamentals",
+        ],
       },
       {
         label: "Platforms",
@@ -65,19 +70,11 @@ describe("documentation catalog", () => {
       },
       {
         label: "Concepts",
-        pages: [
-          "Cache fundamentals",
-          "How Cache works",
-          "Runtime architecture",
-        ],
+        pages: ["How Cache works", "Runtime architecture"],
       },
       {
         label: "Reference",
-        pages: [
-          "API reference",
-          "Driver implementations",
-          "Implementation status",
-        ],
+        pages: ["API reference", "Driver implementations"],
       },
     ]);
   });
@@ -115,10 +112,10 @@ describe("documentation catalog", () => {
       getDocumentTitle({
         context,
         isHome: false,
-        pageTitle: "Local quickstart",
+        pageTitle: "Source walkthrough",
         siteTitle: "Astilba",
       })
-    ).toBe("Local quickstart | Astilba Cache");
+    ).toBe("Source walkthrough | Astilba Cache");
     expect(
       getDocumentTitle({
         isHome: false,
@@ -153,10 +150,10 @@ describe("documentation catalog", () => {
           version: { ...context.version, id: "1.2", label: "1.2" },
         },
         isHome: false,
-        pageTitle: "Local quickstart",
+        pageTitle: "Source walkthrough",
         siteTitle: "Astilba",
       })
-    ).toBe("Local quickstart | Astilba Cache 1.2");
+    ).toBe("Source walkthrough | Astilba Cache 1.2");
   });
 
   it("keeps version roots distinct from page routes", () => {

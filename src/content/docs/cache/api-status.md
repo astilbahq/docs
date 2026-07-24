@@ -5,7 +5,9 @@ description: Check which Astilba Cache methods, helpers, drivers, and adapters w
 
 Astilba Cache is unreleased. The portable correctness kernel and the main Workers source path are active. The Workers composition now keeps construction I/O-free, acquires request-scoped platform handles lazily, and carries its own request-driven recovery ticks. React Router provides scope-aware L3 dependency collection and response tags. Elapsed TTL and grace policy, CDN purge delivery, several convenience methods, and production release gates remain incomplete.
 
-Use this page as the preview ledger. “Implemented” means behavior exists on public main and is exercised by the repository's test lanes. It does not mean the package has an npm installation or production support commitment.
+Use this page as the preview ledger. “Implemented” means behavior exists in the reviewed source snapshot and is exercised by the repository's test lanes. It does not mean the package has an npm installation or production support commitment.
+
+This ledger was reviewed against Cache source commit <code>e490f28</code> from 24 July 2026. The Cache repository is not publicly accessible, so the identifier is maintainer provenance rather than a checkout link. Later source changes are not documented here until this snapshot advances.
 
 Use [API reference](/docs/cache/api-reference/) for exact exported shapes. When another page and this ledger appear to differ, follow this page and report the stale page.
 
@@ -26,8 +28,8 @@ Use [API reference](/docs/cache/api-reference/) for exact exported shapes. When 
 | Surface | Current behavior |
 | --- | --- |
 | <code>createCache()</code> | Builds the cache facade and optional invalidation reader and poller without performing I/O. Retention registration and Bus establishment are deferred until the first read or purge that uses them. |
-| <code>getOrSet()</code> | Reads L1 then L2 or fills a value with compatible in-isolate singleflight. A terminal fenced fill throws <code>FencedError</code>. |
-| <code>getOrSetEntry()</code> | Adds <code>skip()</code> and returns value, the tier actually observed, stale and skip state, elapsed age, optional serve-on-error metadata, and only the durability evidence that serve can prove. |
+| <code>getOrSet()</code> | Reads L1 then L2 or fills a value with compatible in-isolate singleflight. If a shared factory fails transiently, a waiting caller can still make its own stale-on-error decision using the stale candidate it read before joining. A terminal fenced fill throws <code>FencedError</code>. |
+| <code>getOrSetEntry()</code> | Adds <code>skip()</code> and returns value, the tier actually observed, stale and skip state, elapsed age, optional serve-on-error metadata, and only the durability evidence that serve can prove. After a shared transient failure, it preserves the entry form's miss result when its own candidate is no longer servable. |
 | Consistency defaults | A per-call <code>consistency</code> overrides <code>defaults.consistency</code>; an omitted value otherwise resolves to eventual. |
 | Strong reads and fills | Live-check stored entries and pre-check strong misses when coordinated invalidation is configured. Registry failure throws <code>RegistryUnavailableError</code>, or <code>defaults.onUnavailable: "eventual"</code> degrades that call and emits <code>strong_degraded</code>. A verified mid-fill hard purge can trigger a bounded re-mint and refetch. |
 | Unknown error posture | <code>unknownPolicy: "error"</code> throws <code>UnknownTagError</code> instead of refilling. <code>takedownSensitive</code> selects the same outcome and outranks an explicit unknown policy. |
@@ -45,15 +47,16 @@ Use [API reference](/docs/cache/api-reference/) for exact exported shapes. When 
 
 Scope resolution, negative-entry safety, serve-time stale revalidation, codec identity checks, classified L2 write failures, eventual fail-closed behavior, snapshot-capable recovery, and write-back fencing are also implemented.
 
-## Implemented source adapters
+## Implemented source adapters and evidence
 
 | Entry point | Current behavior |
 | --- | --- |
 | <code>@astilba/cache/cloudflare</code> | Exports <code>createWorkersCache</code>, <code>cloudflareKV</code>, <code>Coordinator</code>, <code>doRegistry</code>, <code>doBus</code>, <code>redialingDoBus</code>, and their public configuration types. |
 | <code>@astilba/cache/react-router</code> | Exports root server middleware, typed Cache context, current request access, default L3 budget and ineligibility event constants, and the observable poll-tick event and interval constants. |
 | Recovery poller | Observes pointer liveness, runs bounded delta and snapshot recovery, and backs baseline polling off on failure. <code>createWorkersCache()</code> drives both polling and lazy Bus redial from request-time reads; React Router can additionally adopt middleware ticks into the response lifecycle with <code>waitUntil</code>. |
+| Local chaos demo | An unpublished React Router v8 app composes the real Workers factory with local KV and Coordinator bindings. Demo-owned wrappers inject a KV backend failure, refuse future Bus dials, or make mirror reads unavailable while leaving live Registry RPC intact. The last fault does not close an already-established socket. The app prints observed outcomes beside documented permissions and asserts no SLO. |
 
-These subpaths are present in the source and publish export map, but no package has been published.
+The two adapter subpaths are present in the source and publish export map, but no package has been published. The poller is an internal seam and the demo is an unpublished workspace app; neither creates another public package entry point.
 
 ## Partial or provisional behavior
 
@@ -63,7 +66,7 @@ These subpaths are present in the source and publish export map, but no package 
 | <code>notFoundTtl</code> | Its presence opts an <code>HttpError</code> 404 into a negative write, but the duration is not enforced. Negative entries remain excluded from grace and stale-on-error. |
 | Eventual stale refresh | The stale value is returned, but refresh work is currently awaited before that response resolves. Background adoption, queue retry, and latency decoupling are incomplete. |
 | Factory cancellation and grace context | The factory receives a fresh <code>AbortSignal</code>, but the kernel does not abort it on a cache deadline. <code>ctx.graced</code> is not populated. |
-| <code>compound()</code> validation | Positional escaping works, but compound parts do not receive <code>t</code>'s remaining character or 256-byte validation in current main. Keep parts grammar-safe. |
+| <code>compound()</code> validation | Positional escaping works, but compound parts do not receive <code>t</code>'s remaining character or 256-byte validation in the reviewed snapshot. Keep parts grammar-safe. |
 | React Router response caching | Automatic dependency and scope collection, <code>Cache-Tag</code> emission, safe private demotion, immutable-response rebuilding, and an overridable 16 KB / 1,000-occurrence budget work. The middleware never invents <code>public</code> or <code>s-maxage</code>; the application must opt into shared caching. |
 | Factory response qualifier | <code>FactoryCtx.dependsOn(tag, { l3: false })</code> throws until stored per-tag emission metadata exists. The same qualifier works on <code>RenderCollector.dependsOn()</code>. |
 | Explain scope and authority | <code>explain(key)</code> addresses only the default public canonical key. It uses current local knowledge and performs no live check, resync, or L1 hydration. |
@@ -73,7 +76,7 @@ These subpaths are present in the source and publish export map, but no package 
 | Scope-qualified tag selectors | The selector type accepts <code>scope</code>, but Registry tag resolution ignores it. A tag purge affects every entry carrying that tag. |
 | Lock option | <code>lock: true</code> uses a configured Lock; without one it silently continues without cross-isolate locking. No production Lock adapter is exported. |
 | Coordinator journal | Durable and replayable, but append-only without production checkpointing or truncation. |
-| Workers measurements | Workerd lanes cover behavior, but deployed consistency and caching measurements are still pending. |
+| Workers measurements | Workerd lanes and the local chaos demo cover composition and failure posture. Deployed consistency, propagation, caching, and production-threshold measurements are still pending. |
 
 <code>defaults.consistency</code>, <code>unknownPolicy</code>, <code>onUnavailable</code>, <code>takedownSensitive</code>, <code>maxEntryRetention</code>, <code>maxSyncLag</code>, and <code>heartbeatInterval</code> are consumed. <code>maxSyncLag</code> tunes the attached recovery poller; <code>heartbeatInterval</code> tunes the reader's silence threshold and must be coordinated separately with the Coordinator deployment variable.
 
@@ -101,7 +104,7 @@ These APIs currently return normally or exist in the types but do not apply thei
 
 ## Integrations not present
 
-There is no Redis or Valkey adapter, production Lock, CDN purge path, chaos demo, or deployed-probe package. React Router is the only shared-response adapter, and its fixture plus the Cloudflare integration Worker are tests, not templates.
+There is no Redis or Valkey adapter, production Lock, CDN purge path, or deployed-probe package. React Router is the only shared-response adapter. Its fixture and the Cloudflare integration Worker are tests, while the local chaos demo is an evidence app; none of them is a production application template.
 
 :::note[Development tags are not package releases]
 The repository's <code>v0.1</code> tag records the sealed correctness-kernel milestone. npm still has no <code>@astilba/cache</code> package. Keep using the Unreleased documentation until an installable release exists.
@@ -109,7 +112,7 @@ The repository's <code>v0.1</code> tag records the sealed correctness-kernel mil
 
 ## Related
 
-- [Local quickstart](/docs/cache/quickstart/) demonstrates the smallest runnable source configuration.
+- [Source walkthrough](/docs/cache/quickstart/) follows the smallest reviewed source configuration.
 - [Cloudflare Workers](/docs/cache/cloudflare-workers/) documents the current runtime factory and bindings.
 - [Cache HTTP responses](/docs/cache/response-caching/) documents the implemented L3 collection and header boundary.
 - [Inspect cache behavior](/docs/cache/observability/) documents <code>explain()</code> and the telemetry catalog.

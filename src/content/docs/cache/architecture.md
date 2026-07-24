@@ -5,7 +5,7 @@ description: See how the portable Astilba Cache kernel composes storage, coordin
 
 Astilba Cache keeps cache semantics in a portable kernel and receives runtime capabilities through typed contracts. The kernel owns keys, scopes, tier order, decode safety, fill coordination, and invalidation decisions. A runtime supplies storage, coordination, time, randomness, recovery ticks, and any custom encoding.
 
-This page explains the runtime capability model. For application-level definitions and a smaller starting point, begin with [Cache fundamentals](/docs/cache/core-concepts/) or the [local quickstart](/docs/cache/quickstart/).
+This page explains the runtime capability model. For application-level definitions and a smaller starting point, begin with [Cache fundamentals](/docs/cache/core-concepts/) or the [source walkthrough](/docs/cache/quickstart/).
 
 ## Capabilities at the boundary
 
@@ -53,15 +53,15 @@ Both <code>createCache()</code> and <code>createWorkersCache()</code> construct 
 
 ## Keep runtime integrations outside the kernel
 
-The source repository now exposes two publish-shaped adapter entry points:
+The reviewed source snapshot exposes two publish-shaped adapter entry points:
 
 - <code>@astilba/cache/cloudflare</code> contains the Workers factory plus its KV, Coordinator, Registry, Bus, tick-driven redial, and request carrier pieces.
 - <code>@astilba/cache/react-router</code> contains React Router v8 server middleware, typed Cache context, request-frame access, request-entry recovery lifecycle adoption, and scope-aware response-tag collection.
 
-Both are part of the package export map and covered by source tests. Neither is installable from npm yet, and the repository's integration worker and React Router fixture remain test hosts rather than application templates.
+Both are part of the package export map and covered by source tests. Neither is installable from npm yet, and the integration worker and React Router fixture remain test hosts rather than application templates.
 
 :::caution[Source preview only]
-These combinations describe current main-branch source behavior. <code>@astilba/cache</code> is not published and does not yet have a supported installation, compatibility policy, or production deployment path.
+These combinations describe the reviewed source snapshot. <code>@astilba/cache</code> is not published and does not yet have a public checkout, supported installation, compatibility policy, or production deployment path.
 :::
 
 ## Related

@@ -24,6 +24,12 @@ test("the public home states the current product boundary", async ({
   await expect(
     page.getByRole("link", { name: "Read the Cache preview" })
   ).toHaveAttribute("href", "/docs/cache/overview/");
+  await expect(
+    page.getByRole("link", { name: "View docs source" })
+  ).toHaveAttribute("href", "https://github.com/astilbahq/docs");
+  await expect(
+    page.locator('a[href*="github.com/astilbahq/cache"]')
+  ).toHaveCount(0);
   await expectNoAxeViolations(page);
 });
 
@@ -38,6 +44,12 @@ test("the Cache page never presents an installation path", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByText("No npm package")).toBeVisible();
   await expect(page.getByText(/pnpm add|npm install/)).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Inspect the docs source" })
+  ).toHaveAttribute("href", "https://github.com/astilbahq/docs");
+  await expect(
+    page.locator('a[href*="github.com/astilbahq/cache"]')
+  ).toHaveCount(0);
   await expectNoAxeViolations(page);
 });
 

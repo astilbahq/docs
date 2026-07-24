@@ -98,6 +98,10 @@ The combined set may contain at most 126 distinct user tags. Invalid, reserved, 
 
 Singleflight joins calls only when their canonical key and structural settings agree. Tags, TTL, grace, negative-cache TTL, resolved scope, codec identity, consistency, and API form all participate. Tag order does not matter because tags are sorted and deduplicated first.
 
+The first compatible call runs the shared factory; later compatible calls wait for that work. A successful fill, or a stale serve already revalidated by the factory-running call, is shared with the metadata for the served entry. If that call had no stale candidate and the factory produced only a classified transient failure, each waiting caller makes its own stale-on-error decision using the candidate it read before joining. The factory-running call can receive the origin error while a waiting caller with an eligible stale value revalidates and serves its own copy. A hard invalidation that lands before that revalidation still prevents the stale serve.
+
+Cache consults <code>defaults.staleIfError</code> only for a call that declares <code>grace</code>. Without grace, no caller can use a stale candidate as fallback after a factory error; the origin error propagates without invoking the application's classifier. This does not change soft-stale eventual refresh: that separate path may still return its stale value as described below.
+
 With <code>dev: true</code>, an incompatible same-key call fails loudly. Otherwise it runs separately and emits <code>singleflight_option_mismatch</code> telemetry.
 
 ## Codec changes become misses
@@ -118,7 +122,7 @@ A soft-stale eventual read currently awaits a best-effort refresh, then still re
 
 ## Related
 
-- [Local quickstart](/docs/cache/quickstart/) shows both value reads against the implemented memory Store used as a development-only L2.
+- [Source walkthrough](/docs/cache/quickstart/) shows both value reads against the implemented memory Store used as a development-only L2.
 - [Cache fundamentals](/docs/cache/core-concepts/) explains the storage tiers and read vocabulary.
 - [Consistency and resilience](/docs/cache/consistency-and-resilience/) explains when stale values may be reused.
 - [Cache HTTP responses](/docs/cache/response-caching/) explains how served and factory-declared tags reach a response collector.

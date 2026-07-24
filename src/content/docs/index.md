@@ -4,10 +4,10 @@ description: Portable infrastructure libraries with explicit correctness boundar
 tableOfContents: false
 ---
 
-Astilba builds portable infrastructure libraries with explicit correctness boundaries. These docs describe what the public code does today, what each guarantee costs, and which parts are still incomplete.
+Astilba builds portable infrastructure libraries with explicit correctness boundaries. These docs describe the reviewed implementation, what each guarantee costs, and which parts are still incomplete.
 
 :::caution[The current product is a development preview]
-Astilba Cache is not available from npm and has no supported production installation path. The source repository now includes Cloudflare Workers and React Router adapters, but their presence in source is not a package release or production-support promise.
+Astilba Cache is not available from npm and has no supported production installation path. The reviewed source snapshot includes Cloudflare Workers and React Router adapters, but the Cache repository is not publicly accessible and their presence in source is not a package release or production-support promise.
 :::
 
 ## Products
@@ -16,11 +16,9 @@ Astilba Cache is not available from npm and has no supported production installa
 
 A portable server-side TypeScript cache with explicit invalidation, resilience, and privacy boundaries.
 
-Start with the [overview](/docs/cache/overview/), run the [local quickstart](/docs/cache/quickstart/), or inspect the source adapters for [Cloudflare Workers](/docs/cache/cloudflare-workers/) and [React Router](/docs/cache/react-and-server-apps/).
+Start with the [overview](/docs/cache/overview/), check the [implementation status](/docs/cache/api-status/), review the [source walkthrough](/docs/cache/quickstart/), or learn about the source adapters for [Cloudflare Workers](/docs/cache/cloudflare-workers/) and [React Router](/docs/cache/react-and-server-apps/).
 
-## Sponsors
-
-Astilba is currently independently funded. Sponsorship helps keep its libraries, tooling, and documentation public. [Sponsor Astilba on GitHub](https://github.com/sponsors/astilbahq).
+The implementation ledger records the exact reviewed snapshot and incomplete release gates.
 
 ## For agents
 

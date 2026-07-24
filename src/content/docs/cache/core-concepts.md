@@ -28,7 +28,7 @@ The tier names describe where a value lives, not different value formats.
 | Tier | What it is | Typical use |
 | --- | --- | --- |
 | **L1** | An optional Store local to one process or worker isolate. Other instances cannot see it. | Fast repeat reads and retention of principal-derived values that must not enter shared storage. |
-| **L2** | A Store shared or durable across calls and, depending on the driver, across instances. | The main reusable server-side copy. The current kernel requires L2 whenever a factory must run. The local quickstart uses <code>memory()</code> in this slot only as a non-durable demonstration. |
+| **L2** | A Store shared or durable across calls and, depending on the driver, across instances. | The main reusable server-side copy. The current kernel requires L2 whenever a factory must run. The source walkthrough uses <code>memory()</code> in this slot only as a non-durable demonstration. |
 | **L3** | A shared HTTP or CDN response cache outside the value-store path. | Caching rendered responses. The React Router adapter can emit safe dependency tags; CDN purge delivery is not implemented. |
 | **Origin** | The factory result before or while it is written to a Store. | The database or upstream request supplied by the application. |
 
@@ -66,7 +66,7 @@ Clock and Rng exist for portability and deterministic tests. They are constructi
 
 | Configuration | What it gives you today |
 | --- | --- |
-| <code>clock</code> + <code>rng</code> + <code>l2</code> | Basic read, fill, and reuse without coordinated invalidation. The local quickstart uses <code>memory()</code> for this preview-only shape. |
+| <code>clock</code> + <code>rng</code> + <code>l2</code> | Basic read, fill, and reuse without coordinated invalidation. The source walkthrough uses <code>memory()</code> for this preview-only shape. |
 | Add <code>l1</code> | Process-local reads and retention for values that cannot be shared. |
 | Add <code>registry</code> | Enables the purge methods, but does not create coordinated read validation by itself. |
 | Add <code>registry</code> + <code>bus</code> alongside the existing <code>l2</code> | Live invalidation delivery, channel-state tracking, coordinated validation, snapshot-capable mirror recovery, and an attached replication poller. The embedding runtime or adapter must supply a tick driver for background recovery; reads still perform reactive recovery without one. |
@@ -86,4 +86,4 @@ Clock and Rng exist for portability and deterministic tests. They are constructi
 - **Singleflight** lets compatible callers in one instance share one foreground factory execution.
 - **Fencing** prevents a result produced across a conflicting hard invalidation from being accepted as current. The current fill path can re-mint its birth epoch and refetch within a bounded three-attempt budget when verified knowledge advances.
 
-Continue with the [local quickstart](/docs/cache/quickstart/) for a concrete read, [Cloudflare Workers](/docs/cache/cloudflare-workers/) for the composed runtime, [Cache HTTP responses](/docs/cache/response-caching/) for L3 collection, [How Cache works](/docs/cache/how-it-works/) for the complete sequence, or [runtime architecture](/docs/cache/architecture/) for the capability contracts.
+Continue with the [source walkthrough](/docs/cache/quickstart/) for a concrete read, [Cloudflare Workers](/docs/cache/cloudflare-workers/) for the composed runtime, [Cache HTTP responses](/docs/cache/response-caching/) for L3 collection, [How Cache works](/docs/cache/how-it-works/) for the complete sequence, or [runtime architecture](/docs/cache/architecture/) for the capability contracts.

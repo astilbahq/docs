@@ -43,18 +43,19 @@ Serving-path reads also recognize structural <code>throttled</code> and <code>un
 | --- | --- | --- |
 | Portable kernel and contracts | Implemented | Deterministic invariant, scenario, unit, and conformance lanes cover the public read, fill, invalidation, scope, codec, recovery, and failure behavior. |
 | <code>memory()</code> | Implemented root export | Per-instance LRU Store with <code>maxEntries</code> and UTF-8 <code>maxBytes</code> limits. With an injected Clock it also honors Store-level <code>expirationTtl</code>. |
-| <code>cloudflareKV()</code> | Public source preview | KV-backed Store with metadata round trips, a 25 MiB value ceiling, read and write classification, 60-second minimum write residency, and intent-specific mirror read-cache hints. |
-| <code>Coordinator</code> | Public source preview | SQLite-backed Durable Object host for Registry RPC, a replayable command journal, coalesced flush alarms, mirror deltas and snapshots, and WebSocket fan-out. |
-| <code>doRegistry()</code> | Public source preview | Thin Registry RPC client scoped to the named Coordinator. It accepts either a stub or a per-use stub thunk and passes the Registry contract under workerd. |
-| <code>doBus()</code> | Public source preview | Mechanism-only WebSocket Bus client with wire validation, Registry identity checks, and close reporting. |
-| <code>redialingDoBus()</code> | Public source preview | Schedules DO Bus reconnection with injected jitter and exponential backoff capped at 300 seconds; a due <code>tick(nowMs)</code> performs the redial without a platform timer. |
+| <code>cloudflareKV()</code> | Unreleased source preview | KV-backed Store with metadata round trips, a 25 MiB value ceiling, read and write classification, 60-second minimum write residency, and intent-specific mirror read-cache hints. |
+| <code>Coordinator</code> | Unreleased source preview | SQLite-backed Durable Object host for Registry RPC, a replayable command journal, coalesced flush alarms, mirror deltas and snapshots, and WebSocket fan-out. |
+| <code>doRegistry()</code> | Unreleased source preview | Thin Registry RPC client scoped to the named Coordinator. It accepts either a stub or a per-use stub thunk and passes the Registry contract under workerd. |
+| <code>doBus()</code> | Unreleased source preview | Mechanism-only WebSocket Bus client with wire validation, Registry identity checks, and close reporting. |
+| <code>redialingDoBus()</code> | Unreleased source preview | Schedules DO Bus reconnection with injected jitter and exponential backoff capped at 300 seconds; a due <code>tick(nowMs)</code> performs the redial without a platform timer. |
 | Replication reader | Implemented kernel path | Replays contiguous deltas, escalates persistent holes to a pointer-blessed snapshot, replays the tail, and remains fail closed on corrupt or unfillable chains. |
 | Replication poller | Implemented internal seam | Runs baseline pointer observation, bounded recovery retries, snapshot escalation, and failure backoff from externally supplied ticks. |
-| <code>createWorkersCache()</code> | Public source preview | Composes the Workers Clock/Rng, memory L1, KV L2, lazily minted named Coordinator Registry handles, tick-redialed Bus, and an unawaited read-triggered recovery carrier. Construction performs no I/O. |
-| React Router middleware | Public source preview | Supplies Cache through typed Router context, carries request identity, starts request-entry poll ticks with optional <code>waitUntil</code> adoption, collects served dependencies, emits eligible <code>Cache-Tag</code> headers, and demotes unsafe responses. |
+| <code>createWorkersCache()</code> | Unreleased source preview | Composes the Workers Clock/Rng, memory L1, KV L2, lazily minted named Coordinator Registry handles, tick-redialed Bus, and an unawaited read-triggered recovery carrier. Construction performs no I/O. |
+| React Router middleware | Unreleased source preview | Supplies Cache through typed Router context, carries request identity, starts request-entry poll ticks with optional <code>waitUntil</code> adoption, collects served dependencies, emits eligible <code>Cache-Tag</code> headers, and demotes unsafe responses. |
+| Local chaos demo | Source-only evidence app | Runs the real Workers composition against local KV and Coordinator bindings. Demo-owned wrappers inject three binding failures and the UI compares observed behavior with documented permissions without asserting an SLO. |
 | Redis, production Lock, and CDN drivers | Not implemented | Contracts exist, but no package subpaths or production implementations are present. |
 
-“Public source preview” means the symbol is present in the package export map and publish configuration, not that consumers can install it. npm still has no <code>@astilba/cache</code> package.
+“Unreleased source preview” means the symbol is present in the package export map and publish configuration in the reviewed private source snapshot. It does not mean consumers can inspect or install it. npm still has no <code>@astilba/cache</code> package.
 
 ## Understand Cloudflare-specific behavior
 
@@ -74,7 +75,7 @@ The Coordinator can refresh an idle pointer through <code>REGISTRY_HEARTBEAT_MS<
 
 Workers deployments must use a compatibility date of 2024-09-23 or later and enable <code>nodejs_compat</code>. The root package uses <code>node:crypto</code>, and that flag also supplies the AsyncLocalStorage support needed by React Router. <code>nodejs_als</code> alone is insufficient.
 
-See [Cloudflare Workers](/docs/cache/cloudflare-workers/) for the binding and migration example.
+See [Cloudflare Workers](/docs/cache/cloudflare-workers/) for the binding and lifecycle example.
 
 ## Know the recovery scheduling model
 
@@ -92,10 +93,10 @@ The Workers path still needs work before a production release:
 - Coordinator journal checkpointing and truncation;
 - a CDN purge queue and completion promises that track real acceptance—the response adapter now emits safe tags, but does not deliver purges;
 - a production Lock driver and the deferred Redis/Valkey path;
-- the chaos demo and deployed consistency measurements;
+- deployed consistency, propagation, caching, and production-threshold measurements behind the local chaos demo;
 - an npm release, compatibility policy, deployment guide, and upgrade process.
 
-The integration Worker and React Router fixture prove runtime wiring and build compatibility; they are not application templates. Do not import deep adapter files. Use only the root, <code>./cloudflare</code>, and <code>./react-router</code> entry points documented here.
+The integration Worker and React Router fixture prove runtime wiring and build compatibility. The chaos demo provides a local evidence app, not a production template or an SLO. Do not import deep adapter files. Use only the root, <code>./cloudflare</code>, and <code>./react-router</code> entry points documented here.
 
 ## Related
 

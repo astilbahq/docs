@@ -145,26 +145,6 @@ const productFooterClass = css({
   fontWeight: "medium",
   lineHeight: 1,
 });
-const sponsorSectionClass = css({
-  display: "grid",
-  gridTemplateColumns: "minmax(8.5rem, 0.34fr) minmax(0, 1fr)",
-  gap: "1rem",
-  borderBlockStartWidth: "1px",
-  borderBlockStartStyle: "solid",
-  borderBlockStartColor: "border.chrome",
-  paddingBlockStart: "1.5rem",
-  _narrow: {
-    gridTemplateColumns: "1fr",
-    gap: "0.75rem",
-  },
-});
-const sponsorCopyClass = css({
-  maxInlineSize: "58ch",
-  margin: 0,
-  color: "ink.muted",
-  lineHeight: 1.55,
-  textWrap: "pretty",
-});
 const agentNoteClass = css({
   borderBlockStartWidth: "1px",
   borderBlockStartStyle: "solid",
@@ -248,19 +228,6 @@ const textLinkClass = css({
         ))
       }
     </div>
-  </section>
-
-  <section
-    aria-labelledby="sponsors-heading"
-    class:list={[sectionClass, sponsorSectionClass]}
-  >
-    <h2 class={sectionHeadingClass} id="sponsors-heading">Sponsors</h2>
-    <p class={sponsorCopyClass}>
-      Astilba is currently independently funded. Sponsorship helps keep its libraries, tooling, and documentation public. <a
-        class={textLinkClass}
-        href="https://github.com/sponsors/astilbahq"
-      >Sponsor Astilba on GitHub.</a>
-    </p>
   </section>
 
   <p class={agentNoteClass}>
