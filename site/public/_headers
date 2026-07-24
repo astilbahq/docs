@@ -22,6 +22,12 @@
 /llms.txt
   Cache-Control: public, max-age=3600
 
+/schemas/*
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+  Content-Type: application/schema+json; charset=utf-8
+  X-Content-Type-Options: nosniff
+
 /.well-known/*
   Access-Control-Allow-Origin: *
   Cache-Control: public, max-age=3600

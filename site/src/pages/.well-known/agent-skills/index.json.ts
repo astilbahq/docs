@@ -6,24 +6,38 @@ import { jsonResponse } from "../../../discovery";
 
 export const prerender = true;
 
-const skillPath = resolve(
-  process.cwd(),
-  "../public/.well-known/agent-skills/astilba-cache-docs/SKILL.md"
+const skillDefinitions = [
+  {
+    description:
+      "Consult Astilba's public Cache documentation to explain or evaluate the unreleased TypeScript cache preview without inventing installation or production support.",
+    name: "astilba-cache-docs",
+  },
+  {
+    description:
+      "Consult Astilba's public Create documentation to generate or evaluate projects with the released CLI, supported recipes, and explicit safety boundaries.",
+    name: "astilba-create-docs",
+  },
+] as const;
+const skills = await Promise.all(
+  skillDefinitions.map(async ({ description, name }) => {
+    const skillPath = resolve(
+      process.cwd(),
+      `../public/.well-known/agent-skills/${name}/SKILL.md`
+    );
+    const skill = await readFile(skillPath);
+
+    return {
+      description,
+      digest: `sha256:${createHash("sha256").update(skill).digest("hex")}`,
+      name,
+      type: "skill-md",
+      url: `/docs/.well-known/agent-skills/${name}/SKILL.md`,
+    };
+  })
 );
-const skill = await readFile(skillPath);
-const digest = `sha256:${createHash("sha256").update(skill).digest("hex")}`;
 
 export const GET = (): Response =>
   jsonResponse({
     $schema: "https://schemas.agentskills.io/discovery/0.2.0/schema.json",
-    skills: [
-      {
-        description:
-          "Consult Astilba's public Cache documentation to explain or evaluate the unreleased TypeScript cache preview without inventing installation or production support.",
-        digest,
-        name: "astilba-cache-docs",
-        type: "skill-md",
-        url: "/docs/.well-known/agent-skills/astilba-cache-docs/SKILL.md",
-      },
-    ],
+    skills,
   });

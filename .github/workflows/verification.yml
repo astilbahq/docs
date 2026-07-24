@@ -158,12 +158,12 @@ jobs:
             exit 1
           fi
 
-          if [[ ! -f dist/_headers || ! -f dist/docs/index.html || ! -f dist/docs/sitemap.xml || ! -d dist/docs/.well-known ]]; then
+          if [[ ! -f dist/_headers || ! -f dist/docs/index.html || ! -f dist/docs/create/overview/index.html || ! -f dist/docs/create/overview.md || ! -f dist/docs/_llms-txt/astilba-create.txt || ! -f dist/docs/.well-known/agent-skills/astilba-create-docs/SKILL.md || ! -f dist/docs/sitemap.xml ]]; then
             echo "::error::The verified docs artifact is incomplete."
             exit 1
           fi
 
-          if [[ ! -f site/dist/index.html || ! -f site/dist/cache/index.html || ! -f site/dist/_headers || ! -f site/dist/sitemap.xml ]]; then
+          if [[ ! -f site/dist/index.html || ! -f site/dist/create/index.html || ! -f site/dist/cache/index.html || ! -f site/dist/schemas/create/v1.json || ! -f site/dist/llms.txt || ! -f site/dist/.well-known/agent-skills/index.json || ! -f site/dist/_headers || ! -f site/dist/sitemap-site.xml || ! -f site/dist/sitemap.xml ]]; then
             echo "::error::The verified apex artifact is incomplete."
             exit 1
           fi

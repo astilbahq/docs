@@ -2,11 +2,12 @@
 import BrandMark from "./BrandMark.astro";
 
 interface Props {
-  current?: "cache" | "home";
+  current?: "cache" | "create" | "home";
 }
 
 const { current = "home" } = Astro.props;
 const links = [
+  { href: "/create/", label: "Create", key: "create" },
   { href: "/cache/", label: "Cache", key: "cache" },
   { href: "/docs/", label: "Docs", key: "docs" },
   { href: "https://github.com/astilbahq", label: "GitHub", key: "github" },

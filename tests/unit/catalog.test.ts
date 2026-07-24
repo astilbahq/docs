@@ -15,12 +15,35 @@ import {
   validateDocsProducts,
 } from "../../src/docs/catalog";
 
+const getProduct = (id: string) => {
+  const product = docsProducts.find((candidate) => candidate.id === id);
+
+  if (!product) {
+    throw new Error(`Missing ${id} documentation product.`);
+  }
+
+  return product;
+};
+
 describe("documentation catalog", () => {
-  const cache = docsProducts[0];
+  const cache = getProduct("cache");
+  const create = getProduct("create");
 
-  it("resolves the configured default route", () => {
-    expect(cache).toBeDefined();
+  it("leads with the released Create product", () => {
+    expect(docsProducts.map(({ id }) => id)).toEqual(["create", "cache"]);
 
+    const version = getDefaultVersion(create);
+    const page = getDefaultPage(create, version);
+
+    expect(version.id).toBe("0.1");
+    expect(version.lifecycle).toBe("latest");
+    expect(page.key).toBe("overview");
+    expect(create.repositoryUrl).toBe("https://github.com/astilbahq/create");
+    expect(getProductHomeHref(create)).toBe("/docs/create/");
+    expect(getPageHref(version, page)).toBe("/docs/create/overview/");
+  });
+
+  it("resolves the configured Cache default route", () => {
     const version = getDefaultVersion(cache);
     const page = getDefaultPage(cache, version);
 
@@ -29,6 +52,34 @@ describe("documentation catalog", () => {
     expect(cache.repositoryUrl).toBe("https://github.com/astilbahq/docs");
     expect(getProductHomeHref(cache)).toBe("/docs/cache/");
     expect(getPageHref(version, page)).toBe("/docs/cache/overview/");
+  });
+
+  it("organizes Create pages by reader intent", () => {
+    const version = getDefaultVersion(create);
+
+    expect(
+      version.sections.map(({ items, label }) => ({
+        label,
+        pages: items.map((page) => page.label),
+      }))
+    ).toEqual([
+      {
+        label: "Get started",
+        pages: ["Overview", "Create your first project", "Choose a recipe"],
+      },
+      {
+        label: "Guides",
+        pages: ["Automate project creation"],
+      },
+      {
+        label: "Concepts",
+        pages: ["Deterministic generation", "Project manifest"],
+      },
+      {
+        label: "Reference",
+        pages: ["CLI reference", "Release and support"],
+      },
+    ]);
   });
 
   it("organizes Cache pages by reader intent", () => {

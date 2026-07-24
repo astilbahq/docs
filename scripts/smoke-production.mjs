@@ -7,6 +7,8 @@ import {
 } from "../src/docs/urls.ts";
 
 const CANONICAL_ORIGIN = ASTILBA_ORIGIN;
+const CREATE_HTML_PATH = withDocsBase("/create/overview/");
+const CREATE_MARKDOWN_PATH = withDocsBase("/create/overview.md");
 const HTML_PATH = withDocsBase("/cache/overview/");
 const MARKDOWN_PATH = withDocsBase("/cache/overview.md");
 const MCP_PATH = withDocsBase("/mcp");
@@ -325,6 +327,52 @@ const checkDirectMarkdown = async () => {
   }
 };
 
+const checkCreateDocs = async () => {
+  const htmlResponse = await request(CREATE_HTML_PATH, {
+    headers: { Accept: "text/html" },
+  });
+  requireStatus(htmlResponse, "Create HTML page");
+  requireHeaderIncludes(
+    htmlResponse,
+    "Content-Type",
+    "text/html",
+    "Create HTML page"
+  );
+  requireHeaderIncludes(
+    htmlResponse,
+    "Link",
+    `<${CREATE_MARKDOWN_PATH}>; rel="alternate"`,
+    "Create HTML page"
+  );
+  requireGlobalSecurityHeaders(htmlResponse, "Create HTML page");
+  const html = await htmlResponse.text();
+
+  if (!(html.includes("Astilba Create") && html.includes("four recipe v1"))) {
+    throw new Error(
+      "[production-smoke] Create HTML page content is incomplete."
+    );
+  }
+
+  const markdownResponse = await request(CREATE_MARKDOWN_PATH);
+  requireStatus(markdownResponse, "Create Markdown");
+  requireHeaderEquals(
+    markdownResponse,
+    "Content-Type",
+    "text/markdown; charset=utf-8",
+    "Create Markdown"
+  );
+  requireGlobalSecurityHeaders(markdownResponse, "Create Markdown");
+  const markdown = await markdownResponse.text();
+
+  if (
+    !(markdown.includes("# Overview") && markdown.includes("create-astilba"))
+  ) {
+    throw new Error(
+      "[production-smoke] Create Markdown content is incomplete."
+    );
+  }
+};
+
 const checkMissingMarkdown = async () => {
   const response = await request(
     withDocsBase("/cache/production-smoke-missing.md")
@@ -365,6 +413,73 @@ const checkDiscovery = async () => {
   requireHeaderAbsent(response, "Access-Control-Allow-Methods", "API catalog");
   requireGlobalSecurityHeaders(response, "API catalog");
   await response.body?.cancel();
+
+  const skillsResponse = await request(
+    withDocsBase("/.well-known/agent-skills/index.json")
+  );
+  requireStatus(skillsResponse, "Agent Skills discovery");
+  requireHeaderIncludes(
+    skillsResponse,
+    "Content-Type",
+    "application/json",
+    "Agent Skills discovery"
+  );
+  requireGlobalSecurityHeaders(skillsResponse, "Agent Skills discovery");
+  const discovery = await skillsResponse.json();
+  const createSkill = discovery.skills?.find(
+    ({ name }) => name === "astilba-create-docs"
+  );
+
+  if (
+    createSkill?.url !==
+      "/docs/.well-known/agent-skills/astilba-create-docs/SKILL.md" ||
+    !/^sha256:[0-9a-f]{64}$/.test(createSkill.digest ?? "")
+  ) {
+    throw new Error(
+      "[production-smoke] Agent Skills discovery is missing the Create skill."
+    );
+  }
+
+  const skillResponse = await request(createSkill.url);
+  requireStatus(skillResponse, "Create Agent Skill");
+  requireHeaderIncludes(
+    skillResponse,
+    "Content-Type",
+    "text/markdown",
+    "Create Agent Skill"
+  );
+  requireGlobalSecurityHeaders(skillResponse, "Create Agent Skill");
+  if (
+    !(await skillResponse.text()).includes("# Astilba Create documentation")
+  ) {
+    throw new Error(
+      "[production-smoke] Create Agent Skill content is incomplete."
+    );
+  }
+
+  const customSetResponse = await request(
+    withDocsBase("/_llms-txt/astilba-create.txt")
+  );
+  requireStatus(customSetResponse, "Create LLM document set");
+  requireHeaderIncludes(
+    customSetResponse,
+    "Content-Type",
+    "text/plain",
+    "Create LLM document set"
+  );
+  requireGlobalSecurityHeaders(customSetResponse, "Create LLM document set");
+  const customSet = await customSetResponse.text();
+  if (
+    !(
+      customSet.includes("<SYSTEM>Astilba Create:") &&
+      customSet.includes("# Create") &&
+      customSet.includes("# Release and support")
+    )
+  ) {
+    throw new Error(
+      "[production-smoke] Create LLM document set content is incomplete."
+    );
+  }
 };
 
 const checkSitemap = async () => {
@@ -379,6 +494,7 @@ const checkSitemap = async () => {
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
     ) ||
     !sitemap.includes(`<loc>${docsUrl("/")}</loc>`) ||
+    !sitemap.includes(`<loc>${docsUrl("/create/overview/")}</loc>`) ||
     !/<lastmod>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z<\/lastmod>/.test(
       sitemap
     )
@@ -595,6 +711,23 @@ const checkMcp = async () => {
       "[production-smoke] MCP search_docs did not return the expected documentation resource."
     );
   }
+
+  const createSearch = await callMcp("tools/call", {
+    arguments: { productId: "create", query: "project ownership manifest" },
+    name: "search_docs",
+  });
+  const createResults = createSearch?.structuredContent?.results;
+
+  if (
+    !Array.isArray(createResults) ||
+    !createResults.some(
+      (result) => result?.uri === docsUrl("/create/project-manifest.md")
+    )
+  ) {
+    throw new Error(
+      "[production-smoke] MCP search_docs did not return the expected Create resource."
+    );
+  }
 };
 
 const runChecks = async () => {
@@ -602,6 +735,7 @@ const runChecks = async () => {
   const results = await Promise.allSettled([
     checkMarkdown(),
     checkDirectMarkdown(),
+    checkCreateDocs(),
     checkMissingMarkdown(),
     checkDiscovery(),
     checkSitemap(),

@@ -1026,6 +1026,12 @@ test("searches the production Pagefind index", async ({ page }) => {
   await expect(
     dialog.getByRole("link", { name: /Runtime architecture/i }).first()
   ).toBeVisible();
+  await dialog
+    .getByRole("textbox", { name: "Search" })
+    .fill("Project manifest");
+  await expect(
+    dialog.getByRole("link", { name: /Project manifest/i }).first()
+  ).toBeVisible();
   await dialog.getByRole("textbox", { name: "Search" }).fill("MCP Server");
   await expect(
     dialog.getByRole("link", { name: /MCP Server/i }).first()
@@ -1324,7 +1330,7 @@ test("persists desktop sidebar disclosure state across navigation", async ({
   ).toHaveAttribute("aria-expanded", "false");
 });
 
-test("targets the public documentation repository from product pages", async ({
+test("targets each public product source from product pages", async ({
   page,
 }) => {
   await page.goto("/docs/");
@@ -1335,7 +1341,7 @@ test("targets the public documentation repository from product pages", async ({
   await page.goto("/docs/cache/overview/");
   await expect(
     page.getByRole("link", {
-      name: "Astilba Cache documentation on GitHub",
+      name: "Astilba Cache on GitHub",
       exact: true,
     })
   ).toHaveAttribute("href", "https://github.com/astilbahq/docs");
@@ -1346,13 +1352,21 @@ test("targets the public documentation repository from product pages", async ({
   await page.goto("/docs/cache/");
   await expect(
     page.getByRole("link", {
-      name: "Astilba Cache documentation on GitHub",
+      name: "Astilba Cache on GitHub",
       exact: true,
     })
   ).toHaveAttribute("href", "https://github.com/astilbahq/docs");
   await expect(
     page.locator('a[href*="github.com/astilbahq/cache"]')
   ).toHaveCount(0);
+
+  await page.goto("/docs/create/overview/");
+  await expect(
+    page.getByRole("link", {
+      name: "Astilba Create on GitHub",
+      exact: true,
+    })
+  ).toHaveAttribute("href", "https://github.com/astilbahq/create");
 });
 
 test("uses product-aware document titles", async ({ page }) => {
@@ -1373,6 +1387,16 @@ test("uses product-aware document titles", async ({ page }) => {
     "Cache | Astilba"
   );
 
+  await page.goto("/docs/create/quickstart/");
+  await expect(page).toHaveTitle("Create your first project | Astilba Create");
+
+  await page.goto("/docs/create/");
+  await expect(page).toHaveTitle("Create | Astilba");
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+    "content",
+    "Create | Astilba"
+  );
+
   await page.goto("/docs/agents/mcp/");
   await expect(page).toHaveTitle("MCP Server | Astilba");
 });
@@ -1388,9 +1412,17 @@ test("presents products and copies the agent setup prompt from the homepage", as
   await expect(pageTitle).toHaveCSS("font-weight", "500");
   const sidebar = page.locator("#starlight__sidebar");
   await expect(sidebar).toBeVisible();
-  await expect(
-    sidebar.getByRole("link", { name: "Cache documentation" })
-  ).toHaveAttribute("href", "/docs/cache/");
+  const productMenu = sidebar.getByRole("button", {
+    name: "Choose product. Current product: Create",
+    exact: true,
+  });
+  await expect(productMenu).toBeVisible();
+  await productMenu.click();
+  await expect(page.getByRole("menuitem", { name: /Cache/ })).toHaveAttribute(
+    "href",
+    "/docs/cache/"
+  );
+  await page.keyboard.press("Escape");
   await expect(
     sidebar.getByRole("button", { name: "AI for Agents", exact: true })
   ).toHaveAttribute("aria-expanded", "true");
@@ -1404,7 +1436,7 @@ test("presents products and copies the agent setup prompt from the homepage", as
     name: "Read the docs",
     exact: true,
   });
-  await expect(primaryAction).toHaveAttribute("href", "/docs/cache/");
+  await expect(primaryAction).toHaveAttribute("href", "/docs/create/");
   await expect(primaryAction).toHaveCSS("height", "40px");
   await expect(primaryAction).toHaveCSS("padding-inline", "14px");
   const primarySelection = await primaryAction.evaluate((element) => {
@@ -1423,15 +1455,23 @@ test("presents products and copies the agent setup prompt from the homepage", as
   await expect(primaryAction).toHaveCSS("background-color", "rgb(42, 42, 42)");
   await expect(primaryAction).toHaveCSS("color", "rgb(255, 255, 255)");
 
-  const product = page.getByRole("article").filter({
+  const createProduct = page.getByRole("article").filter({
+    has: page.getByRole("heading", { level: 3, name: "Create" }),
+  });
+  await expect(createProduct).toContainText("Released");
+  await expect(createProduct).toContainText("create-astilba 0.1.0");
+  await expect(
+    createProduct.getByRole("link", { name: "Create" })
+  ).toHaveAttribute("href", "/docs/create/");
+
+  const cacheProduct = page.getByRole("article").filter({
     has: page.getByRole("heading", { level: 3, name: "Cache" }),
   });
-  await expect(product).toContainText("Preview");
-  await expect(product).toContainText("There is no supported npm release");
-  await expect(product.getByRole("link", { name: "Cache" })).toHaveAttribute(
-    "href",
-    "/docs/cache/"
-  );
+  await expect(cacheProduct).toContainText("Preview");
+  await expect(cacheProduct).toContainText("There is no supported npm release");
+  await expect(
+    cacheProduct.getByRole("link", { name: "Cache" })
+  ).toHaveAttribute("href", "/docs/cache/");
   await expect(
     page.getByRole("heading", { level: 2, name: "How to read these docs" })
   ).toHaveCount(0);
@@ -1544,16 +1584,50 @@ test("presents Cache as a distinct product home", async ({ page }) => {
 
   const sidebar = page.locator("#starlight__sidebar");
   await expect(
-    sidebar.getByRole("link", {
-      name: "Cache documentation home",
+    sidebar.getByRole("button", {
+      name: "Choose product. Current product: Cache",
       exact: true,
     })
-  ).toHaveAttribute("href", "/docs/cache/");
+  ).toBeVisible();
   await expect(
     sidebar.getByRole("link", { name: "Overview", exact: true })
   ).toHaveAttribute("href", "/docs/cache/overview/");
   await expect(
     page.getByRole("banner").getByRole("link", { name: "Cache", exact: true })
+  ).toHaveAttribute("aria-current", "page");
+  await expectNoAxeViolations(page);
+});
+
+test("presents Create as a distinct released product home", async ({
+  page,
+}) => {
+  await page.goto("/docs/create/");
+
+  const title = page.getByRole("heading", { level: 1, name: "Create" });
+  await expect(title).toBeVisible();
+  await expect(title).toHaveCSS("font-size", "56px");
+  await expect(
+    page.getByText(
+      "Generate a verified TypeScript project from one maintained Astilba recipe."
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Read the docs", exact: true })
+  ).toHaveAttribute("href", "/docs/create/overview/");
+  await expect(page.getByText("create-astilba 0.1.0")).toBeVisible();
+
+  const sidebar = page.locator("#starlight__sidebar");
+  await expect(
+    sidebar.getByRole("button", {
+      name: "Choose product. Current product: Create",
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(
+    sidebar.getByRole("link", { name: "Overview", exact: true })
+  ).toHaveAttribute("href", "/docs/create/overview/");
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: "Create", exact: true })
   ).toHaveAttribute("aria-current", "page");
   await expectNoAxeViolations(page);
 });
