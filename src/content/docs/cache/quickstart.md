@@ -1,12 +1,12 @@
 ---
-title: Local quickstart
-description: Run one Astilba Cache miss and hit with the implemented memory Store in the current source workspace.
+title: Source walkthrough
+description: Follow one Astilba Cache miss and hit through the implemented memory Store in the reviewed source snapshot.
 ---
 
-This walkthrough caches one product with the smallest configuration the current source can run. The first read calls the factory; the second reuses the stored result.
+This walkthrough follows one product through the smallest configuration in the reviewed source snapshot. The first read calls the factory; the second reuses the stored result.
 
-:::caution[Source workspace only]
-<code>@astilba/cache</code> is not available from npm. This example runs from the Cache repository workspace or another setup that deliberately builds the current source. It is not a production installation recipe.
+:::caution[Source example, not a runnable public quickstart]
+<code>@astilba/cache</code> is not available from npm, and the Cache repository is not publicly accessible. Use this page to understand the reviewed implementation. It is not a public checkout or production installation recipe.
 :::
 
 ## Understand the setup
@@ -16,14 +16,14 @@ The portable constructor requires explicit capabilities:
 | Part | Purpose here |
 | --- | --- |
 | <code>createCache()</code> | Creates the application-facing cache. |
-| <code>memory()</code> | Supplies a bounded, per-instance Store. This walkthrough uses it as a development L2 because a factory fill currently requires L2. |
+| <code>memory()</code> | Supplies a bounded, per-instance Store. The source example uses it as a development L2 because a factory fill currently requires L2. |
 | <code>Clock</code> | Supplies logical time to the portable kernel. |
 | <code>Rng</code> | Supplies randomness without hard-coding a platform source into the kernel. |
 | Factory | Loads the product when no stored value is usable. |
 
 No Registry or Bus is configured, so this example demonstrates read, fill, and reuse—not distributed invalidation.
 
-## Read or fill one product
+## Follow one product read
 
 ~~~ts title="cache.ts"
 import { createCache, memory, t } from "@astilba/cache"
@@ -83,7 +83,7 @@ The application-facing portion begins at <code>options</code>: choose a stable k
 
 ## Know what is and is not exercised
 
-This example does exercise:
+The reviewed source path exercises:
 
 - the implemented <code>memory()</code> Store, including its entry and byte bounds;
 - the implemented <code>t</code> tag builder;
@@ -99,7 +99,7 @@ It deliberately leaves out:
 - request identity, cross-isolate locks, telemetry, and the React Router response-cache integration.
 
 :::note[Why <code>memory()</code> is passed as L2]
-The current kernel refuses a factory fill without an L2 Store. The same small <code>Store</code> contract is used by both tiers, so <code>memory()</code> is sufficient for a local demonstration. It does not become shared or durable simply because it occupies the <code>l2</code> configuration field.
+The current kernel refuses a factory fill without an L2 Store. The same small <code>Store</code> contract is used by both tiers, so <code>memory()</code> is sufficient for this source example. It does not become shared or durable simply because it occupies the <code>l2</code> configuration field.
 :::
 
 ## Move to a runtime integration

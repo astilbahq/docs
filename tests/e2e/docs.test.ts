@@ -417,7 +417,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   expect(homeMarkdownResponse.headers().vary).toContain("Accept");
   const homeMarkdown = await homeMarkdownResponse.text();
   expect(homeMarkdown).toContain("# Overview");
-  expect(homeMarkdown).toContain("## Sponsors");
+  expect(homeMarkdown).not.toContain("## Sponsors");
   expect(homeMarkdown).not.toContain("## How to read these docs");
 
   const rootMarkdownResponse = await request.get("/docs/index.md");
@@ -1205,7 +1205,7 @@ test("registers a read-only WebMCP tool when the API is available", async ({
 
     return window.__webMcpTools?.[0]?.execute({ offset: 0 });
   });
-  expect(nextPageChunk).toContain("# Local quickstart");
+  expect(nextPageChunk).toContain("# Source walkthrough");
   expect(markdownRequests).toEqual([
     "/docs/cache/overview.md",
     "/docs/cache/quickstart.md",
@@ -1324,7 +1324,7 @@ test("persists desktop sidebar disclosure state across navigation", async ({
   ).toHaveAttribute("aria-expanded", "false");
 });
 
-test("targets the active product repository from the header", async ({
+test("targets the public documentation repository from product pages", async ({
   page,
 }) => {
   await page.goto("/docs/");
@@ -1335,26 +1335,32 @@ test("targets the active product repository from the header", async ({
   await page.goto("/docs/cache/overview/");
   await expect(
     page.getByRole("link", {
-      name: "Astilba Cache on GitHub",
+      name: "Astilba Cache documentation on GitHub",
       exact: true,
     })
-  ).toHaveAttribute("href", "https://github.com/astilbahq/cache");
+  ).toHaveAttribute("href", "https://github.com/astilbahq/docs");
+  await expect(
+    page.locator('a[href*="github.com/astilbahq/cache"]')
+  ).toHaveCount(0);
 
   await page.goto("/docs/cache/");
   await expect(
     page.getByRole("link", {
-      name: "Astilba Cache on GitHub",
+      name: "Astilba Cache documentation on GitHub",
       exact: true,
     })
-  ).toHaveAttribute("href", "https://github.com/astilbahq/cache");
+  ).toHaveAttribute("href", "https://github.com/astilbahq/docs");
+  await expect(
+    page.locator('a[href*="github.com/astilbahq/cache"]')
+  ).toHaveCount(0);
 });
 
 test("uses product-aware document titles", async ({ page }) => {
   await page.goto("/docs/cache/quickstart/");
-  await expect(page).toHaveTitle("Local quickstart | Astilba Cache");
+  await expect(page).toHaveTitle("Source walkthrough | Astilba Cache");
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
     "content",
-    "Local quickstart | Astilba Cache"
+    "Source walkthrough | Astilba Cache"
   );
 
   await page.goto("/docs/");
@@ -1431,22 +1437,10 @@ test("presents products and copies the agent setup prompt from the homepage", as
   ).toHaveCount(0);
   await expect(
     page.getByRole("heading", { level: 2, name: "Sponsors" })
-  ).toBeVisible();
+  ).toHaveCount(0);
   await expect(
     page.getByRole("link", { name: "Sponsor Astilba on GitHub." })
-  ).toHaveAttribute("href", "https://github.com/sponsors/astilbahq");
-  const sponsorsHeading = page.getByRole("heading", {
-    level: 2,
-    name: "Sponsors",
-  });
-  const sponsorsCopy = page
-    .getByRole("region", { name: "Sponsors" })
-    .locator("p");
-  const [sponsorsHeadingBox, sponsorsCopyBox] = await Promise.all([
-    sponsorsHeading.boundingBox(),
-    sponsorsCopy.boundingBox(),
-  ]);
-  expect(sponsorsHeadingBox?.y).toBeCloseTo(sponsorsCopyBox?.y ?? 0, 1);
+  ).toHaveCount(0);
 
   const copy = page.getByRole("button", {
     name: "Copy agent setup",

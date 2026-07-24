@@ -90,6 +90,8 @@ The default <code>isRetriableHttp()</code> classifier accepts:
 
 Caller-originated timeouts and fact-like HTTP responses such as 403, 404, and 410 are not retriable by default. Replace the classifier with <code>defaults.staleIfError</code> when your application has a different failure vocabulary.
 
+Cache invokes that classifier only when the call declares <code>grace</code>. Compatible singleflight callers share origin work, but a transient shared failure does not erase the stale candidate each caller read before joining. If the factory-running call had no candidate, a waiting caller with its own eligible candidate can still revalidate and serve it; a caller with no candidate propagates the failure. A hard purge observed before serve-time revalidation makes the candidate ineligible.
+
 ## Keep facts visible
 
 Negative entries are never served through grace or stale-on-error. Declaring <code>notFoundTtl</code> opts an <code>HttpError</code> with status 404 into a negative write, and a negative result cannot displace a still-servable value.

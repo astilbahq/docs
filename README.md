@@ -34,7 +34,8 @@ The structure borrows TanStack's useful multi-library context and Better Auth's 
 ## Current scope
 
 - One documented product: Cache.
-- Sixteen progressively disclosed Cache preview pages backed by public exports, public behavior, tagged releases, and approved public copy.
+- Sixteen progressively disclosed Cache preview pages backed by the reviewed source snapshot, public behavior, tagged releases, and approved public copy.
+- One unpublished, non-public chaos evidence app documented in the Workers guide, with its evidence boundary kept separate from deployed measurements and production support.
 - Base UI context switching and animated, session-persisted sidebar sections.
 - Starlight table of contents, theme control, code presentation, and Pagefind search.
 - Visible release-status language wherever a surface is not yet shipped.
@@ -144,8 +145,8 @@ The Cache document set follows the typed sidebar order and states that the packa
 
 ## Keeping product status current
 
-Treat `src/content/docs/cache/api-status.md` as the release-state ledger. Update it first when public behavior changes, then reconcile the overview, runtime status, concepts, and examples against it. Verify claims from the public package exports, implementation, and tests; do not infer shipped support from an internal source file or engineering milestone tag.
+Treat `src/content/docs/cache/api-status.md` as the release-state ledger. Update it first when behavior changes, then reconcile the overview, runtime status, concepts, and examples against it. Verify claims from the reviewed source snapshot, intended public exports, observable behavior, and tests; do not infer shipped support from an internal source file or engineering milestone tag.
 
 ## Content boundary
 
-This is a public documentation repository. Never copy private handbook prose, ADR rationale, research, red-team material, or incident narrative into it. Public facts must come from released code, public types, public tests, or explicitly approved launch copy.
+This is a public documentation repository. Never copy private handbook prose, ADR rationale, research, red-team material, or incident narrative into it. Public claims must be independently supported by the reviewed implementation, public behavior, tagged releases, or explicitly approved launch copy, and must state when the underlying source is not publicly accessible.

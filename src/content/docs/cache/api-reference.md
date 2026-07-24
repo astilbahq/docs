@@ -3,7 +3,7 @@ title: API reference
 description: Reference the root, Cloudflare, and React Router exports in the current @astilba/cache source snapshot.
 ---
 
-This page documents the complete root export surface and the two public adapter subpaths in the current source snapshot. Start with the [overview](/docs/cache/overview/) or [local quickstart](/docs/cache/quickstart/) if you are learning the library; use this page when you need an exact method, option, result field, or driver contract.
+This page documents the complete root export surface and the two public adapter subpaths in the current source snapshot. Start with the [overview](/docs/cache/overview/) or [source walkthrough](/docs/cache/quickstart/) if you are learning the library; use this page when you need an exact method, option, result field, or driver contract.
 
 :::caution[Unreleased and unevenly implemented]
 <code>@astilba/cache</code> is not published to npm. Some declarations describe intended behavior that still throws or remains inert. Each section calls out important boundaries; [Implementation status](/docs/cache/api-status/) is the authoritative implementation ledger.
@@ -96,6 +96,8 @@ The raw constructor requires <code>namespace</code>, <code>clock</code>, and <co
 | <code>factory</code> | Async origin loader. Its context is <code>FactoryCtx&lt;T&gt;</code> or <code>EntryFactoryCtx&lt;T&gt;</code>. |
 
 The exported option types are <code>GetOptions</code>, <code>GetOrSetOptions</code>, and <code>GetOrSetEntryOptions</code>.
+
+Compatible calls share one foreground factory execution only when key, tags, TTL, grace, negative-cache TTL, resolved scope, codec identity, consistency, and API form agree. A successful fill or an already-revalidated stale serve is shared with its evidence. If the factory-running call had no stale candidate and shares only a classified transient failure, each waiting caller makes its own stale-on-error decision using the candidate it read before joining. The classifier is not invoked when <code>grace</code> is absent. If no caller has a candidate, both API forms propagate the error. If serve-time revalidation rejects a waiting caller's candidate after a hard invalidation, the plain form propagates the classified error while the entry form returns its documented miss result.
 
 ### Factory context
 
@@ -363,7 +365,7 @@ Import these names from <code>@astilba/cache/cloudflare</code>. The subpath reso
 | --- | --- |
 | <code>createWorkersCache(config)</code> | Composes a Workers Clock and Rng, bounded memory L1, KV L2, named Coordinator Registry, lazily redialed Bus, and a request-driven recovery carrier. Construction performs no I/O. |
 | <code>WorkersCacheConfig</code> | Requires <code>name</code>, <code>kv</code>, and <code>coordinator</code>; accepts optional <code>defaults</code>, kernel <code>telemetry</code>, and <code>takedownSensitive</code>. |
-| <code>Coordinator</code> | Durable Object class the Worker must export and bind with a SQLite migration. Its environment requires <code>REGISTRY_KV</code> and accepts Registry heartbeat and snapshot tuning variables. |
+| <code>Coordinator</code> | Durable Object class the Worker must export and bind with a SQLite lifecycle declaration. Prefer the top-level <code>exports</code> map for a new Worker; legacy <code>migrations</code> remain supported. Its environment requires <code>REGISTRY_KV</code> and accepts Registry heartbeat and snapshot tuning variables. |
 | <code>cloudflareKV(namespace)</code> | Builds the Cloudflare KV Store driver. |
 | <code>doRegistry(source, regId?)</code> | Builds the thin Coordinator RPC Registry from a stub or a thunk that mints one. The Registry ID must match the named Durable Object identity. |
 | <code>StubSource</code> | A Coordinator stub or a zero-argument stub factory. Use the thunk form when the Registry outlives a request. |

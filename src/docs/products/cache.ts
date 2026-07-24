@@ -12,11 +12,25 @@ const cacheSections = [
         sourcePath: "src/content/docs/cache/overview.md",
       },
       {
+        key: "api-status",
+        label: "Implementation status",
+        slug: "api-status",
+        icon: "approve-check-circle",
+        sourcePath: "src/content/docs/cache/api-status.md",
+      },
+      {
         key: "quickstart",
-        label: "Local quickstart",
+        label: "Source walkthrough",
         slug: "quickstart",
         icon: "rocket",
         sourcePath: "src/content/docs/cache/quickstart.md",
+      },
+      {
+        key: "core-concepts",
+        label: "Cache fundamentals",
+        slug: "core-concepts",
+        icon: "open-book",
+        sourcePath: "src/content/docs/cache/core-concepts.md",
       },
     ],
   },
@@ -95,13 +109,6 @@ const cacheSections = [
     label: "Concepts",
     items: [
       {
-        key: "core-concepts",
-        label: "Cache fundamentals",
-        slug: "core-concepts",
-        icon: "open-book",
-        sourcePath: "src/content/docs/cache/core-concepts.md",
-      },
-      {
         key: "how-it-works",
         label: "How Cache works",
         slug: "how-it-works",
@@ -134,13 +141,6 @@ const cacheSections = [
         icon: "server",
         sourcePath: "src/content/docs/cache/drivers-and-status.md",
       },
-      {
-        key: "api-status",
-        label: "Implementation status",
-        slug: "api-status",
-        icon: "approve-check-circle",
-        sourcePath: "src/content/docs/cache/api-status.md",
-      },
     ],
   },
 ] satisfies DocsProduct["versions"][number]["sections"];
@@ -152,9 +152,9 @@ export const cacheProduct = {
   description:
     "A portable server-side TypeScript cache with explicit invalidation, resilience, and privacy boundaries.",
   availabilityNote:
-    "Source preview. There is no supported npm release or production installation path yet.",
+    "Unreleased source snapshot. There is no supported npm release, public checkout, or production installation path yet.",
   homePath: "/cache/",
-  repositoryUrl: "https://github.com/astilbahq/cache",
+  repositoryUrl: "https://github.com/astilbahq/docs",
   status: {
     text: "Preview",
     variant: "caution",
