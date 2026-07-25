@@ -30,8 +30,8 @@ Create 0.2.0 reports planning, generation, and optional dependency installation 
 
 | Requirement | Supported value |
 | --- | --- |
-| Node.js | 22.18.0 or later |
-| pnpm | Exactly 11.10.0 |
+| Create CLI runtime | Node.js 22.18.0 or later |
+| Generated project package manager | pnpm 11.10.0 |
 
 You invoke Create through npm, but generated projects use pnpm. With `--install`, Create uses the `pnpm` executable only when it reports version 11.10.0. Otherwise, Create asks Corepack for `pnpm@11.10.0`.
 

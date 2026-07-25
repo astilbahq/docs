@@ -27,11 +27,12 @@ Fetch https://astilba.com/docs/agent-setup/prompt.md and follow its instructions
 
 Once connected, ask the client questions such as:
 
+- “Which project recipes does Astilba Create 0.2.0 support?”
 - “Is Astilba Cache ready for production?”
 - “Find the documentation for invalidating related cached values.”
 - “How do the Cloudflare Workers platform and React Router framework support differ?”
 
-The client should search before reading a bounded page or resource. Answers about availability should use the current [Implementation status](/docs/cache/api-status/) page.
+The client should search before reading a bounded page or resource. Answers about Create releases should use [Release and support](/docs/create/release-and-support/); answers about Cache availability should use [Implementation status](/docs/cache/api-status/).
 
 ## Tools
 
@@ -48,7 +49,7 @@ Every published Markdown page is also exposed as a fixed MCP resource. Resource 
 
 Prefer resources when your client supports them: discovery gives you the canonical page list and a resource read returns the published document directly. Use `search_docs` and `read_doc` when the client exposes tools more reliably than resources.
 
-When you need to make a release or availability claim about Cache, read [Implementation status](/docs/cache/api-status/) before relying on examples elsewhere in the documentation.
+When you need to make a release or availability claim, read [Release and support](/docs/create/release-and-support/) for Create or [Implementation status](/docs/cache/api-status/) for Cache before relying on examples elsewhere in the documentation.
 
 ## Usage limits
 
@@ -61,7 +62,7 @@ The endpoint has a Cloudflare-native allowance of 60 units per minute for each s
 
 An exhausted per-minute MCP guard returns HTTP 429 with `Retry-After: 60`. Treat this as an abuse guard, not an account quota or a guarantee of globally synchronized capacity.
 
-That guard is separate from the Cloudflare account's Workers request allowance. On the Free plan, Worker-first routes count toward a 100,000-request daily allowance; exhausting it can terminate those requests with Cloudflare Error 1027 rather than the MCP guard's HTTP 429 response. The active account plan remains the authority for that daily allowance.
+That guard is separate from the Cloudflare account's Workers request allowance. On the Free plan, Worker-first routes count toward a 100,000-request daily allowance. Cloudflare documents HTTP 429 for matching Static Assets <code>run_worker_first</code> requests after that allowance is exhausted; unlike the MCP guard response, that platform response does not carry this endpoint's <code>Retry-After: 60</code> contract. The active account plan remains the authority for the daily allowance.
 
 Request bodies are limited to 256,000 bytes. The server accepts up to 16 legacy batch messages only for protocol versions that still permit JSON-RPC batching; current structured-result protocol versions must send individual requests.
 

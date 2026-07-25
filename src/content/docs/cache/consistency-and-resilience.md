@@ -94,7 +94,11 @@ Cache invokes that classifier only when the call declares <code>grace</code>. Co
 
 ## Keep facts visible
 
-Negative entries are never served through grace or stale-on-error. Declaring <code>notFoundTtl</code> opts an <code>HttpError</code> with status 404 into a negative write, and a negative result cannot displace a still-servable value.
+Negative entries are never served through grace or stale-on-error. Declaring <code>notFoundTtl</code> allows an <code>HttpError</code> with status 404 to take the negative L2 path. A negative fill and a later read that reaches the invalidation-fresh negative resolve the fact as <code>undefined</code>, never as the internal stored placeholder.
+
+The singleflight outcome depends first on what the factory-running caller observed and whether the compatible calls declared <code>grace</code>. If the leader has a grace-eligible, still-servable stale value, it suppresses the negative write and its value and evidence become the shared outcome for every compatible joiner. If that candidate revalidates as dead or unknown, it writes and serves the negative as the shared result; no caller may fall back to a candidate that cannot be established servable. If the factory-running caller has no grace-eligible candidate, it makes the negative L2 write attempt once inside the shared fill window and shares the not-found fact. Only in that leader-without-a-candidate case does each waiter use its own earlier read: a waiter that declared <code>grace</code> and observed a still-servable stale value returns it, while a waiter without one returns <code>undefined</code>. Without <code>grace</code>, every compatible caller takes the negative disposition even if it observed a stale value. Serve-time validation may instead throw <code>RegistryUnavailableError</code> under the configured unavailable posture. Waiters do not write the fact again.
+
+The negative is not copied into L1. Cache best-effort deletes an older L1 value after attempting to record the fact in L2. If that deletion fails, the older L1 copy can still win a later tier read until it is evicted or overwritten.
 
 :::caution[Durations are not enforced]
 The presence of <code>grace</code> currently opts a stale candidate into error fallback, but elapsed grace is not measured. Likewise, <code>notFoundTtl</code> opts into a negative entry without expiring it after the declared duration. Entry <code>age</code> is measured from the served envelope's <code>bornMs</code> fill-start timestamp, but TTL and grace still do not consume that elapsed time.

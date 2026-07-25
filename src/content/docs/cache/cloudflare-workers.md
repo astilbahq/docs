@@ -155,6 +155,14 @@ The app contains three scenes:
 
 The Vite development rig uses <code>@cloudflare/vite-plugin</code>; the built rig launches the generated Worker through Wrangler. Both use Cloudflare's local Workers tooling and run Worker code in workerd through Miniflare. In the reviewed local evidence, the WebSocket hello did not complete in the Vite development rig, while the built Wrangler rig established the channel. Treat that as an observed rig difference, not a claim that Vite runs outside workerd.
 
+A required source CI lane now holds the built-rig claim. It builds the demo, boots the emitted Worker with its real local Coordinator and KV bindings, and reads the channel from a narrow JSON status route rather than scraping page markup. The status reports the armed scene, channel, dial-failure count, event names, and any witness error.
+
+After a boot budget of 90 seconds, each channel arm polls that status every 500 milliseconds for at most 30 seconds; the scene action has its own 30-second budget. The healthy arm must reach <code>established</code>. The Bus-drop fault is then armed before the app creates a fresh scene-owned reader whose dial is refused. That armed arm must report <code>never-established</code> plus at least one <code>bus_dial_failed</code> event. It is a negative control: it proves the status instrument can distinguish a refused connection from a healthy one.
+
+A non-200 response, malformed status, witness error, stalled body, or budget that expires during a read is a probe failure and says nothing about the channel. If completed status reads continue until the budget ends without reaching the required state, the lane instead records <code>not-within-budget</code>: a channel verdict and a failed arm.
+
+The lane proves that the composed demo as built can expose those two states on local workerd. It proves neither Cache kernel semantics nor Bus-mechanism correctness; the invariant and integration lanes own those questions. It also proves no propagation latency, production availability, or deployed SLO. Deployed probes remain absent.
+
 The internal app reduces <code>maxSyncLag</code> from the factory's 60-second baseline to five seconds so request-driven polling is watchable locally. It prints what happened beside what the configuration permits and asserts no timing or consistency SLO. No deployed measurements have been taken; those remain a release gate.
 
 ## Know the operational boundary
@@ -166,8 +174,9 @@ The source path currently includes:
 - WebSocket Bus delivery with scope checks, explicit lost-channel reporting, and tick-driven jittered redial backoff;
 - reactive read-path recovery plus an out-of-band polling state machine;
 - a factory-owned request-driven carrier for plain Worker reads;
-- optional React Router lifecycle adoption of middleware ticks through <code>waitUntil</code>.
-- the source-only three-scene chaos evidence app described above.
+- optional React Router lifecycle adoption of middleware ticks through <code>waitUntil</code>;
+- the source-only three-scene chaos evidence app described above;
+- the required composed-demo workerd boot witness and its armed negative control.
 
 It does not yet provide:
 

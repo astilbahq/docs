@@ -62,7 +62,7 @@ The inference lowercases the destination basename, replaces runs of non-alphanum
 
 | Input | Validation |
 | --- | --- |
-| Description | 1–280 characters; no leading or trailing whitespace; no control characters |
+| Description | 1–280 characters; no leading or trailing whitespace; no control or formatting characters |
 | GitHub owner | 1–39 characters; letters, digits, and internal hyphens; must begin and end with a letter or digit |
 | GitHub repository | 1–100 characters; letters, digits, dots, underscores, and hyphens; must begin and end with a letter or digit |
 | Package name | 1–214 characters; supported lowercase npm package name, optionally scoped |
@@ -139,7 +139,7 @@ Error:
 | Status | Meaning |
 | --- | --- |
 | `0` | Help, version, plan, creation, and any requested install completed successfully |
-| `1` | Input, planning, generation, Git, or dependency-installation error |
+| `1` | Input, planning, generation, Git, dependency-installation, or terminal-reporting error |
 | `130` | The operation was cancelled or interrupted |
 
 For a complete automated example, see [Automate project creation](/docs/create/automation/).

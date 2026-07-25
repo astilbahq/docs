@@ -68,7 +68,8 @@ Most application code should begin with <code>getOrSet()</code>. Registry, Bus, 
 - **Uncertain invalidation knowledge never becomes false freshness.** Cache may perform extra origin work while distributed state reconverges.
 - **Soft and hard invalidation are different.** Soft expiry permits refresh and eligible stale fallback; hard deletion makes older values unreadable.
 - **Identity affects storage.** Principal-derived values stay in local storage unless the application deliberately declares a shareable scope.
-- **Failures are classified.** A transient outage may reuse an eligible stale value; facts such as 403, 404, and 410 remain visible.
+- **Failures are classified.** A transient outage may reuse an eligible stale value. Fact-like statuses such as 403, 404, and 410 are not retriable by default; an opted-in 404 follows the separate negative-cache rule below.
+- **Not-found facts are explicit.** When a call takes the opted-in negative disposition for a 404, it resolves <code>undefined</code>; a grace-eligible stale value may suppress that disposition. Negative entries never become grace or stale-on-error values.
 - **Strong reads pay for authority.** With coordinated invalidation configured, they perform a live Registry check before serving a stored entry and before a strong miss is filled.
 - **Serve metadata reports evidence, not guesses.** Entry tier and age describe the value actually served; durability is omitted when an L1 hit cannot prove whether an L2 copy exists.
 - **A private dependency makes the rendered response private.** The React Router adapter emits response tags only when every managed dependency has readable public scope.
@@ -85,6 +86,7 @@ Cache does not update your source of truth. Change the database or upstream serv
 | Cloudflare path | Unreleased source preview | <code>./cloudflare</code> exports the Workers factory, KV, Coordinator, Registry, Bus, and tick-driven redial helpers; workerd integration tests cover the primary path. |
 | React Router path | Unreleased source preview | <code>./react-router</code> exports server middleware, typed request context access, request-entry recovery lifecycle adoption, and scope-aware response-tag collection. |
 | Local chaos demo | Source-only evidence app | An unpublished React Router app runs three demo-side binding failures against the real Workers composition without claiming production timing or an SLO. |
+| Composed-app boot witness | Required source CI lane | The built demo boots on local workerd with its real Coordinator and KV bindings, proves a healthy Bus reaches <code>established</code>, and proves an armed refusal reports <code>never-established</code> plus <code>bus_dial_failed</code>. It is not a deployed measurement. |
 | Public package | Not released | npm has no <code>@astilba/cache</code> package, so there is no supported installation or production deployment path. |
 
 ## Choose a path

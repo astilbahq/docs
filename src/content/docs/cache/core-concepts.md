@@ -79,6 +79,7 @@ Clock and Rng exist for portability and deterministic tests. They are constructi
 
 - **TTL** is how long a value should be fresh by elapsed time. Duration values and the <code>duration()</code> builder are implemented, but the cache does not enforce elapsed TTL yet.
 - **Grace** is the period in which an eligible stale value may be reused after a classified transient failure. Its duration is not enforced yet.
+- A **negative entry** remembers an opted-in 404 without inventing a value. A fresh negative resolves as <code>undefined</code>; it is never served through grace or stale-on-error. Its declared duration is not enforced yet.
 - **Eventual consistency** uses verified local invalidation knowledge and fails closed when that knowledge is insufficient.
 - **Strong consistency** performs a live Registry check before serving a stored entry and before running the factory for a strong miss when coordinated invalidation is active.
 - **Soft invalidation** makes an older value stale.
