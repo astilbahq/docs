@@ -8,7 +8,7 @@ next: false
 
 Astilba Create generates a complete TypeScript project from a small catalog of maintained recipes. It writes the application starting point, pinned toolchain, verification scripts, GitHub workflows, repository guidance, and an ownership manifest in one deterministic operation.
 
-`create-astilba` 0.2.0 is available on npm. Its supported public interface is the command-line tool:
+`create-astilba` 0.3.0 is available on npm. Its supported public interface is the command-line tool:
 
 ```sh
 npm create astilba@latest
@@ -19,6 +19,7 @@ npm create astilba@latest
 | Goal | Start here |
 | --- | --- |
 | Decide whether Create fits | [Overview](/docs/create/overview/) |
+| Assemble a paste-ready command | [Configure a project](https://astilba.com/create/new/) |
 | Generate and verify a project | [Create your first project](/docs/create/quickstart/) |
 | Compare the four maintained starting points | [Choose a recipe](/docs/create/recipes/) |
 | Run Create in CI or an agent workflow | [Automate project creation](/docs/create/automation/) |
@@ -27,4 +28,4 @@ npm create astilba@latest
 | Look up every option and default | [CLI reference](/docs/create/cli-reference/) |
 | Check the exact supported release surface | [Release and support](/docs/create/release-and-support/) |
 
-If this is your first visit, use the quickstart. If you are integrating Create into automation, read the automation guide and deterministic-generation model together.
+If this is your first visit, use the configurator or quickstart. If you are integrating Create into automation, read the automation guide and deterministic-generation model together.

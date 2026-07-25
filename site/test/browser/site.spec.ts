@@ -20,13 +20,17 @@ test("the public home distinguishes the released and preview products", async ({
     })
   ).toBeVisible();
   await expect(page.getByText("create-astilba", { exact: true })).toBeVisible();
-  await expect(page.getByText("0.2.0 is released")).toBeVisible();
+  await expect(page.getByText("0.3.0 is released")).toBeVisible();
   await expect(
     page.getByText("Cache remains a development preview")
   ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Create a project" }).first()
-  ).toHaveAttribute("href", "/docs/create/quickstart/");
+  const configure = page
+    .getByRole("link", { name: "Configure a project" })
+    .first();
+  await expect(configure).toHaveAttribute("href", "/create/new/");
+  await configure.hover();
+  await expect(configure).toHaveCSS("background-color", "rgb(42, 42, 42)");
+  await expect(configure).toHaveCSS("color", "rgb(255, 255, 255)");
   await expect(
     page.getByRole("link", { name: "View docs source" })
   ).toHaveAttribute("href", "https://github.com/astilbahq/docs");
@@ -47,11 +51,13 @@ test("the Create page presents the released CLI boundary", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByText("create-astilba", { exact: true })).toBeVisible();
   await expect(
-    page.getByText("Four recipe v2 contracts", { exact: true })
+    page.getByText("Schema v1 · four recipe v2 contracts", {
+      exact: true,
+    })
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Create a project" })
-  ).toHaveAttribute("href", "/docs/create/quickstart/");
+    page.getByRole("link", { name: "Configure a project" })
+  ).toHaveAttribute("href", "/create/new/");
   await expect(
     page.getByRole("link", { name: "View the source" })
   ).toHaveAttribute("href", "https://github.com/astilbahq/create");
@@ -81,6 +87,262 @@ test("the Cache page never presents an installation path", async ({ page }) => {
   await expect(
     page.locator('a[href*="github.com/astilbahq/cache"]')
   ).toHaveCount(0);
+  await expectNoAxeViolations(page);
+});
+
+test("the Create configurator assembles and shares a released command", async ({
+  context,
+  page,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/create/new/?private=do-not-share");
+
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Configure a project" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("radio", { name: /TypeScript library/ })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("radio", { name: /React \+ Vite application/ })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("radio", { name: /Astro static site/ })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("radio", { name: /Cloudflare Worker service/ })
+  ).toBeVisible();
+
+  const copyCommand = page.locator("[data-copy-command]");
+  const copyConfiguration = page.locator("[data-copy-configuration]");
+  const command = page.locator("[data-create-command]");
+  await expect(copyCommand).toHaveAccessibleName("Copy command");
+  await expect(copyConfiguration).toHaveAccessibleName(
+    "Copy configuration link"
+  );
+  await expect(copyCommand).toBeDisabled();
+  await expect(copyConfiguration).toBeDisabled();
+
+  await page
+    .locator(".recipe-option")
+    .filter({ hasText: "React + Vite application" })
+    .click();
+  await page.getByLabel("Directory").fill("projects/my app");
+  await page.getByLabel("Description").fill("It's a useful application.");
+  await page.getByLabel("GitHub owner").fill("astilbahq");
+
+  for (const invalidDestination of ["../escape", "CON", ".git"]) {
+    await page.getByLabel("Directory").fill(invalidDestination);
+    await expect(copyCommand).toBeDisabled();
+    await expect(page.locator("[data-destination-error]")).toBeVisible();
+    await expect(page.getByLabel("Directory")).toHaveAttribute(
+      "aria-invalid",
+      "true"
+    );
+    await expect(command).toContainText(
+      "Destination must be a normalized portable relative path"
+    );
+  }
+  await page.getByLabel("Directory").fill("projects/my app");
+  await expect(page.locator("[data-destination-error]")).toBeHidden();
+
+  await page.getByLabel("Description").fill(" leading whitespace");
+  await expect(copyCommand).toBeDisabled();
+  await expect(page.locator("[data-description-error]")).toBeVisible();
+  await expect(page.getByLabel("Description")).toHaveAttribute(
+    "aria-invalid",
+    "true"
+  );
+  await expect(command).toContainText(
+    "Description must not start or end with whitespace"
+  );
+  await page.getByLabel("Description").fill("It's a useful application.");
+
+  await page.getByLabel("GitHub owner").fill("foo_");
+  await expect(copyCommand).toBeDisabled();
+  await expect(page.locator("[data-github-owner-error]")).toBeVisible();
+  await expect(page.getByLabel("GitHub owner")).toHaveAttribute(
+    "aria-invalid",
+    "true"
+  );
+  await expect(command).toContainText(
+    "GitHub owner is not a supported account name"
+  );
+  await page.getByLabel("GitHub owner").fill("astilbahq");
+
+  const skipLink = page.getByRole("link", { name: "Skip to content" });
+  await skipLink.focus();
+  await skipLink.press("Enter");
+  await expect(page).toHaveURL(/#main-content$/u);
+  await expect(page.getByLabel("Directory")).toHaveValue("projects/my app");
+  await expect(page.getByLabel("Description")).toHaveValue(
+    "It's a useful application."
+  );
+  await expect(copyCommand).toBeEnabled();
+
+  await page.goBack();
+  await expect(page).not.toHaveURL(/#main-content$/u);
+  await expect(page.getByLabel("Directory")).toHaveValue("projects/my app");
+  await expect(page.getByLabel("Description")).toHaveValue(
+    "It's a useful application."
+  );
+  await expect(copyCommand).toBeEnabled();
+  await page.goForward();
+  await expect(page).toHaveURL(/#main-content$/u);
+  await expect(page.getByLabel("Description")).toHaveValue(
+    "It's a useful application."
+  );
+
+  const formUrl = page.url();
+  await page.getByLabel("GitHub owner").press("Enter");
+  await expect(page).toHaveURL(formUrl);
+
+  await expect(command).toHaveText(
+    "npm create astilba@0.3.0 -- --recipe=react-vite-spa '--description=It'\"'\"'s a useful application.' --github-owner=astilbahq --git --install -- 'projects/my app'"
+  );
+  await expect(copyCommand).toBeEnabled();
+
+  const buttonSizeBefore = await copyCommand.boundingBox();
+  await copyCommand.click();
+  await expect(copyCommand).toHaveAttribute("data-copy-state", "copied");
+  await expect(copyCommand).toContainText("Copied!");
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toBe(await command.textContent());
+  const buttonSizeAfter = await copyCommand.boundingBox();
+  expect(buttonSizeAfter?.height).toBe(buttonSizeBefore?.height);
+  expect(buttonSizeAfter?.width).toBe(buttonSizeBefore?.width);
+
+  await page
+    .locator(".shell-selector label")
+    .filter({ hasText: "PowerShell" })
+    .click();
+  await expect(command).toHaveText(
+    "npm create astilba@0.3.0 -- '--recipe=react-vite-spa' '--description=It''s a useful application.' '--github-owner=astilbahq' --git --install -- 'projects/my app'"
+  );
+
+  const originalUrl = page.url();
+  await copyConfiguration.click();
+  await expect(copyConfiguration).toHaveAttribute("data-copy-state", "copied");
+  await expect(page).toHaveURL(originalUrl);
+  const sharedUrl = await page.evaluate(() => navigator.clipboard.readText());
+  const parsedSharedUrl = new URL(sharedUrl);
+  expect(parsedSharedUrl.pathname).toBe("/create/new/");
+  expect(parsedSharedUrl.search).toBe("");
+  expect(parsedSharedUrl.hash).toContain("v=1");
+  expect(parsedSharedUrl.hash).toContain("generatorVersion=0.3.0");
+  expect(parsedSharedUrl.hash).toContain("recipe=react-vite-spa");
+  expect(parsedSharedUrl.hash).toContain("recipeVersion=2");
+
+  await page.goto(sharedUrl);
+  await expect(page.locator("[data-configurator-status]")).toHaveText(
+    "Shared configuration loaded."
+  );
+  await expect(
+    page.getByRole("radio", { name: /React \+ Vite application/ })
+  ).toBeChecked();
+  await expect(page.getByLabel("Directory")).toHaveValue("projects/my app");
+
+  const secondSharedUrl = new URL(sharedUrl);
+  const secondParameters = new URLSearchParams(secondSharedUrl.hash.slice(1));
+  secondParameters.set("recipe", "astro-static-site");
+  secondParameters.set("destination", "second-project");
+  secondParameters.set("description", "A second shared configuration.");
+  secondSharedUrl.hash = secondParameters.toString();
+  await page.goto(secondSharedUrl.href);
+  await expect(
+    page.getByRole("radio", { name: /Astro static site/ })
+  ).toBeChecked();
+  await expect(page.getByLabel("Directory")).toHaveValue("second-project");
+  await expect(page.getByLabel("Description")).toHaveValue(
+    "A second shared configuration."
+  );
+
+  await page.goto("/create/new/");
+  await expect(
+    page.getByRole("radio", { name: /Astro static site/ })
+  ).not.toBeChecked();
+  await expect(page.getByLabel("Directory")).toHaveValue("my-project");
+  await expect(page.getByLabel("Description")).toHaveValue("");
+  await expect(copyCommand).toBeDisabled();
+  await expect(page.locator("[data-share-fallback]")).toBeHidden();
+
+  await page.goBack();
+  await expect(
+    page.getByRole("radio", { name: /Astro static site/ })
+  ).toBeChecked();
+  await expect(page.getByLabel("Directory")).toHaveValue("second-project");
+
+  const invalidSharedUrl = new URL(secondSharedUrl);
+  const invalidParameters = new URLSearchParams(invalidSharedUrl.hash.slice(1));
+  invalidParameters.set("generatorVersion", "9.9.9");
+  invalidSharedUrl.hash = invalidParameters.toString();
+  await page.goto(invalidSharedUrl.href);
+  await expect(page.locator("[data-configurator-status]")).toHaveText(
+    "The shared configuration targets a different Create release."
+  );
+  await expect(page.getByLabel("Directory")).toHaveValue("my-project");
+  await expect(copyCommand).toBeDisabled();
+
+  await page.goBack();
+  await expect(page.getByLabel("Directory")).toHaveValue("second-project");
+  await expect(copyCommand).toBeEnabled();
+  await page.goForward();
+  await expect(page.getByLabel("Directory")).toHaveValue("my-project");
+  await expect(copyCommand).toBeDisabled();
+
+  const dimensions = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  expect(dimensions.scrollWidth).toBe(dimensions.clientWidth);
+  await expectNoAxeViolations(page);
+
+  await page.getByRole("button", { name: "Switch to light theme" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.waitForTimeout(250);
+  await expectNoAxeViolations(page);
+});
+
+test("the Create configurator reveals a configuration link when clipboard access fails", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: {
+        writeText: () => Promise.reject(new Error("Clipboard unavailable")),
+      },
+    });
+  });
+  await page.goto("/create/new/");
+
+  await page
+    .locator(".recipe-option")
+    .filter({ hasText: "TypeScript library" })
+    .click();
+  await page.getByLabel("Description").fill("A useful library.");
+  await page.getByLabel("GitHub owner").fill("astilbahq");
+  await page.locator("[data-copy-configuration]").click();
+
+  const fallback = page.locator("[data-share-fallback]");
+  const fallbackInput = page.locator("[data-share-fallback-input]");
+  await expect(fallback).toBeVisible();
+  await expect(fallbackInput).toBeFocused();
+  await expect(fallbackInput).toHaveValue(/\/create\/new\/#v=1&/u);
+  await expect(page.locator("[data-configurator-status]")).toHaveText(
+    "Clipboard access failed. The configuration link is selected above."
+  );
+  const selection = await fallbackInput.evaluate((input) => ({
+    end: (input as HTMLInputElement).selectionEnd,
+    length: (input as HTMLInputElement).value.length,
+    start: (input as HTMLInputElement).selectionStart,
+  }));
+  expect(selection).toEqual({
+    end: selection.length,
+    length: selection.length,
+    start: 0,
+  });
   await expectNoAxeViolations(page);
 });
 

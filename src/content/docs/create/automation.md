@@ -93,6 +93,18 @@ Without `--json`, ordinary errors go to standard error with an `Error:` prefix. 
 
 Always check both `schemaVersion` and `ok` before reading other fields. Branch on `error.code`, `error.phase`, and `projectCreated`; treat `error.message` as human-readable context.
 
+## Discover the released recipes
+
+Read the versioned recipe catalog when automation needs to offer or validate the released choices:
+
+```sh
+npm create astilba@latest -- --catalog --json
+```
+
+This command does not prompt or write project files. Check `schemaVersion`, `generator.version`, and `ok` before reading `recipes`. Each recipe entry exposes its stable ID, recipe version, label, and description. The npm package includes the strict catalog schema at `schemas/catalog-v1.json`.
+
+Use the catalog as discovery metadata, not as a dependency or generated-file manifest. It deliberately excludes internal profiles, package pins, and implementation details.
+
 ## Distinguish generation from installation
 
 Create publishes the complete project tree before it runs dependency installation. This gives automation two distinct failure boundaries:
@@ -102,14 +114,14 @@ Create publishes the complete project tree before it runs dependency installatio
 
 Choose `--no-install` when your workflow wants to inspect, archive, or enter the generated tree before resolving dependencies. It is also the default outside the interactive questionnaire.
 
-CLI output schema version 1 deliberately remains unchanged in Create 0.2.0. It reports whether the project was created, but it does not expose the internal distinction between an unchanged destination and an incomplete publication: both have `projectCreated: false`. When automatic recovery must be unambiguous, use `--no-install`, branch on the structured error fields, and never accept a destination that contains `.astilba-create-incomplete`.
+CLI output schema version 1 deliberately remains unchanged in Create 0.3.0. It reports whether the project was created, but it does not expose the internal distinction between an unchanged destination and an incomplete publication: both have `projectCreated: false`. When automatic recovery must be unambiguous, use `--no-install`, branch on the structured error fields, and never accept a destination that contains `.astilba-create-incomplete`.
 
 ## Pin when reproducibility requires it
 
 `@latest` selects the npm release current at execution time. If an automation contract must stay on one generator release, invoke that exact package version:
 
 ```sh
-npm create astilba@0.2.0 -- my-project \
+npm create astilba@0.3.0 -- my-project \
   --recipe typescript-library \
   --description "A useful library." \
   --github-owner example \
@@ -119,15 +131,16 @@ npm create astilba@0.2.0 -- my-project \
 
 The generated manifest records the selected generator and recipe versions. Commit it with the project.
 
-## Inspect help and version as JSON
+## Inspect catalog, help, and version as JSON
 
-Both informational commands support machine-readable output:
+The informational commands support machine-readable output:
 
 ```sh
+npm create astilba@latest -- --catalog --json
 npm create astilba@latest -- --help --json
 npm create astilba@latest -- --version --json
 ```
 
-Help returns `command`, `ok`, `schemaVersion`, and `usage`. Version returns `command`, `ok`, `schemaVersion`, and `version`.
+Catalog returns `command`, `generator`, `ok`, `recipes`, and its own `schemaVersion`. Help returns `command`, `ok`, `schemaVersion`, and `usage`. Version returns `command`, `ok`, `schemaVersion`, and `version`.
 
 See [CLI reference](/docs/create/cli-reference/) for every option and validation rule, and [Deterministic generation](/docs/create/deterministic-generation/) for the filesystem transaction boundary.

@@ -94,6 +94,6 @@ This boundary avoids deleting a valid project because a registry, network, lifec
 
 ## Do not use Create as an updater
 
-Create 0.2.0 only creates a destination that does not exist. It does not regenerate over an existing repository, merge a newer recipe, run `doctor`, or update a default branch.
+Create 0.3.0 only creates a destination that does not exist. It does not regenerate over an existing repository, merge a newer recipe, run `doctor`, or update a default branch.
 
 The [project manifest](/docs/create/project-manifest/) records enough ownership evidence for future explicit migrations, but no migration command is shipped in this release.

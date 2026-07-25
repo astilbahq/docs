@@ -145,6 +145,12 @@ importers:
       '@playwright/test':
         specifier: 1.62.0
         version: 1.62.0
+      ajv:
+        specifier: 8.20.0
+        version: 8.20.0
+      create-astilba:
+        specifier: 0.3.0
+        version: 0.3.0
       cross-env:
         specifier: 10.1.0
         version: 10.1.0
@@ -2461,6 +2467,11 @@ packages:
   cors@2.8.6:
     resolution: {integrity: sha512-tJtZBBHA6vjIAaF6EnIaq6laBBP9aq/Y3ouVJjEfoHbRBcHBAHYcMh/w8LDrk2PvIMMq8gmopa5D4V8RmbrxGw==}
     engines: {node: '>= 0.10'}
+
+  create-astilba@0.3.0:
+    resolution: {integrity: sha512-kUBr59yhtgBAH9ZmbWYG9GHYsT6oeNhAQNJiAHh7CVQFREkMwnpdViAA5Q0dVJqsQVW4MTCK/wLEbw14qMSjqw==}
+    engines: {node: '>=22.18.0', pnpm: '>=11.10.0'}
+    hasBin: true
 
   cross-env@10.1.0:
     resolution: {integrity: sha512-GsYosgnACZTADcmEyJctkJIoqAhHjttw7RsFrVoJNXbsWWqaq6Ym+7kZjq6mS45O0jij6vtiReppKQEtqWy6Dw==}
@@ -7005,6 +7016,10 @@ snapshots:
     dependencies:
       object-assign: 4.1.1
       vary: 1.1.2
+
+  create-astilba@0.3.0:
+    dependencies:
+      '@clack/prompts': 1.7.0
 
   cross-env@10.1.0:
     dependencies:

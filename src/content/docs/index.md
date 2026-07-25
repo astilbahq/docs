@@ -14,7 +14,7 @@ The products are at different lifecycle stages. Create has an installable public
 
 A deterministic CLI that generates complete TypeScript projects from four maintained recipes.
 
-`create-astilba` 0.2.0 is released on npm. Start with [Create your first project](/docs/create/quickstart/), compare the [recipe catalog](/docs/create/recipes/), or check the exact [release and support](/docs/create/release-and-support/) boundary.
+`create-astilba` 0.3.0 is released on npm. [Configure a paste-ready command](https://astilba.com/create/new/), start with [Create your first project](/docs/create/quickstart/), compare the [recipe catalog](/docs/create/recipes/), or check the exact [release and support](/docs/create/release-and-support/) boundary.
 
 ### [Cache](/docs/cache/)
 
@@ -30,7 +30,7 @@ Start with the [overview](/docs/cache/overview/), check the [implementation stat
 
 Each product owns its own version tree and release boundary:
 
-- For Create, [Release and support](/docs/create/release-and-support/) records the public package, runtime, recipes, and omitted capabilities supported by 0.2.0.
+- For Create, [Release and support](/docs/create/release-and-support/) records the public package, runtime, recipes, and omitted capabilities supported by 0.3.0.
 - For Cache, [Implementation status](/docs/cache/api-status/) is the authoritative ledger for the reviewed source snapshot, partial behavior, placeholders, and missing release gates.
 
 Guides show an outcome, concepts explain one mental model, and reference pages enumerate the public surface. If an example and a status ledger ever appear to disagree, follow the ledger and report the stale page.

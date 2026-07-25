@@ -17,7 +17,7 @@ An abridged manifest looks like this:
   "features": [],
   "generator": {
     "name": "create-astilba",
-    "version": "0.2.0"
+    "version": "0.3.0"
   },
   "ownership": {
     "managed": [
@@ -63,7 +63,7 @@ The example shortens the ownership arrays and replaces real digests with descrip
 | `schemaVersion` | Structure of the manifest itself. Version 1 is documented by the public schema. |
 | `generator.version` | Exact `create-astilba` package version that produced the project. |
 | `recipe.id` | Permanent identifier for the selected maintained recipe. |
-| `recipe.version` | Version of that recipe's output contract. All recipes in Create 0.2.0 use version 2. |
+| `recipe.version` | Version of that recipe's output contract. All recipes in Create 0.3.0 use version 2. |
 | `features` | Reserved feature list. It is empty in the current schema and release. |
 
 A new generator release does not necessarily imply a new manifest schema or recipe version. Each coordinate changes only when its own contract changes.
@@ -88,7 +88,7 @@ Future generator tooling must not assume that these files still resemble their g
 
 ### Structured fields
 
-`ownership.structured` divides a JSON file into independently tracked fields. In 0.2.0, that file is `package.json`.
+`ownership.structured` divides a JSON file into independently tracked fields. In 0.3.0, that file is `package.json`.
 
 Each `pointer` is an RFC 6901 JSON Pointer. Its digest covers the JSON serialization of that field's original value, not the bytes of the entire file. This allows a future migration to reason about one script or dependency without claiming ownership of unrelated package metadata.
 
@@ -100,7 +100,7 @@ The target is recorded as a portable project-relative path. On Windows, creating
 
 ## Use the manifest today
 
-Create 0.2.0 does not include an update, migration, or `doctor` command. Today the manifest helps you:
+Create 0.3.0 does not include an update, migration, or `doctor` command. Today the manifest helps you:
 
 - identify the exact generator and recipe contract;
 - audit which files began as managed configuration or user-owned seeds;

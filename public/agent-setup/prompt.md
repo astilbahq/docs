@@ -14,7 +14,7 @@ Complete the following steps in the user's current coding-agent environment. Pre
    The endpoint is public and read-only. It does not require credentials. Use the agent's supported MCP command or configuration mechanism; do not guess a configuration location or remove unrelated entries.
 3. If the current session cannot change its own MCP configuration, tell the user the exact minimal change required for this agent and whether a restart is needed.
 4. Verify the connection by listing the server's capabilities, then search the documentation for `Create release and support`.
-5. Treat `create-astilba` 0.2.0 and its four recipe v2 contracts as released. Check `https://astilba.com/docs/create/release-and-support.md` before claiming another recipe, update path, or programmatic API is supported.
+5. Treat `create-astilba` 0.3.0 and its four recipe v2 contracts as released. Check `https://astilba.com/docs/create/release-and-support.md` before claiming another recipe, update path, or programmatic API is supported.
 6. Treat Cache as an unreleased source preview. Do not provide a package installation command or describe it as production-ready. Check `https://astilba.com/docs/cache/api-status.md` before making availability or completeness claims.
 
 When setup is complete, report which skills and MCP configuration were added, where they were added, whether a restart is required, and the result of the verification search.
