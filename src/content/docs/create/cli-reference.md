@@ -130,7 +130,7 @@ Error:
 | `projectCreated` | boolean | Whether a complete project was published |
 | `schemaVersion` | `1` | CLI output schema version |
 
-`error.code` is one of `CANCELLED`, `GENERATION_FAILED`, `INSTALLATION_FAILED`, `INVALID_INPUT`, `PACKAGE_MANAGER_UNAVAILABLE`, or `UNEXPECTED_ERROR`. When `projectCreated` is `false`, inspect a resolved destination for `.astilba-create-incomplete` before treating it as unchanged.
+`error.code` is one of `CANCELLED`, `GENERATION_FAILED`, `INSTALLATION_FAILED`, `INVALID_INPUT`, `PACKAGE_MANAGER_UNAVAILABLE`, or `UNEXPECTED_ERROR`. `CANCELLED` maps to status `130`; the other codes map to status `1`. When `projectCreated` is `false`, inspect a resolved destination for `.astilba-create-incomplete` before treating it as unchanged.
 
 `--help --json` returns `command`, `ok`, `schemaVersion`, and `usage`. `--version --json` returns `command`, `ok`, `schemaVersion`, and `version`.
 

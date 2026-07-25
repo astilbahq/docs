@@ -87,7 +87,7 @@ On an ordinary error with `--json`, Create writes this shape to standard output 
 }
 ```
 
-`destination` is present when Create resolved one. `error.code` is one of `CANCELLED`, `GENERATION_FAILED`, `INSTALLATION_FAILED`, `INVALID_INPUT`, `PACKAGE_MANAGER_UNAVAILABLE`, or `UNEXPECTED_ERROR`. `error.phase` is `input`, `generation`, `installation`, or `unknown`.
+`destination` is present when Create resolved one. `error.code` is one of `CANCELLED`, `GENERATION_FAILED`, `INSTALLATION_FAILED`, `INVALID_INPUT`, `PACKAGE_MANAGER_UNAVAILABLE`, or `UNEXPECTED_ERROR`. `CANCELLED` is the status-130 exception; the other codes use status `1`. `error.phase` is `input`, `generation`, `installation`, or `unknown`.
 
 Without `--json`, ordinary errors go to standard error with an `Error:` prefix. Cancellation and process interruption exit with status `130` in every output mode.
 
