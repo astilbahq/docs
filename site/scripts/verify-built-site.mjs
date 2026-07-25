@@ -77,7 +77,7 @@ assertIncludes(
   'href="https://astilba.com/create/" rel="canonical"',
   "Create page"
 );
-assertIncludes(create, "four recipe v1 contracts", "Create page");
+assertIncludes(create, "four recipe v2 contracts", "Create page");
 assertIncludes(create, "github.com/astilbahq/create", "Create page");
 assertIncludes(headers, "Content-Security-Policy:", "Static headers");
 assertIncludes(

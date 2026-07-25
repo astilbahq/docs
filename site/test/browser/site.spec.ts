@@ -20,7 +20,7 @@ test("the public home distinguishes the released and preview products", async ({
     })
   ).toBeVisible();
   await expect(page.getByText("create-astilba", { exact: true })).toBeVisible();
-  await expect(page.getByText("0.1.0 is released")).toBeVisible();
+  await expect(page.getByText("0.1.2 is released")).toBeVisible();
   await expect(
     page.getByText("Cache remains a development preview")
   ).toBeVisible();
@@ -47,7 +47,7 @@ test("the Create page presents the released CLI boundary", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByText("create-astilba", { exact: true })).toBeVisible();
   await expect(
-    page.getByText("Four recipe v1 contracts", { exact: true })
+    page.getByText("Four recipe v2 contracts", { exact: true })
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Create a project" })

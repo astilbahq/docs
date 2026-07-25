@@ -113,7 +113,7 @@ const run = async () => {
   requireStatus(createResponse, 200, "Create page");
   requireBodyIncludes(
     await createResponse.text(),
-    "four recipe v1 contracts",
+    "four recipe v2 contracts",
     "Create page"
   );
 

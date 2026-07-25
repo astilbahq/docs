@@ -1,22 +1,22 @@
 ---
 title: Release and support
-description: Check the exact package, runtime, recipe, platform, and verification surface supported by Astilba Create 0.1.0.
+description: Check the exact package, runtime, recipe, platform, and verification surface supported by Astilba Create 0.1.2.
 ---
 
-`create-astilba` 0.1.0 is published on npm from the public [`astilbahq/create`](https://github.com/astilbahq/create) repository. The source release is tagged [`v0.1.0`](https://github.com/astilbahq/create/tree/v0.1.0).
+`create-astilba` 0.1.2 is published on npm from the public [`astilbahq/create`](https://github.com/astilbahq/create) repository. The source release is tagged [`v0.1.2`](https://github.com/astilbahq/create/tree/v0.1.2).
 
 ## Supported public surface
 
-| Surface | 0.1.0 status |
+| Surface | 0.1.2 status |
 | --- | --- |
 | Interactive CLI | Released |
 | Non-interactive CLI | Released |
 | Versioned JSON output | Schema version 1 |
 | `--dry-run` planning | Released |
-| `typescript-library` | Recipe version 1 |
-| `react-vite-spa` | Recipe version 1 |
-| `astro-static-site` | Recipe version 1 |
-| `cloudflare-worker-service` | Recipe version 1 |
+| `typescript-library` | Recipe version 2 |
+| `react-vite-spa` | Recipe version 2 |
+| `astro-static-site` | Recipe version 2 |
+| `cloudflare-worker-service` | Recipe version 2 |
 | Project manifest | Schema version 1 |
 | Programmatic TypeScript API | Not exported by the npm package |
 | Update, migration, or `doctor` commands | Not shipped |
@@ -26,14 +26,14 @@ The npm export map exposes package metadata only. Internal generator modules in 
 
 ## Runtime requirements
 
-| Requirement | Floor |
+| Requirement | Supported value |
 | --- | --- |
 | Node.js | 22.18.0 or later |
-| pnpm | 11.10.0 or later |
+| pnpm | Exactly 11.10.0 |
 
-You invoke Create through npm, but generated projects use pnpm. With `--install`, Create uses the `pnpm` executable or falls back to `corepack pnpm` only when that executable is missing.
+You invoke Create through npm, but generated projects use pnpm. With `--install`, Create uses the `pnpm` executable only when it reports version 11.10.0. Otherwise, Create asks Corepack for `pnpm@11.10.0`.
 
-Generated verification runs on the minimum Node.js release and the current supported major recorded by Create. In 0.1.0, those lanes are Node.js 22.18.0 and 24.18.0.
+Generated verification runs on the minimum Node.js release and the current supported major recorded by Create. In 0.1.2, those lanes are Node.js 22.18.0 and 24.18.0.
 
 ## Platform boundary
 
@@ -53,13 +53,13 @@ The Create repository verifies more than its own unit tests:
 - Actionlint and Zizmor audit the emitted GitHub workflows; and
 - OSV-Scanner, CodeQL, and dependency review run against the Create source repository.
 
-The packed npm artifact is limited to the license, README, package metadata, and compiled `dist` files.
+The packed npm artifact contains the license, README, package metadata, compiled `dist` files, the public project-manifest schema, and the recipe contract metadata and canonical lockfiles needed to verify generation.
 
-## Configured publication path
+## Publication evidence
 
-When a GitHub Release is published, the repository's release workflow is configured to verify that its tag points to `main` and matches the package version before publishing through a protected GitHub environment with npm trusted publishing and provenance.
+The [`v0.1.2` GitHub Release](https://github.com/astilbahq/create/releases/tag/v0.1.2) ran the checked-in release workflow. It verified that the release tag pointed to `main` and matched the package version, rebuilt and checked the package, and published through a protected GitHub environment with npm trusted publishing.
 
-This is the configured path for future releases. The npm record for 0.1.0 does not include a provenance attestation, so this documentation does not attribute that first publication to the workflow.
+The [`create-astilba@0.1.2` npm record](https://www.npmjs.com/package/create-astilba/v/0.1.2) includes a provenance attestation that identifies the public source repository and GitHub Actions release workflow.
 
 ## Responsibility after generation
 
@@ -77,7 +77,7 @@ The Worker recipe includes Wrangler development, type-generation, dry-run build,
 
 ## Deliberate omissions
 
-Create 0.1.0 does not include optional Panda CSS, monitoring, browser testing, authentication, databases, or general deployment automation. These are not hidden flags or parked public recipes.
+Create 0.1.2 does not include optional Panda CSS, monitoring, browser testing, authentication, databases, or general deployment automation. These are not hidden flags or parked public recipes.
 
 Future repair and update tooling is intended to use explicit authored migrations and the manifest's ownership evidence. It will not regenerate over an existing repository or silently mutate a default branch.
 

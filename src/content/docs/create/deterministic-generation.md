@@ -27,7 +27,7 @@ The same Create version, recipe, and metadata produce the same planned regular-f
 
 Fresh `.git` internals and an installed `node_modules` tree are outside that byte-for-byte contract. Git still receives a stable structural guarantee: Create starts a new repository on `main`, without template history or an initial commit.
 
-Recipe identifiers and recipe versions are permanent contract coordinates. Updating a recipe requires a new version; it does not silently redefine the recorded v1 output.
+Recipe identifiers and recipe versions are permanent contract coordinates. Updating a recipe requires a new version; it does not silently redefine the recorded v2 output.
 
 ## Reject unsafe destinations
 
@@ -84,14 +84,14 @@ This prevents a developer's hooks, templates, aliases, or global defaults from m
 
 Dependency installation is deliberately outside atomic generation:
 
-- Create first tries `pnpm install`.
-- It tries `corepack pnpm install` only when the `pnpm` executable is missing.
+- Create uses an installed `pnpm` only when its version exactly matches the generated project's pinned version.
+- Otherwise, it asks Corepack for that exact pnpm version before installing.
 - A package-manager failure leaves the generated project intact and reports that installation must be retried.
 
 This boundary avoids deleting a valid project because a registry, network, lifecycle script, or local package-manager configuration failed.
 
 ## Do not use Create as an updater
 
-Create 0.1.0 only creates a destination that does not exist. It does not regenerate over an existing repository, merge a newer recipe, run `doctor`, or update a default branch.
+Create 0.1.2 only creates a destination that does not exist. It does not regenerate over an existing repository, merge a newer recipe, run `doctor`, or update a default branch.
 
 The [project manifest](/docs/create/project-manifest/) records enough ownership evidence for future explicit migrations, but no migration command is shipped in this release.

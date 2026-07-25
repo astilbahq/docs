@@ -229,6 +229,8 @@ const requiredArtifacts = [
   docsArtifact("/create/index.html"),
   docsArtifact("/create/overview.md"),
   docsArtifact("/create/overview/index.html"),
+  docsArtifact("/create/recipes.md"),
+  docsArtifact("/create/release-and-support.md"),
   docsArtifact("/index.md"),
   docsArtifact("/index.html"),
   docsArtifact("/llms-full.txt"),
@@ -541,6 +543,11 @@ assertIncludes(
   docsUrl("/create/release-and-support.md")
 );
 assertIncludes(createSkillArtifact, createSkill, docsUrl("/mcp"));
+assertIncludes(
+  createSkillArtifact,
+  createSkill,
+  "`create-astilba` 0.1.2 and its four recipe v2 contracts"
+);
 
 const pageUrl = docsUrl("/cache/overview/");
 const markdownUrl = docsUrl("/cache/overview.md");
@@ -762,7 +769,7 @@ assertIncludes(
   llmsIndex,
   "Astilba Cache remains an unreleased preview"
 );
-assertIncludes(llmsArtifact, llmsIndex, "Create 0.1.0 is released");
+assertIncludes(llmsArtifact, llmsIndex, "Create 0.1.2 is released");
 assertIncludes(llmsArtifact, llmsIndex, mcpUrl);
 const llmsFullArtifact = docsArtifact("/llms-full.txt");
 assertIncludes(
@@ -908,7 +915,7 @@ assertIncludes(
   agentSetupPrompt,
   "unreleased source preview"
 );
-assertIncludes(agentSetupArtifact, agentSetupPrompt, "create-astilba` 0.1.0");
+assertIncludes(agentSetupArtifact, agentSetupPrompt, "create-astilba` 0.1.2");
 
 const overviewArtifact = docsArtifact("/cache/overview.md");
 const markdown = artifacts.get(overviewArtifact);
@@ -952,7 +959,27 @@ assertIncludes(
 assertIncludes(
   createOverviewArtifact,
   createOverviewMarkdown,
-  "The current release is `create-astilba` 0.1.0"
+  "The current release is `create-astilba` 0.1.2"
+);
+
+const createRecipesArtifact = docsArtifact("/create/recipes.md");
+assertIncludes(
+  createRecipesArtifact,
+  artifacts.get(createRecipesArtifact),
+  "pnpm-lock.yaml"
+);
+
+const createReleaseArtifact = docsArtifact("/create/release-and-support.md");
+const createReleaseMarkdown = artifacts.get(createReleaseArtifact);
+assertIncludes(
+  createReleaseArtifact,
+  createReleaseMarkdown,
+  "canonical lockfiles needed to verify generation"
+);
+assertIncludes(
+  createReleaseArtifact,
+  createReleaseMarkdown,
+  "includes a provenance attestation"
 );
 
 for (const field of [

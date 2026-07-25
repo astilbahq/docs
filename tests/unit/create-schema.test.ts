@@ -16,7 +16,7 @@ const createManifest = (recipeId: (typeof recipeIds)[number]) => ({
   features: [],
   generator: {
     name: "create-astilba",
-    version: "0.1.0",
+    version: "0.1.2",
   },
   ownership: {
     managed: [{ path: ".editorconfig", sha256: digest }],
@@ -32,7 +32,7 @@ const createManifest = (recipeId: (typeof recipeIds)[number]) => ({
   },
   recipe: {
     id: recipeId,
-    version: 1,
+    version: 2,
   },
   schemaVersion: 1,
 });
@@ -42,7 +42,7 @@ describe("Create project manifest schema", () => {
     createProjectManifestSchemaV1
   );
 
-  it.each(recipeIds)("accepts the %s recipe v1 manifest shape", (recipeId) => {
+  it.each(recipeIds)("accepts the %s recipe v2 manifest shape", (recipeId) => {
     expect(validate(createManifest(recipeId))).toBe(true);
   });
 
