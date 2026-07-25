@@ -8,7 +8,7 @@ next: false
 
 Astilba Create generates a complete TypeScript project from a small catalog of maintained recipes. It writes the application starting point, pinned toolchain, verification scripts, GitHub workflows, repository guidance, and an ownership manifest in one deterministic operation.
 
-`create-astilba` 0.1.2 is available on npm. Its supported public interface is the command-line tool:
+`create-astilba` 0.2.0 is available on npm. Its supported public interface is the command-line tool:
 
 ```sh
 npm create astilba@latest

@@ -21,38 +21,45 @@ npm create astilba@latest
 
 The questionnaire asks for:
 
-1. a portable relative destination such as `my-project`;
-2. one supported recipe;
+1. one supported recipe;
+2. a portable relative destination such as `my-project`;
 3. a short project description;
-4. an npm package name;
-5. the GitHub owner;
+4. the GitHub owner;
+5. whether to customize the inferred project, package, and repository names;
 6. whether to initialize Git;
 7. whether to install dependencies; and
-8. final confirmation.
+8. whether to create the project, change a detail, or cancel.
 
-The directory name supplies the default project name, package name, and GitHub repository name. The interactive flow defaults both Git initialization and dependency installation to **yes**.
+The directory name supplies the default project name, package name, and GitHub repository name. Keep the customization prompt at **no** to accept all three together, or choose **yes** to edit them individually.
+
+Before writing, Create validates every resolved value and shows the complete project summary. You can change one detail and return to the review without restarting the questionnaire. `--yes` skips this final review action only; it does not answer missing questions.
+
+The interactive flow defaults both Git initialization and dependency installation to **yes**.
 
 :::note
 Create requires a destination that does not exist. It will not write into an empty existing directory or merge generated files with another tree.
 :::
 
-## Verify the generated project
+Create reports planning, generation, and optional dependency installation as separate phases. Its completion message states whether dependencies were installed and gives the next verification step.
 
-Enter the new directory and run its complete verification script:
+## Finish and verify the generated project
+
+If Create installed dependencies, enter the new directory and run its complete verification script:
 
 ```sh
 cd my-project
 pnpm verify
 ```
 
-Every recipe checks formatting and lint rules, TypeScript, tests, unused files and dependencies, and its production build. The TypeScript library recipe also validates the packed package with Publint and Are the Types Wrong.
-
-If you declined dependency installation, install first:
+If you declined dependency installation or installation failed, install the generated project's pinned dependencies first:
 
 ```sh
-pnpm install
+cd my-project
+pnpm install --frozen-lockfile
 pnpm verify
 ```
+
+Every recipe checks formatting and lint rules, TypeScript, tests, unused files and dependencies, and its production build. The TypeScript library recipe also validates the packed package with Publint and Are the Types Wrong.
 
 ## Review what Create owns
 
@@ -64,7 +71,7 @@ Open `.astilba/project.json` before your first commit. It records:
 - individually owned `package.json` fields; and
 - the `CLAUDE.md` symbolic link and its target.
 
-The manifest is evidence for future fail-closed migrations. Create 0.1.2 does not include an updater, and the manifest does not prevent you from changing any generated file.
+The manifest is evidence for future fail-closed migrations. Create 0.2.0 does not include an updater, and the manifest does not prevent you from changing any generated file.
 
 ## Make the first commit
 

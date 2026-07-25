@@ -546,7 +546,7 @@ assertIncludes(createSkillArtifact, createSkill, docsUrl("/mcp"));
 assertIncludes(
   createSkillArtifact,
   createSkill,
-  "`create-astilba` 0.1.2 and its four recipe v2 contracts"
+  "`create-astilba` 0.2.0 and its four recipe v2 contracts"
 );
 
 const pageUrl = docsUrl("/cache/overview/");
@@ -769,7 +769,7 @@ assertIncludes(
   llmsIndex,
   "Astilba Cache remains an unreleased preview"
 );
-assertIncludes(llmsArtifact, llmsIndex, "Create 0.1.2 is released");
+assertIncludes(llmsArtifact, llmsIndex, "Create 0.2.0 is released");
 assertIncludes(llmsArtifact, llmsIndex, mcpUrl);
 const llmsFullArtifact = docsArtifact("/llms-full.txt");
 assertIncludes(
@@ -915,7 +915,7 @@ assertIncludes(
   agentSetupPrompt,
   "unreleased source preview"
 );
-assertIncludes(agentSetupArtifact, agentSetupPrompt, "create-astilba` 0.1.2");
+assertIncludes(agentSetupArtifact, agentSetupPrompt, "create-astilba` 0.2.0");
 
 const overviewArtifact = docsArtifact("/cache/overview.md");
 const markdown = artifacts.get(overviewArtifact);
@@ -959,7 +959,7 @@ assertIncludes(
 assertIncludes(
   createOverviewArtifact,
   createOverviewMarkdown,
-  "The current release is `create-astilba` 0.1.2"
+  "The current release is `create-astilba` 0.2.0"
 );
 
 const createRecipesArtifact = docsArtifact("/create/recipes.md");

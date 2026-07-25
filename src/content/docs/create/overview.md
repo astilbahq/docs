@@ -5,7 +5,7 @@ description: Understand what Astilba Create generates, what it guarantees, and w
 
 Astilba Create turns a named recipe and a small set of project metadata into an independent TypeScript repository. Use it when you want a maintained starting point with build, test, lint, dependency, security, and repository conventions already connected.
 
-The current release is `create-astilba` 0.1.2. It supports four recipe v2 contracts:
+The current release is `create-astilba` 0.2.0. It supports four recipe v2 contracts:
 
 - `typescript-library`
 - `react-vite-spa`
@@ -28,7 +28,7 @@ npm create astilba@latest
 | Create a repository with no template ancestry | Git initialization creates a fresh `main` branch and does not copy Astilba's commit history. |
 | Add arbitrary framework, database, authentication, or deployment combinations | Not yet. Create supports complete named recipes, not an unverified feature matrix. |
 | Merge generated files into an existing directory | Not supported. The destination must not already exist. |
-| Update or repair an existing generated project | Not in 0.1.2. `doctor` and migration tooling are future work. |
+| Update or repair an existing generated project | Not in 0.2.0. `doctor` and migration tooling are future work. |
 | Import a programmatic generator API | Not supported. The npm package exports its CLI and package metadata, not its internal TypeScript modules. |
 
 ## Start from a complete recipe
@@ -69,4 +69,4 @@ Dependency installation happens after the complete project tree is published. If
 | Run without prompts | [Automate project creation](/docs/create/automation/) |
 | Audit filesystem and failure behavior | [Deterministic generation](/docs/create/deterministic-generation/) |
 | Understand future migration evidence | [Project manifest](/docs/create/project-manifest/) |
-| Confirm what 0.1.2 supports | [Release and support](/docs/create/release-and-support/) |
+| Confirm what 0.2.0 supports | [Release and support](/docs/create/release-and-support/) |

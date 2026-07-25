@@ -1,15 +1,15 @@
 ---
 title: Release and support
-description: Check the exact package, runtime, recipe, platform, and verification surface supported by Astilba Create 0.1.2.
+description: Check the exact package, runtime, recipe, platform, and verification surface supported by Astilba Create 0.2.0.
 ---
 
-`create-astilba` 0.1.2 is published on npm from the public [`astilbahq/create`](https://github.com/astilbahq/create) repository. The source release is tagged [`v0.1.2`](https://github.com/astilbahq/create/tree/v0.1.2).
+`create-astilba` 0.2.0 is published on npm from the public [`astilbahq/create`](https://github.com/astilbahq/create) repository. The source release is tagged [`v0.2.0`](https://github.com/astilbahq/create/tree/v0.2.0).
 
 ## Supported public surface
 
-| Surface | 0.1.2 status |
+| Surface | 0.2.0 status |
 | --- | --- |
-| Interactive CLI | Released |
+| Interactive CLI | Recipe-first questionnaire with validated review and per-field editing |
 | Non-interactive CLI | Released |
 | Versioned JSON output | Schema version 1 |
 | `--dry-run` planning | Released |
@@ -24,6 +24,8 @@ description: Check the exact package, runtime, recipe, platform, and verificatio
 
 The npm export map exposes package metadata only. Internal generator modules in the source repository are implementation details and are not a supported import path.
 
+Create 0.2.0 reports planning, generation, and optional dependency installation as separate interactive phases. Human success and recovery output distinguishes a failure that committed no generated files, an incomplete publication with its marker, and a complete project whose installation or terminal reporting needs attention. The non-interactive flags, exit codes, and JSON schema version remain compatible with 0.1.2.
+
 ## Runtime requirements
 
 | Requirement | Supported value |
@@ -33,7 +35,7 @@ The npm export map exposes package metadata only. Internal generator modules in 
 
 You invoke Create through npm, but generated projects use pnpm. With `--install`, Create uses the `pnpm` executable only when it reports version 11.10.0. Otherwise, Create asks Corepack for `pnpm@11.10.0`.
 
-Generated verification runs on the minimum Node.js release and the current supported major recorded by Create. In 0.1.2, those lanes are Node.js 22.18.0 and 24.18.0.
+Generated verification runs on the minimum Node.js release and the current supported major recorded by Create. In 0.2.0, those lanes are Node.js 22.18.0 and 24.18.0.
 
 ## Platform boundary
 
@@ -57,9 +59,9 @@ The packed npm artifact contains the license, README, package metadata, compiled
 
 ## Publication evidence
 
-The [`v0.1.2` GitHub Release](https://github.com/astilbahq/create/releases/tag/v0.1.2) ran the checked-in release workflow. It verified that the release tag pointed to `main` and matched the package version, rebuilt and checked the package, and published through a protected GitHub environment with npm trusted publishing.
+The [`v0.2.0` GitHub Release](https://github.com/astilbahq/create/releases/tag/v0.2.0) ran the checked-in release workflow. It verified that the release tag pointed to `main` and matched the package version, rebuilt and checked the package, and published through a protected GitHub environment with npm trusted publishing.
 
-The [`create-astilba@0.1.2` npm record](https://www.npmjs.com/package/create-astilba/v/0.1.2) includes a provenance attestation that identifies the public source repository and GitHub Actions release workflow.
+The [`create-astilba@0.2.0` npm record](https://www.npmjs.com/package/create-astilba/v/0.2.0) includes a provenance attestation that identifies the public source repository and GitHub Actions release workflow.
 
 ## Responsibility after generation
 
@@ -77,7 +79,7 @@ The Worker recipe includes Wrangler development, type-generation, dry-run build,
 
 ## Deliberate omissions
 
-Create 0.1.2 does not include optional Panda CSS, monitoring, browser testing, authentication, databases, or general deployment automation. These are not hidden flags or parked public recipes.
+Create 0.2.0 does not include optional Panda CSS, monitoring, browser testing, authentication, databases, or general deployment automation. These are not hidden flags or parked public recipes.
 
 Future repair and update tooling is intended to use explicit authored migrations and the manifest's ownership evidence. It will not regenerate over an existing repository or silently mutate a default branch.
 

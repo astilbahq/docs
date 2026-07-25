@@ -50,7 +50,7 @@ The result uses `"action":"plan"` and `"installed":false`. A successful write us
 
 The JSON plan lists every regular-file and symbolic-link path in deterministic order. It does not return file contents or modes.
 
-A dry run validates metadata, the portable destination argument, recipe rules, generated paths, collisions, and link targets. It does not inspect the destination filesystem or exercise Git, symbolic-link creation, or dependency installation. Run actual creation in the target environment to check that the destination is absent, its parent exists without symbolic-link ancestors, and those external operations are available.
+A dry run validates metadata, the portable destination argument, recipe rules, generated paths, collisions, and link targets. It does not inspect the destination filesystem or exercise parent-directory preparation, Git, symbolic-link creation, or dependency installation. Run actual creation in the target environment to check that the destination is absent, any existing parent ancestry contains no symbolic links, missing parent directories can be created, and those external operations are available.
 
 ## Consume JSON output
 
@@ -71,37 +71,45 @@ Successful creation writes one JSON object to standard output:
 
 The actual `files` array contains every planned regular file in deterministic path order. The shortened array above only illustrates the response shape.
 
-On an error with `--json`, Create writes this shape to standard output and exits with status `1`:
+On an ordinary error with `--json`, Create writes this shape to standard output and exits with status `1`:
 
 ```json
 {
+  "destination": "/absolute/path/to/my-project",
   "error": {
-    "message": "The actionable error message."
+    "code": "INSTALLATION_FAILED",
+    "message": "The actionable error message.",
+    "phase": "installation"
   },
   "ok": false,
+  "projectCreated": true,
   "schemaVersion": 1
 }
 ```
 
-Without `--json`, errors go to standard error with an `Error:` prefix. Interactive cancellation exits with status `130`.
+`destination` is present when Create resolved one. `error.code` is one of `CANCELLED`, `GENERATION_FAILED`, `INSTALLATION_FAILED`, `INVALID_INPUT`, `PACKAGE_MANAGER_UNAVAILABLE`, or `UNEXPECTED_ERROR`. `CANCELLED` is the status-130 exception; the other codes use status `1`. `error.phase` is `input`, `generation`, `installation`, or `unknown`.
 
-Always check both `schemaVersion` and `ok` before reading other fields. Version 1 does not include nested error codes; treat `error.message` as human-readable context, not a stable branch key.
+Without `--json`, ordinary errors go to standard error with an `Error:` prefix. Cancellation and process interruption exit with status `130` in every output mode.
+
+Always check both `schemaVersion` and `ok` before reading other fields. Branch on `error.code`, `error.phase`, and `projectCreated`; treat `error.message` as human-readable context.
 
 ## Distinguish generation from installation
 
 Create publishes the complete project tree before it runs dependency installation. This gives automation two distinct failure boundaries:
 
-1. If generation fails, Create does not publish a complete destination.
+1. If generation fails, Create does not present the destination as complete. A rare failed publication rollback preserves `.astilba-create-incomplete`.
 2. If installation fails, the project remains at the destination and the command exits with an error explaining how to rerun `pnpm install`.
 
 Choose `--no-install` when your workflow wants to inspect, archive, or enter the generated tree before resolving dependencies. It is also the default outside the interactive questionnaire.
+
+CLI output schema version 1 deliberately remains unchanged in Create 0.2.0. It reports whether the project was created, but it does not expose the internal distinction between an unchanged destination and an incomplete publication: both have `projectCreated: false`. When automatic recovery must be unambiguous, use `--no-install`, branch on the structured error fields, and never accept a destination that contains `.astilba-create-incomplete`.
 
 ## Pin when reproducibility requires it
 
 `@latest` selects the npm release current at execution time. If an automation contract must stay on one generator release, invoke that exact package version:
 
 ```sh
-npm create astilba@0.1.2 -- my-project \
+npm create astilba@0.2.0 -- my-project \
   --recipe typescript-library \
   --description "A useful library." \
   --github-owner example \

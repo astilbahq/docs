@@ -3,7 +3,7 @@ title: CLI reference
 description: Look up Astilba Create commands, inputs, defaults, validation rules, output, and exit behavior.
 ---
 
-The supported public interface of `create-astilba` 0.1.2 is its command-line tool.
+The supported public interface of `create-astilba` 0.2.0 is its command-line tool.
 
 ## Usage
 
@@ -76,23 +76,30 @@ The `cloudflare-worker-service` recipe further restricts the project name to at 
 
 The destination argument must be a normalized portable relative path. It cannot contain traversal, backslashes, `.git`, Windows device names, control or formatting characters, non-ASCII path segments, trailing spaces or periods, or Windows-forbidden filename characters.
 
-For actual creation, the destination must not exist. Its parent directory must exist and must not contain symbolic links in its existing ancestry.
+For actual creation, the destination must not exist. Create makes missing parent directories, while rejecting symbolic links or non-directory entries in the existing ancestry.
 
-`--dry-run` validates the destination argument and generated output plan, but it does not inspect the destination filesystem. It therefore does not prove that the destination is absent, its parent exists without symbolic-link ancestors, Git or link creation will work, or dependency installation is available.
+`--dry-run` validates the destination argument and generated output plan, but it does not inspect the destination filesystem. It therefore does not prove that the destination is absent, existing parent ancestry is safe, missing parents can be created, Git or link creation will work, or dependency installation is available.
 
 See [Deterministic generation](/docs/create/deterministic-generation/) for output collision checks, staging, rollback, and the incomplete marker.
 
 ## Human-readable output
 
-Interactive terminals receive progress and completion messages. A successful non-TTY run without `--json` prints one summary:
+Interactive terminals report planning, generation, and optional dependency installation as separate phases. A successful non-TTY run without `--json` prints the same final state and next step without terminal animation:
 
 ```text
-Created React + Vite application at /absolute/path/to/my-project
+Created React + Vite application at /absolute/path/to/my-project. Dependencies were not installed.
+Next: open /absolute/path/to/my-project, run pnpm install --frozen-lockfile, then run pnpm verify.
 ```
 
-A dry run begins with `Planned`. Errors print to standard error as `Error: <message>` and exit with status `1`.
+A dry run begins with `Planned`. A successful install instead reports `Dependencies installed` and directs you to `pnpm verify`.
 
-If dependency installation fails, the destination remains and the message explains how to rerun `pnpm install`.
+Ordinary errors print to standard error as `Error: <message>` and exit with status `1`. Recovery text distinguishes these filesystem outcomes:
+
+- no generated files were committed to the destination;
+- publication is incomplete and the `.astilba-create-incomplete` marker remains; or
+- the project was created, but installation or terminal reporting needs attention.
+
+Cancellation and process interruption exit with status `130` in every output mode. If cancellation arrives after publication, recovery output still says that the project exists and whether dependency installation needs to be completed.
 
 ## JSON output
 
@@ -115,9 +122,15 @@ Error:
 
 | Field | Type | Meaning |
 | --- | --- | --- |
+| `destination` | string, optional | Absolute resolved destination when one is available |
+| `error.code` | string | Stable failure category |
 | `error.message` | string | Human-readable actionable error |
+| `error.phase` | string | `input`, `generation`, `installation`, or `unknown` |
 | `ok` | `false` | Error discriminator |
+| `projectCreated` | boolean | Whether a complete project was published |
 | `schemaVersion` | `1` | CLI output schema version |
+
+`error.code` is one of `CANCELLED`, `GENERATION_FAILED`, `INSTALLATION_FAILED`, `INVALID_INPUT`, `PACKAGE_MANAGER_UNAVAILABLE`, or `UNEXPECTED_ERROR`. `CANCELLED` maps to status `130`; the other codes map to status `1`. When `projectCreated` is `false`, inspect a resolved destination for `.astilba-create-incomplete` before treating it as unchanged.
 
 `--help --json` returns `command`, `ok`, `schemaVersion`, and `usage`. `--version --json` returns `command`, `ok`, `schemaVersion`, and `version`.
 
@@ -127,6 +140,6 @@ Error:
 | --- | --- |
 | `0` | Help, version, plan, creation, and any requested install completed successfully |
 | `1` | Input, planning, generation, Git, or dependency-installation error |
-| `130` | Interactive prompt or confirmation was cancelled |
+| `130` | The operation was cancelled or interrupted |
 
 For a complete automated example, see [Automate project creation](/docs/create/automation/).

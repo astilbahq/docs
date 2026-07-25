@@ -1466,7 +1466,7 @@ test("presents products and copies the agent setup prompt from the homepage", as
     has: page.getByRole("heading", { level: 3, name: "Create" }),
   });
   await expect(createProduct).toContainText("Released");
-  await expect(createProduct).toContainText("create-astilba 0.1.2");
+  await expect(createProduct).toContainText("create-astilba 0.2.0");
   await expect(
     createProduct.getByRole("link", { name: "Create" })
   ).toHaveAttribute("href", "/docs/create/");
@@ -1621,7 +1621,7 @@ test("presents Create as a distinct released product home", async ({
   await expect(
     page.getByRole("link", { name: "Read the docs", exact: true })
   ).toHaveAttribute("href", "/docs/create/overview/");
-  await expect(page.getByText("create-astilba 0.1.2")).toBeVisible();
+  await expect(page.getByText("create-astilba 0.2.0")).toBeVisible();
 
   const sidebar = page.locator("#starlight__sidebar");
   await expect(
