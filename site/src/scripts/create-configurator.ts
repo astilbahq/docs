@@ -286,6 +286,20 @@ const initializeConfigurator = (root: HTMLElement): void => {
     }
   };
 
+  const selectCommand = (): void => {
+    command.focus();
+
+    const selection = window.getSelection();
+    if (selection === null) {
+      return;
+    }
+
+    const range = document.createRange();
+    range.selectNodeContents(command);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  };
+
   copyCommand.addEventListener("click", () => {
     const configuration = readConfiguration();
 
@@ -300,7 +314,8 @@ const initializeConfigurator = (root: HTMLElement): void => {
       copyCommand,
       command.textContent ?? "",
       "Command copied.",
-      "Clipboard access failed. Select and copy the command instead."
+      "Clipboard access failed. The command is selected above.",
+      selectCommand
     );
   });
 

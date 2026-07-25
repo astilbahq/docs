@@ -192,12 +192,17 @@ describe("Create command presentation", () => {
     }
   );
 
-  it.each(["", " leading", "trailing ", "line\nbreak", "x".repeat(281)])(
-    "rejects an invalid description",
-    (description) => {
-      expect(getDescriptionValidationMessage(description)).toBeDefined();
-    }
-  );
+  it.each([
+    "",
+    " leading",
+    "trailing ",
+    "line\nbreak",
+    "visually\u202Ereordered",
+    "zero\u200Dwidth",
+    "x".repeat(281),
+  ])("rejects an invalid description", (description) => {
+    expect(getDescriptionValidationMessage(description)).toBeDefined();
+  });
 
   it.each(["example", "a", "example-owner", "a".repeat(39)])(
     "accepts a valid GitHub owner: %s",

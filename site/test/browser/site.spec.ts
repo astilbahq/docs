@@ -304,7 +304,7 @@ test("the Create configurator assembles and shares a released command", async ({
   await expectNoAxeViolations(page);
 });
 
-test("the Create configurator reveals a configuration link when clipboard access fails", async ({
+test("the Create configurator provides keyboard-usable fallbacks when clipboard access fails", async ({
   page,
 }) => {
   await page.addInitScript(() => {
@@ -323,6 +323,17 @@ test("the Create configurator reveals a configuration link when clipboard access
     .click();
   await page.getByLabel("Description").fill("A useful library.");
   await page.getByLabel("GitHub owner").fill("astilbahq");
+
+  const command = page.locator("[data-create-command]");
+  await page.locator("[data-copy-command]").click();
+  await expect(command).toBeFocused();
+  await expect(page.locator("[data-configurator-status]")).toHaveText(
+    "Clipboard access failed. The command is selected above."
+  );
+  await expect
+    .poll(() => page.evaluate(() => window.getSelection()?.toString()))
+    .toBe(await command.textContent());
+
   await page.locator("[data-copy-configuration]").click();
 
   const fallback = page.locator("[data-share-fallback]");

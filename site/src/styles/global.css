@@ -8,6 +8,8 @@
   --surface-quiet: #131313;
   --surface-hover: rgba(255, 255, 255, 0.055);
   --surface-pressed: rgba(255, 255, 255, 0.09);
+  --primary-action-hover-background: #2a2a2a;
+  --primary-action-hover-text: #ffffff;
   --border: rgba(196, 196, 196, 0.1);
   --border-strong: rgba(255, 255, 255, 0.18);
   --control-border: #686868;
@@ -351,9 +353,9 @@ h3 {
 }
 
 .action--primary:hover {
-  border-color: #2a2a2a;
-  background: #2a2a2a;
-  color: #ffffff;
+  border-color: var(--primary-action-hover-background);
+  background: var(--primary-action-hover-background);
+  color: var(--primary-action-hover-text);
 }
 
 .action--secondary:hover {
@@ -1207,9 +1209,9 @@ h3 {
 }
 
 .configurator-button--primary:not(:disabled):hover {
-  border-color: #2a2a2a;
-  background: #2a2a2a;
-  color: #ffffff;
+  border-color: var(--primary-action-hover-background);
+  background: var(--primary-action-hover-background);
+  color: var(--primary-action-hover-text);
 }
 
 .configurator-button:disabled {
