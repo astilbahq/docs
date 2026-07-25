@@ -10,10 +10,11 @@ The supported public interface of `create-astilba` 0.3.0 is its command-line too
 ```text
 npm create astilba@latest
 npm create astilba@latest -- <directory> --recipe <recipe> [options]
-npm create astilba@latest -- --catalog [--json]
+npm create astilba@latest -- --catalog
+npx --yes create-astilba@latest --catalog --json
 ```
 
-Use the first form for the interactive questionnaire. In the second form, `--` tells npm to forward the remaining arguments to Create.
+Use the first form for the interactive questionnaire. In the other npm forms, `--` tells npm to forward the remaining arguments to Create. Use the direct `npx` form whenever standard output must contain only the JSON object; npm's `create` wrapper adds its own lifecycle lines.
 
 ## Recipes
 
@@ -40,7 +41,7 @@ Recipe identifiers are stable. See [Choose a recipe](/docs/create/recipes/) for 
 | `--git` / `--no-git` | — | Enable or disable fresh Git initialization. Defaults to enabled. |
 | `--install` / `--no-install` | — | Enable or disable dependency installation. Questionnaire default: enabled. Prompt-free default: disabled. |
 | `--dry-run` | — | Validate inputs and construct the generation plan without writing, initializing Git, or installing. JSON output returns the planned file and link paths, not their contents or modes. |
-| `--json` | — | Emit versioned machine-readable output. This mode never prompts. |
+| `--json` | — | Emit versioned machine-readable output. This mode never prompts. Invoke `create-astilba` directly through `npx` when a machine will parse standard output. |
 | `--yes` | `-y` | Skip the final interactive confirmation. It does not supply missing required inputs. |
 | `--version` | `-v` | Print the installed Create version. |
 | `--help` | `-h` | Print usage, recipes, and options. |
@@ -107,6 +108,17 @@ Cancellation and process interruption exit with status `130` in every output mod
 
 `--json` writes one JSON object to standard output.
 
+Invoke the package directly to keep npm wrapper output out of that stream:
+
+```sh
+npx --yes create-astilba@latest my-project \
+  --recipe react-vite-spa \
+  --description "A useful application." \
+  --github-owner example \
+  --no-install \
+  --json
+```
+
 Successful plan or creation:
 
 | Field | Type | Meaning |
@@ -139,7 +151,7 @@ Error:
 Use the catalog when an interface or automation needs to discover released recipe IDs without duplicating a list:
 
 ```sh
-npm create astilba@latest -- --catalog --json
+npx --yes create-astilba@latest --catalog --json
 ```
 
 The command does not start the questionnaire or write project files. It emits one newline-terminated JSON object with:

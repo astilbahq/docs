@@ -10,7 +10,7 @@ Supply every required input explicitly, request JSON output, and use the process
 A non-interactive run requires a destination, recipe, description, and GitHub owner:
 
 ```sh
-npm create astilba@latest -- my-project \
+npx --yes create-astilba@latest my-project \
   --recipe react-vite-spa \
   --description "A useful application." \
   --github-owner example \
@@ -20,6 +20,8 @@ npm create astilba@latest -- my-project \
 ```
 
 `--json` never prompts, even when the terminal is interactive. It does not make missing inputs optional.
+
+Use the direct `npx` form whenever a machine will parse standard output. npm's `create` wrapper writes its own lifecycle lines around the command, while `create-astilba` itself keeps standard output to the single JSON result.
 
 The destination name supplies these defaults:
 
@@ -38,7 +40,7 @@ Use `--install` when the workflow should run `pnpm install` after generation. Us
 Add `--dry-run` to resolve inputs and construct the complete generation plan without creating the destination, initializing Git, or installing dependencies:
 
 ```sh
-npm create astilba@latest -- my-project \
+npx --yes create-astilba@latest my-project \
   --recipe astro-static-site \
   --description "A useful static site." \
   --github-owner example \
@@ -98,7 +100,7 @@ Always check both `schemaVersion` and `ok` before reading other fields. Branch o
 Read the versioned recipe catalog when automation needs to offer or validate the released choices:
 
 ```sh
-npm create astilba@latest -- --catalog --json
+npx --yes create-astilba@latest --catalog --json
 ```
 
 This command does not prompt or write project files. Check `schemaVersion`, `generator.version`, and `ok` before reading `recipes`. Each recipe entry exposes its stable ID, recipe version, label, and description. The npm package includes the strict catalog schema at `schemas/catalog-v1.json`.
@@ -121,7 +123,7 @@ CLI output schema version 1 deliberately remains unchanged in Create 0.3.0. It r
 `@latest` selects the npm release current at execution time. If an automation contract must stay on one generator release, invoke that exact package version:
 
 ```sh
-npm create astilba@0.3.0 -- my-project \
+npx --yes create-astilba@0.3.0 my-project \
   --recipe typescript-library \
   --description "A useful library." \
   --github-owner example \
@@ -136,9 +138,9 @@ The generated manifest records the selected generator and recipe versions. Commi
 The informational commands support machine-readable output:
 
 ```sh
-npm create astilba@latest -- --catalog --json
-npm create astilba@latest -- --help --json
-npm create astilba@latest -- --version --json
+npx --yes create-astilba@latest --catalog --json
+npx --yes create-astilba@latest --help --json
+npx --yes create-astilba@latest --version --json
 ```
 
 Catalog returns `command`, `generator`, `ok`, `recipes`, and its own `schemaVersion`. Help returns `command`, `ok`, `schemaVersion`, and `usage`. Version returns `command`, `ok`, `schemaVersion`, and `version`.
