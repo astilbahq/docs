@@ -30,7 +30,7 @@ Recipe identifiers are stable. See [Choose a recipe](/docs/create/recipes/) for 
 
 | Option | Short | Meaning |
 | --- | --- | --- |
-| `--catalog` | — | List the released recipes without starting the questionnaire or writing project files. It can only be combined with `--json`. |
+| `--catalog` | — | List the released recipes without starting the questionnaire or writing project files. Add `--json` for versioned machine-readable output. |
 | `--description <text>` | — | Project description. Required outside the interactive questionnaire. |
 | `--github-owner <owner>` | — | GitHub account that will own the repository. Required outside the interactive questionnaire. |
 | `--github-repo <name>` | — | GitHub repository name. Defaults to the normalized destination basename. |

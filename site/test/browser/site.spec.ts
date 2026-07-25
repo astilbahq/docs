@@ -8,6 +8,21 @@ const expectNoAxeViolations = async (page: Page): Promise<void> => {
   expect(results.violations).toEqual([]);
 };
 
+const waitForVisualTransitions = async (page: Page): Promise<void> => {
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+
+    await Promise.all(
+      document
+        .getAnimations()
+        .filter((animation) => animation.playState === "running")
+        .map((animation) => animation.finished.catch(() => undefined))
+    );
+  });
+};
+
 test("the public home distinguishes the released and preview products", async ({
   page,
 }) => {
@@ -315,7 +330,7 @@ test("the Create configurator assembles and shares a released command", async ({
 
   await page.getByRole("button", { name: "Switch to light theme" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
-  await page.waitForTimeout(250);
+  await waitForVisualTransitions(page);
   await expectNoAxeViolations(page);
 });
 

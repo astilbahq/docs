@@ -14,6 +14,7 @@ import {
   getDescriptionValidationMessage,
   getDestinationValidationMessage,
   getGithubOwnerValidationMessage,
+  inferProjectName,
   parseConfigurationHash,
   quotePowerShellToken,
   quotePosixShellToken,
@@ -133,11 +134,17 @@ describe("Create command presentation", () => {
   it("is accepted by the installed Create parser", async () => {
     const directory = await mkdtemp(join(tmpdir(), "astilba-docs-create-"));
     const tokens = createCommandTokens(configuration, "0.3.0");
+    const firstSeparator = tokens.indexOf("--");
+    const lastSeparator = tokens.lastIndexOf("--");
+
+    expect(firstSeparator).toBeGreaterThan(-1);
+    expect(lastSeparator).toBeGreaterThan(firstSeparator);
+
     const cliArguments = [
-      ...tokens.slice(4, -2),
+      ...tokens.slice(firstSeparator + 1, lastSeparator),
       "--dry-run",
       "--json",
-      ...tokens.slice(-2),
+      ...tokens.slice(lastSeparator),
     ];
 
     try {
@@ -168,6 +175,11 @@ describe("Create command presentation", () => {
       expect(getDestinationValidationMessage(destination)).toBeUndefined();
     }
   );
+
+  it("infers the same project name used by destination validation", () => {
+    expect(inferProjectName("projects/My useful app")).toBe("my-useful-app");
+    expect(inferProjectName("projects/---")).toBe("");
+  });
 
   it.each([
     "",

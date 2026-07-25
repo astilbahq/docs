@@ -38,48 +38,82 @@ export const quotePowerShellToken = (value: string): string => {
   return `'${value.replaceAll("'", "''")}'`;
 };
 
+interface CreateCommandToken {
+  readonly quoteInPowerShell: boolean;
+  readonly value: string;
+}
+
+const createCommandTokenEntries = (
+  configuration: CreateConfiguration,
+  generatorVersion: string
+): readonly CreateCommandToken[] => [
+  { quoteInPowerShell: false, value: "npm" },
+  { quoteInPowerShell: false, value: "create" },
+  {
+    quoteInPowerShell: false,
+    value: `astilba@${generatorVersion}`,
+  },
+  { quoteInPowerShell: false, value: "--" },
+  {
+    quoteInPowerShell: true,
+    value: `--recipe=${configuration.recipe}`,
+  },
+  {
+    quoteInPowerShell: true,
+    value: `--description=${configuration.description}`,
+  },
+  {
+    quoteInPowerShell: true,
+    value: `--github-owner=${configuration.githubOwner}`,
+  },
+  {
+    quoteInPowerShell: false,
+    value: configuration.initializeGit ? "--git" : "--no-git",
+  },
+  {
+    quoteInPowerShell: false,
+    value: configuration.installDependencies ? "--install" : "--no-install",
+  },
+  { quoteInPowerShell: false, value: "--" },
+  { quoteInPowerShell: true, value: configuration.destination },
+];
+
 export const createCommandTokens = (
   configuration: CreateConfiguration,
   generatorVersion: string
-): readonly string[] => [
-  "npm",
-  "create",
-  `astilba@${generatorVersion}`,
-  "--",
-  `--recipe=${configuration.recipe}`,
-  `--description=${configuration.description}`,
-  `--github-owner=${configuration.githubOwner}`,
-  configuration.initializeGit ? "--git" : "--no-git",
-  configuration.installDependencies ? "--install" : "--no-install",
-  "--",
-  configuration.destination,
-];
+): readonly string[] =>
+  createCommandTokenEntries(configuration, generatorVersion).map(
+    ({ value }) => value
+  );
 
 export const createPosixCommand = (
   configuration: CreateConfiguration,
   generatorVersion: string
 ): string =>
-  createCommandTokens(configuration, generatorVersion)
-    .map(quotePosixShellToken)
+  createCommandTokenEntries(configuration, generatorVersion)
+    .map(({ value }) => quotePosixShellToken(value))
     .join(" ");
 
 export const createPowerShellCommand = (
   configuration: CreateConfiguration,
   generatorVersion: string
 ): string =>
-  [
-    "npm",
-    "create",
-    `astilba@${generatorVersion}`,
-    "--",
-    quotePowerShellToken(`--recipe=${configuration.recipe}`),
-    quotePowerShellToken(`--description=${configuration.description}`),
-    quotePowerShellToken(`--github-owner=${configuration.githubOwner}`),
-    configuration.initializeGit ? "--git" : "--no-git",
-    configuration.installDependencies ? "--install" : "--no-install",
-    "--",
-    quotePowerShellToken(configuration.destination),
-  ].join(" ");
+  createCommandTokenEntries(configuration, generatorVersion)
+    .map(({ quoteInPowerShell, value }) =>
+      quoteInPowerShell ? quotePowerShellToken(value) : value
+    )
+    .join(" ");
+
+export const inferProjectName = (destination: string): string => {
+  const segment = destination.split("/").at(-1) ?? "";
+
+  return segment
+    .toLowerCase()
+    .replaceAll(/[^a-z\d]+/gu, "-")
+    .replaceAll(/^-+|-+$/gu, "")
+    .slice(0, 63)
+    .replace(/-+$/u, "");
+};
 
 const isPortableDestinationSegment = (segment: string): boolean => {
   if (
@@ -131,14 +165,7 @@ export const getDestinationValidationMessage = (
     return "Destination must be a normalized portable relative path without traversal.";
   }
 
-  const inferredName = destination
-    .split("/")
-    .at(-1)
-    ?.toLowerCase()
-    .replaceAll(/[^a-z\d]+/gu, "-")
-    .replaceAll(/^-+|-+$/gu, "")
-    .slice(0, 63)
-    .replace(/-+$/u, "");
+  const inferredName = inferProjectName(destination);
 
   if (!inferredName) {
     return "The destination name must include at least one letter or digit so project metadata can be inferred.";

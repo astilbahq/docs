@@ -4,6 +4,7 @@ import {
   getDescriptionValidationMessage,
   getDestinationValidationMessage,
   getGithubOwnerValidationMessage,
+  inferProjectName,
   parseConfigurationHash,
   serializeConfigurationHash,
 } from "../create-command";
@@ -32,17 +33,6 @@ const writeClipboard = async (value: string): Promise<void> => {
   }
 
   await navigator.clipboard.writeText(value);
-};
-
-const inferName = (destination: string): string => {
-  const segment = destination.split("/").at(-1) ?? "";
-
-  return segment
-    .toLowerCase()
-    .replaceAll(/[^a-z\d]+/gu, "-")
-    .replaceAll(/^-+|-+$/gu, "")
-    .slice(0, 63)
-    .replace(/-+$/u, "");
 };
 
 const initializeConfigurator = (root: HTMLElement): void => {
@@ -236,8 +226,7 @@ const initializeConfigurator = (root: HTMLElement): void => {
     };
   };
 
-  const readConfiguration = (): CreateConfiguration | undefined => {
-    updateCustomValidity();
+  const readValidConfiguration = (): CreateConfiguration | undefined => {
     const recipe = recipeInputs.find((input) => input.checked)?.value;
 
     if (recipe === undefined || !form.checkValidity()) {
@@ -254,6 +243,11 @@ const initializeConfigurator = (root: HTMLElement): void => {
     };
   };
 
+  const readConfiguration = (): CreateConfiguration | undefined => {
+    updateCustomValidity();
+    return readValidConfiguration();
+  };
+
   const readShell = (): CreateCommandShell => {
     const shell = shellInputs.find((input) => input.checked)?.value;
 
@@ -266,8 +260,8 @@ const initializeConfigurator = (root: HTMLElement): void => {
 
   const render = (): void => {
     const validation = updateCustomValidity();
-    const configuration = readConfiguration();
-    const inferred = inferName(destination.value);
+    const configuration = readValidConfiguration();
+    const inferred = inferProjectName(destination.value);
     const shell = readShell();
 
     inferredName.textContent =
