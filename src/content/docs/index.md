@@ -6,6 +6,8 @@ tableOfContents: false
 
 Astilba builds portable infrastructure tools and libraries with explicit correctness boundaries. These docs describe each released or reviewed surface, what its guarantees cost, and which parts remain incomplete.
 
+The products are at different lifecycle stages. Create has an installable public release; Cache is a source-reviewed development preview. Read each product's status page before treating an example as a supported setup.
+
 ## Products
 
 ### [Create](/docs/create/)
@@ -23,6 +25,15 @@ Start with the [overview](/docs/cache/overview/), check the [implementation stat
 :::caution[Cache is a development preview]
 `@astilba/cache` is not available from npm and has no supported production installation path. The implementation ledger records the exact reviewed source snapshot and incomplete release gates.
 :::
+
+## Read the docs in context
+
+Each product owns its own version tree and release boundary:
+
+- For Create, [Release and support](/docs/create/release-and-support/) records the public package, runtime, recipes, and omitted capabilities supported by 0.2.0.
+- For Cache, [Implementation status](/docs/cache/api-status/) is the authoritative ledger for the reviewed source snapshot, partial behavior, placeholders, and missing release gates.
+
+Guides show an outcome, concepts explain one mental model, and reference pages enumerate the public surface. If an example and a status ledger ever appear to disagree, follow the ledger and report the stale page.
 
 ## For agents
 

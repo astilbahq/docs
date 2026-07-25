@@ -94,13 +94,56 @@ The combined set may contain at most 126 distinct user tags. Invalid, reserved, 
 
 <code>FactoryCtx.dependsOn(tag, { l3: false })</code> currently throws <code>NotImplementedError</code>; the stored format cannot retain that per-tag response-emission flag for later hits. <code>FactoryCtx.setTtl()</code> also throws <code>NotImplementedError</code> while elapsed TTL is deferred.
 
+## Cache an explicit 404
+
+Set <code>notFoundTtl</code> only when an <code>HttpError</code> with status 404 is a cacheable fact:
+
+~~~ts
+import { httpError } from "@astilba/cache"
+
+const entry = await cache.getOrSetEntry<Product>({
+  key: `product:${productId}`,
+  notFoundTtl: "30s",
+  factory: async () => {
+    const response = await fetchProduct(productId)
+    if (response.status === 404) throw httpError(response)
+    if (!response.ok) throw httpError(response)
+    return response.json()
+  },
+})
+
+if (entry.tier === "miss") {
+  throw new Error("Cache could not establish a result")
+}
+
+if (entry.value === undefined) {
+  return new Response("Not found", { status: 404 })
+}
+~~~
+
+Check <code>tier</code> before interpreting <code>undefined</code>: the entry form also uses <code>{ tier: "miss", value: undefined }</code> for a terminal fenced fill, and <code>skip()</code> produces a skipped miss. Neither is a 404 fact.
+
+When the 404 is not suppressed—because the factory-running caller had no grace-eligible stale candidate or that candidate revalidated as not servable—it attempts one negative L2 write and its call resolves with <code>value: undefined</code> at <code>tier: "origin"</code>. A suppressed retryable write failure reports <code>durable: false</code>; an accepted write can supply a later invalidation-fresh L2 hit. That hit also surfaces <code>undefined</code>, while retaining the tier, age, and durability evidence for the entry that was actually read. <code>notFoundTtl</code> still does not expire the entry by elapsed time. The internal storable placeholder is never exposed as an application value.
+
+The plain <code>getOrSet()</code> form also resolves <code>undefined</code> when an opted-in 404 takes the negative disposition. Its declared return type is <code>Promise&lt;T&gt;</code>, so include <code>undefined</code> in <code>T</code> whenever you enable <code>notFoundTtl</code>, or use <code>getOrSetEntry()</code> and branch on both <code>entry.tier</code> and <code>entry.value</code>.
+
+Negative entries are stored only in L2. A negative fill does not hydrate L1 and makes a best-effort attempt to delete an older L1 value for the same canonical key. If that delete fails, the call still returns the negative fact, but the older L1 entry can be served by a later read until the tier evicts it or a later value fill overwrites it.
+
 ## Compatible concurrent calls
 
 Singleflight joins calls only when their canonical key and structural settings agree. Tags, TTL, grace, negative-cache TTL, resolved scope, codec identity, consistency, and API form all participate. Tag order does not matter because tags are sorted and deduplicated first.
 
 The first compatible call runs the shared factory; later compatible calls wait for that work. A successful fill, or a stale serve already revalidated by the factory-running call, is shared with the metadata for the served entry. If that call had no stale candidate and the factory produced only a classified transient failure, each waiting caller makes its own stale-on-error decision using the candidate it read before joining. The factory-running call can receive the origin error while a waiting caller with an eligible stale value revalidates and serves its own copy. A hard invalidation that lands before that revalidation still prevents the stale serve.
 
-Cache consults <code>defaults.staleIfError</code> only for a call that declares <code>grace</code>. Without grace, no caller can use a stale candidate as fallback after a factory error; the origin error propagates without invoking the application's classifier. This does not change soft-stale eventual refresh: that separate path may still return its stale value as described below.
+When serve-time validation completes, an opted-in shared 404 has three served dispositions:
+
+- If the factory-running caller declared <code>grace</code> and holds a still-servable stale value, it suppresses the negative write and serves that value. Every compatible joiner inherits the leader's value and evidence, even if that joiner did not read a candidate of its own.
+- If that grace-eligible stale candidate revalidates as dead or unknown, the leader makes the negative write attempt and serves that result. Every compatible joiner inherits the negative result; a candidate that cannot be established servable is not eligible for caller-local fallback.
+- If the factory-running caller has no grace-eligible candidate, it makes the negative L2 write attempt once inside the singleflight window and shares the not-found fact. Each waiter then compares that fact with its own earlier read. A waiter that declared <code>grace</code> and observed a still-servable stale value returns that value without <code>servedOnError</code>; a waiter without one returns <code>undefined</code>. When <code>grace</code> is absent from the compatible calls, every caller takes the negative disposition even if it observed a stale value.
+
+Serve-time validation may instead throw <code>RegistryUnavailableError</code> under the configured unavailable posture. Waiters never repeat or rewrite the negative entry.
+
+For classified transient failures, Cache consults <code>defaults.staleIfError</code> only for a call that declares <code>grace</code>. Without grace, no caller can use a stale candidate as transient-error fallback; that origin error propagates without invoking the application's classifier. Opted-in 404 handling is the separate fact path described above and can resolve a negative result without grace. This does not change soft-stale eventual refresh: that separate path may still return its stale value as described below.
 
 With <code>dev: true</code>, an incompatible same-key call fails loudly. Otherwise it runs separately and emits <code>singleflight_option_mismatch</code> telemetry.
 

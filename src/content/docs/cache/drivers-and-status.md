@@ -53,6 +53,7 @@ Serving-path reads also recognize structural <code>throttled</code> and <code>un
 | <code>createWorkersCache()</code> | Unreleased source preview | Composes the Workers Clock/Rng, memory L1, KV L2, lazily minted named Coordinator Registry handles, tick-redialed Bus, and an unawaited read-triggered recovery carrier. Construction performs no I/O. |
 | React Router middleware | Unreleased source preview | Supplies Cache through typed Router context, carries request identity, starts request-entry poll ticks with optional <code>waitUntil</code> adoption, collects served dependencies, emits eligible <code>Cache-Tag</code> headers, and demotes unsafe responses. |
 | Local chaos demo | Source-only evidence app | Runs the real Workers composition against local KV and Coordinator bindings. Demo-owned wrappers inject three binding failures and the UI compares observed behavior with documented permissions without asserting an SLO. |
+| Composed demo boot witness | Required source CI lane | Builds and boots the emitted demo Worker on local workerd with its real Coordinator and KV bindings. Bounded polling requires a healthy channel to reach <code>established</code> and, after arming the fault, a fresh scene-owned reader to report <code>never-established</code> plus <code>bus_dial_failed</code>. Probe failure remains distinct from a channel verdict. This is a composition witness, not a deployed measurement or kernel-semantics test. |
 | Redis, production Lock, and CDN drivers | Not implemented | Contracts exist, but no package subpaths or production implementations are present. |
 
 “Unreleased source preview” means the symbol is present in the package export map and publish configuration in the reviewed private source snapshot. It does not mean consumers can inspect or install it. npm still has no <code>@astilba/cache</code> package.
@@ -96,7 +97,7 @@ The Workers path still needs work before a production release:
 - deployed consistency, propagation, caching, and production-threshold measurements behind the local chaos demo;
 - an npm release, compatibility policy, deployment guide, and upgrade process.
 
-The integration Worker and React Router fixture prove runtime wiring and build compatibility. The chaos demo provides a local evidence app, not a production template or an SLO. Do not import deep adapter files. Use only the root, <code>./cloudflare</code>, and <code>./react-router</code> entry points documented here.
+The integration Worker and React Router fixture prove runtime wiring and build compatibility. The required built-demo witness adds one local composition check for healthy and refused Bus establishment. The chaos demo remains a local evidence app, not a production template or an SLO. Do not import deep adapter files. Use only the root, <code>./cloudflare</code>, and <code>./react-router</code> entry points documented here.
 
 ## Related
 

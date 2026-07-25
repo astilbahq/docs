@@ -68,7 +68,7 @@ The raw constructor requires <code>namespace</code>, <code>clock</code>, and <co
 
 | Method | Returns | Current behavior |
 | --- | --- | --- |
-| <code>getOrSet(options)</code> | <code>Promise&lt;T&gt;</code> | Returns a usable hit or runs the factory. A terminal fenced fill throws <code>FencedError</code>. |
+| <code>getOrSet(options)</code> | <code>Promise&lt;T&gt;</code> | Returns a usable hit or runs the factory. When an opted-in 404 takes the negative disposition, it resolves as <code>undefined</code>; include <code>undefined</code> in <code>T</code>. A terminal fenced fill throws <code>FencedError</code>. |
 | <code>getOrSetEntry(options)</code> | <code>Promise&lt;CacheEntry&lt;T&gt;&gt;</code> | Adds <code>skip()</code> and returns read metadata. A terminal fenced fill becomes a miss entry. |
 | <code>expire(selector)</code> | <code>Promise&lt;PurgeResult&gt;</code> | Applies a soft invalidation through Registry. |
 | <code>delete(selector)</code> | <code>Promise&lt;PurgeResult&gt;</code> | Applies a hard invalidation through Registry. CDN modes are not wired. |
@@ -88,7 +88,7 @@ The raw constructor requires <code>namespace</code>, <code>clock</code>, and <co
 | <code>tags</code> | Optional dependency tags. Use branded values created by the tag helpers. |
 | <code>ttl</code> | Intended freshness duration. It participates in singleflight compatibility but elapsed time is not enforced. |
 | <code>grace</code> | Opts a stale candidate into classified error fallback. The declared duration is not enforced. |
-| <code>notFoundTtl</code> | Its presence allows an <code>HttpError</code> 404 to become a negative entry. The duration is not enforced. |
+| <code>notFoundTtl</code> | Its presence allows an <code>HttpError</code> 404 to become a negative L2 entry. A negative fill and a later read that reaches the invalidation-fresh negative surface <code>undefined</code>; the duration is not enforced. |
 | <code>scope</code> | <code>"public"</code> or <code>{ tenant }</code>. When omitted, visible identity derives a principal-local scope; contextless work resolves public. |
 | <code>consistency</code> | <code>"eventual"</code> or <code>"strong"</code>. Strong live-checks a stored entry and pre-checks a miss before running its factory when coordinated invalidation is active. |
 | <code>lock</code> | Requests a configured cross-instance Lock. Without a driver, <code>true</code> currently continues unlocked. |
@@ -98,6 +98,8 @@ The raw constructor requires <code>namespace</code>, <code>clock</code>, and <co
 The exported option types are <code>GetOptions</code>, <code>GetOrSetOptions</code>, and <code>GetOrSetEntryOptions</code>.
 
 Compatible calls share one foreground factory execution only when key, tags, TTL, grace, negative-cache TTL, resolved scope, codec identity, consistency, and API form agree. A successful fill or an already-revalidated stale serve is shared with its evidence. If the factory-running call had no stale candidate and shares only a classified transient failure, each waiting caller makes its own stale-on-error decision using the candidate it read before joining. The classifier is not invoked when <code>grace</code> is absent. If no caller has a candidate, both API forms propagate the error. If serve-time revalidation rejects a waiting caller's candidate after a hard invalidation, the plain form propagates the classified error while the entry form returns its documented miss result.
+
+When serve-time validation completes, an opted-in shared 404 has three served dispositions. If the factory-running caller declared <code>grace</code> and holds a still-servable stale value, it suppresses the negative write and every compatible joiner inherits that value and its evidence. If that grace-eligible candidate revalidates as dead or unknown, the leader makes the negative L2 write attempt and every compatible joiner inherits the negative result. If the leader has no grace-eligible candidate, it makes at most one negative L2 write attempt inside the singleflight window and shares the not-found fact; each waiter then decides its own disposition from its earlier read, so a waiter with a grace-eligible, still-servable stale value returns it while a waiter without one returns <code>undefined</code>. Without <code>grace</code>, every compatible caller takes the negative disposition even if it observed a stale value. Validation may instead throw <code>RegistryUnavailableError</code> under the configured unavailable posture. A suppressed retryable write failure reports a non-durable negative fill. The negative is not hydrated into L1 and triggers a best-effort deletion of any older L1 copy.
 
 ### Factory context
 
@@ -124,7 +126,7 @@ Related exports are <code>FactoryCtx</code>, <code>EntryFactoryCtx</code>, <code
 
 | Field | Meaning and current boundary |
 | --- | --- |
-| <code>value</code> | The value, or <code>undefined</code> for a miss, skip, or negative entry. |
+| <code>value</code> | The value, or <code>undefined</code> for a miss, skip, or negative entry. A fresh negative keeps the tier, age, and durability evidence of the entry that supplied that fact. |
 | <code>skipped</code> | The entry factory called <code>skip()</code>. |
 | <code>stale</code> | The returned value was not fresh at this read's consistency level. |
 | <code>age</code> | Whole milliseconds since the served envelope's <code>bornMs</code> fill-start timestamp, measured with the injected Clock and clamped at zero. A miss or skip reports zero. This is observability, not TTL enforcement. |
@@ -288,7 +290,7 @@ See [Driver implementations](/docs/cache/drivers-and-status/) for available impl
 | --- | --- |
 | <code>v</code> | Literal schema version <code>3</code>. |
 | <code>key</code> | Canonical namespace-version, namespace, scope, and user-key string. |
-| <code>val</code> | Stored value. |
+| <code>val</code> | Stored value after decoding. For <code>kind: "neg"</code>, the decoded placeholder is internal and a serving read returns <code>undefined</code> instead. |
 | <code>bornEpoch</code> | Invalidation epoch captured at fill start. |
 | <code>bornMs</code> | Fill-start time for TTL, grace, age, and retention arithmetic—not invalidation ordering. |
 | <code>storedAt</code> | Observability timestamp. |
