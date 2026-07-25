@@ -233,6 +233,7 @@ test("the Create configurator assembles and shares a released command", async ({
   expect(parsedSharedUrl.hash).toContain("generatorVersion=0.3.0");
   expect(parsedSharedUrl.hash).toContain("recipe=react-vite-spa");
   expect(parsedSharedUrl.hash).toContain("recipeVersion=2");
+  expect(parsedSharedUrl.hash).toContain("shell=powershell");
 
   await page.goto(sharedUrl);
   await expect(page.locator("[data-configurator-status]")).toHaveText(
@@ -241,7 +242,11 @@ test("the Create configurator assembles and shares a released command", async ({
   await expect(
     page.getByRole("radio", { name: /React \+ Vite application/ })
   ).toBeChecked();
+  await expect(page.getByRole("radio", { name: "PowerShell" })).toBeChecked();
   await expect(page.getByLabel("Directory")).toHaveValue("projects/my app");
+  await expect(command).toHaveText(
+    "npm create astilba@0.3.0 -- '--recipe=react-vite-spa' '--description=It''s a useful application.' '--github-owner=astilbahq' --git --install -- 'projects/my app'"
+  );
 
   const secondSharedUrl = new URL(sharedUrl);
   const secondParameters = new URLSearchParams(secondSharedUrl.hash.slice(1));
@@ -264,6 +269,9 @@ test("the Create configurator assembles and shares a released command", async ({
   ).not.toBeChecked();
   await expect(page.getByLabel("Directory")).toHaveValue("my-project");
   await expect(page.getByLabel("Description")).toHaveValue("");
+  await expect(
+    page.getByRole("radio", { name: "Shell", exact: true })
+  ).toBeChecked();
   await expect(copyCommand).toBeDisabled();
   await expect(page.locator("[data-share-fallback]")).toBeHidden();
 
@@ -282,13 +290,20 @@ test("the Create configurator assembles and shares a released command", async ({
     "The shared configuration targets a different Create release."
   );
   await expect(page.getByLabel("Directory")).toHaveValue("my-project");
+  await expect(
+    page.getByRole("radio", { name: "Shell", exact: true })
+  ).toBeChecked();
   await expect(copyCommand).toBeDisabled();
 
   await page.goBack();
   await expect(page.getByLabel("Directory")).toHaveValue("second-project");
+  await expect(page.getByRole("radio", { name: "PowerShell" })).toBeChecked();
   await expect(copyCommand).toBeEnabled();
   await page.goForward();
   await expect(page.getByLabel("Directory")).toHaveValue("my-project");
+  await expect(
+    page.getByRole("radio", { name: "Shell", exact: true })
+  ).toBeChecked();
   await expect(copyCommand).toBeDisabled();
 
   const dimensions = await page.evaluate(() => ({
@@ -354,6 +369,17 @@ test("the Create configurator provides keyboard-usable fallbacks when clipboard 
     length: selection.length,
     start: 0,
   });
+
+  await page
+    .locator(".shell-selector label")
+    .filter({ hasText: "PowerShell" })
+    .click();
+  await expect(fallback).toBeHidden();
+  await expect(fallbackInput).toHaveValue("");
+
+  await page.locator("[data-copy-configuration]").click();
+  await expect(fallback).toBeVisible();
+  await expect(fallbackInput).toHaveValue(/shell=powershell/u);
   await expectNoAxeViolations(page);
 });
 

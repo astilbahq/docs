@@ -12,6 +12,12 @@ export interface CreateConfigurationRelease {
   readonly recipeVersion: number;
 }
 
+export type CreateCommandShell = "posix" | "powershell";
+
+export interface SharedCreateConfiguration extends CreateConfiguration {
+  readonly shell: CreateCommandShell;
+}
+
 const SAFE_POSIX_TOKEN = /^[A-Za-z0-9_@%+=:,./-]+$/u;
 const CONTROL_OR_FORMATTING_CHARACTER_PATTERN = /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/u;
 const WINDOWS_DEVICE_NAME_PATTERN =
@@ -185,6 +191,7 @@ const CONFIGURATION_KEYS = new Set([
   "installDependencies",
   "recipe",
   "recipeVersion",
+  "shell",
   "v",
 ]);
 
@@ -218,15 +225,27 @@ const readHashBoolean = (
   throw new Error(`The shared configuration has an invalid ${name} value.`);
 };
 
+const readHashShell = (parameters: URLSearchParams): CreateCommandShell => {
+  const shell = readSingleHashValue(parameters, "shell");
+
+  if (shell === "posix" || shell === "powershell") {
+    return shell;
+  }
+
+  throw new Error("The shared configuration has an invalid shell value.");
+};
+
 export const serializeConfigurationHash = (
   configuration: CreateConfiguration,
-  release: CreateConfigurationRelease
+  release: CreateConfigurationRelease,
+  shell: CreateCommandShell
 ): string => {
   const parameters = new URLSearchParams([
     ["v", CONFIGURATION_HASH_VERSION],
     ["generatorVersion", release.generatorVersion],
     ["recipe", configuration.recipe],
     ["recipeVersion", String(release.recipeVersion)],
+    ["shell", shell],
     ["destination", configuration.destination],
     ["description", configuration.description],
     ["githubOwner", configuration.githubOwner],
@@ -241,7 +260,7 @@ export const parseConfigurationHash = (
   hash: string,
   recipeVersions: ReadonlyMap<string, number>,
   generatorVersion: string
-): CreateConfiguration | undefined => {
+): SharedCreateConfiguration | undefined => {
   if (hash.length === 0 || hash === "#") {
     return undefined;
   }
@@ -292,6 +311,7 @@ export const parseConfigurationHash = (
     initializeGit: readHashBoolean(parameters, "initializeGit"),
     installDependencies: readHashBoolean(parameters, "installDependencies"),
     recipe,
+    shell: readHashShell(parameters),
   };
 
   const validationMessage =

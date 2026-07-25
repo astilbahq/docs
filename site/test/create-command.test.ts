@@ -223,31 +223,40 @@ describe("Create command presentation", () => {
       ...configuration,
       description: "文".repeat(280),
     };
-    const hash = serializeConfigurationHash(multibyteConfiguration, release);
+    const hash = serializeConfigurationHash(
+      multibyteConfiguration,
+      release,
+      "posix"
+    );
 
     expect(hash.length).toBeGreaterThan(2048);
     expect(
       parseConfigurationHash(hash, recipeVersions, release.generatorVersion)
-    ).toEqual(multibyteConfiguration);
+    ).toEqual({ ...multibyteConfiguration, shell: "posix" });
   });
 
   it("round-trips an explicitly shared configuration through a URL fragment", () => {
-    const hash = serializeConfigurationHash(configuration, release);
+    const hash = serializeConfigurationHash(
+      configuration,
+      release,
+      "powershell"
+    );
 
     expect(
       parseConfigurationHash(hash, recipeVersions, release.generatorVersion)
-    ).toEqual(configuration);
+    ).toEqual({ ...configuration, shell: "powershell" });
   });
 
   it.each([
-    "#v=2&generatorVersion=0.3.0&recipe=react-vite-spa&recipeVersion=2&destination=x&description=x&githubOwner=x&initializeGit=1&installDependencies=1",
-    "#v=1&generatorVersion=0.3.0&recipe=unknown&recipeVersion=2&destination=x&description=x&githubOwner=x&initializeGit=1&installDependencies=1",
-    "#v=1&generatorVersion=0.3.0&recipe=react-vite-spa&recipe=astro-static-site&recipeVersion=2&destination=x&description=x&githubOwner=x&initializeGit=1&installDependencies=1",
-    "#v=1&generatorVersion=0.3.0&recipe=react-vite-spa&recipeVersion=2&destination=x&description=x&githubOwner=x&initializeGit=maybe&installDependencies=1",
-    "#v=1&generatorVersion=0.3.0&recipe=react-vite-spa&recipeVersion=2&destination=x&description=x&githubOwner=x&initializeGit=1&installDependencies=1&extra=x",
-    "#v=1&generatorVersion=9.9.9&recipe=react-vite-spa&recipeVersion=2&destination=x&description=x&githubOwner=x&initializeGit=1&installDependencies=1",
-    "#v=1&generatorVersion=0.3.0&recipe=react-vite-spa&recipeVersion=3&destination=x&description=x&githubOwner=x&initializeGit=1&installDependencies=1",
-    "#v=1&generatorVersion=0.3.0&recipe=react-vite-spa&recipeVersion=2&destination=..&description=x&githubOwner=x&initializeGit=1&installDependencies=1",
+    "#v=2&generatorVersion=0.3.0&recipe=react-vite-spa&recipeVersion=2&shell=posix&destination=x&description=x&githubOwner=x&initializeGit=1&installDependencies=1",
+    "#v=1&generatorVersion=0.3.0&recipe=unknown&recipeVersion=2&shell=posix&destination=x&description=x&githubOwner=x&initializeGit=1&installDependencies=1",
+    "#v=1&generatorVersion=0.3.0&recipe=react-vite-spa&recipe=astro-static-site&recipeVersion=2&shell=posix&destination=x&description=x&githubOwner=x&initializeGit=1&installDependencies=1",
+    "#v=1&generatorVersion=0.3.0&recipe=react-vite-spa&recipeVersion=2&shell=posix&destination=x&description=x&githubOwner=x&initializeGit=maybe&installDependencies=1",
+    "#v=1&generatorVersion=0.3.0&recipe=react-vite-spa&recipeVersion=2&shell=posix&destination=x&description=x&githubOwner=x&initializeGit=1&installDependencies=1&extra=x",
+    "#v=1&generatorVersion=9.9.9&recipe=react-vite-spa&recipeVersion=2&shell=posix&destination=x&description=x&githubOwner=x&initializeGit=1&installDependencies=1",
+    "#v=1&generatorVersion=0.3.0&recipe=react-vite-spa&recipeVersion=3&shell=posix&destination=x&description=x&githubOwner=x&initializeGit=1&installDependencies=1",
+    "#v=1&generatorVersion=0.3.0&recipe=react-vite-spa&recipeVersion=2&shell=posix&destination=..&description=x&githubOwner=x&initializeGit=1&installDependencies=1",
+    "#v=1&generatorVersion=0.3.0&recipe=react-vite-spa&recipeVersion=2&shell=cmd&destination=x&description=x&githubOwner=x&initializeGit=1&installDependencies=1",
   ])("rejects an invalid shared configuration: %s", (hash) => {
     expect(() =>
       parseConfigurationHash(hash, recipeVersions, release.generatorVersion)

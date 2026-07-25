@@ -7,7 +7,10 @@ import {
   parseConfigurationHash,
   serializeConfigurationHash,
 } from "../create-command";
-import type { CreateConfiguration } from "../create-command";
+import type {
+  CreateCommandShell,
+  CreateConfiguration,
+} from "../create-command";
 
 const requireElement = <ElementType extends Element>(
   root: Document | Element,
@@ -182,6 +185,11 @@ const initializeConfigurator = (root: HTMLElement): void => {
     }
   };
 
+  const resetShareFallback = (): void => {
+    shareFallback.hidden = true;
+    shareFallbackInput.value = "";
+  };
+
   const updateCustomValidity = (): {
     readonly descriptionMessage?: string;
     readonly destinationMessage?: string;
@@ -246,11 +254,21 @@ const initializeConfigurator = (root: HTMLElement): void => {
     };
   };
 
+  const readShell = (): CreateCommandShell => {
+    const shell = shellInputs.find((input) => input.checked)?.value;
+
+    if (shell === "posix" || shell === "powershell") {
+      return shell;
+    }
+
+    throw new Error("Create configurator is missing a supported shell.");
+  };
+
   const render = (): void => {
     const validation = updateCustomValidity();
     const configuration = readConfiguration();
     const inferred = inferName(destination.value);
-    const shell = shellInputs.find((input) => input.checked)?.value ?? "posix";
+    const shell = readShell();
 
     inferredName.textContent =
       inferred.length > 0 ? inferred : "Waiting for a portable directory";
@@ -278,7 +296,7 @@ const initializeConfigurator = (root: HTMLElement): void => {
   ): Promise<void> => {
     try {
       await writeClipboard(value);
-      shareFallback.hidden = true;
+      resetShareFallback();
       setCopyState(button, "copied", successMessage);
     } catch {
       onFailure?.();
@@ -309,7 +327,7 @@ const initializeConfigurator = (root: HTMLElement): void => {
       return;
     }
 
-    shareFallback.hidden = true;
+    resetShareFallback();
     void copyWithState(
       copyCommand,
       command.textContent ?? "",
@@ -337,10 +355,14 @@ const initializeConfigurator = (root: HTMLElement): void => {
       );
     }
 
-    url.hash = serializeConfigurationHash(configuration, {
-      generatorVersion,
-      recipeVersion,
-    });
+    url.hash = serializeConfigurationHash(
+      configuration,
+      {
+        generatorVersion,
+        recipeVersion,
+      },
+      readShell()
+    );
     void copyWithState(
       copyConfiguration,
       url.href,
@@ -376,7 +398,7 @@ const initializeConfigurator = (root: HTMLElement): void => {
     if (isProjectField(event.target)) {
       interactedFields.add(event.target);
     }
-    shareFallback.hidden = true;
+    resetShareFallback();
     resetCopyStates();
     render();
   });
@@ -390,6 +412,7 @@ const initializeConfigurator = (root: HTMLElement): void => {
 
   for (const shellInput of shellInputs) {
     shellInput.addEventListener("input", () => {
+      resetShareFallback();
       resetCopyStates();
       render();
     });
@@ -412,11 +435,13 @@ const initializeConfigurator = (root: HTMLElement): void => {
     }
 
     resetCopyStates();
-    shareFallback.hidden = true;
-    shareFallbackInput.value = "";
+    resetShareFallback();
 
     const resetForm = (): void => {
       form.reset();
+      for (const shellInput of shellInputs) {
+        shellInput.checked = shellInput.defaultChecked;
+      }
       interactedFields = new WeakSet<HTMLInputElement | HTMLTextAreaElement>();
     };
 
@@ -439,11 +464,17 @@ const initializeConfigurator = (root: HTMLElement): void => {
       if (recipe === undefined) {
         throw new Error("The shared configuration uses an unknown recipe.");
       }
+      const shell = shellInputs.find((input) => input.value === shared.shell);
+
+      if (shell === undefined) {
+        throw new Error("The shared configuration uses an unknown shell.");
+      }
 
       interactedFields.add(destination);
       interactedFields.add(description);
       interactedFields.add(githubOwner);
       recipe.checked = true;
+      shell.checked = true;
       destination.value = shared.destination;
       description.value = shared.description;
       githubOwner.value = shared.githubOwner;
