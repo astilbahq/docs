@@ -20,7 +20,7 @@ test("the public home distinguishes the released and preview products", async ({
     })
   ).toBeVisible();
   await expect(page.getByText("create-astilba", { exact: true })).toBeVisible();
-  await expect(page.getByText("0.1.2 is released")).toBeVisible();
+  await expect(page.getByText("0.2.0 is released")).toBeVisible();
   await expect(
     page.getByText("Cache remains a development preview")
   ).toBeVisible();

@@ -140,7 +140,7 @@ describe("documentation sidebar model", () => {
       throw new Error("Expected a product sidebar context.");
     }
     expect(createPage.product.label).toBe("Create");
-    expect(createPage.version?.label).toBe("0.1");
+    expect(createPage.version?.label).toBe("0.2");
     expect(createPage.version?.meta).toBe("Latest");
   });
 

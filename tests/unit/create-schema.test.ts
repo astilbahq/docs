@@ -16,7 +16,7 @@ const createManifest = (recipeId: (typeof recipeIds)[number]) => ({
   features: [],
   generator: {
     name: "create-astilba",
-    version: "0.1.2",
+    version: "0.2.0",
   },
   ownership: {
     managed: [{ path: ".editorconfig", sha256: digest }],

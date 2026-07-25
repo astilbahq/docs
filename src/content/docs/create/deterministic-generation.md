@@ -43,7 +43,7 @@ The command-line destination must be a normalized portable relative path. Create
 - non-ASCII path segments; and
 - characters that are not portable to Windows.
 
-During actual creation, the resolved destination must not already exist. Its parent must exist, and no existing parent segment may be a symbolic link. Dry runs skip these filesystem checks.
+During actual creation, the resolved destination must not already exist. Create makes missing parent directories one segment at a time and rejects symbolic links or non-directory entries in the existing ancestry. Dry runs skip this filesystem preparation and its checks.
 
 These rules are stricter than the host filesystem because a generated repository should remain portable when checked out elsewhere.
 
@@ -70,7 +70,9 @@ Publication creates the destination with an incomplete marker, moves the staged 
 - when rollback succeeds, it removes the marker and tries to remove the now-empty destination;
 - when any rollback also fails, it preserves the incomplete marker so the directory cannot be mistaken for a successful project.
 
-Create never recursively deletes a destination that another process may have changed.
+Create never recursively deletes a destination that another process may have changed. Cleanup failures cannot replace the publication result: an incomplete destination remains reported as incomplete, while a failure to remove an already empty staging directory does not turn a complete project into a failed generation.
+
+Human recovery output names the relevant outcome. If the incomplete marker remains, inspect the destination and either recover or remove it before running Create again.
 
 On Windows, `CLAUDE.md` requires symbolic-link permission. Enable Developer Mode or use an elevated shell. If the link cannot be created, staging fails before publication.
 
@@ -92,6 +94,6 @@ This boundary avoids deleting a valid project because a registry, network, lifec
 
 ## Do not use Create as an updater
 
-Create 0.1.2 only creates a destination that does not exist. It does not regenerate over an existing repository, merge a newer recipe, run `doctor`, or update a default branch.
+Create 0.2.0 only creates a destination that does not exist. It does not regenerate over an existing repository, merge a newer recipe, run `doctor`, or update a default branch.
 
 The [project manifest](/docs/create/project-manifest/) records enough ownership evidence for future explicit migrations, but no migration command is shipped in this release.

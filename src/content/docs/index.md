@@ -12,7 +12,7 @@ Astilba builds portable infrastructure tools and libraries with explicit correct
 
 A deterministic CLI that generates complete TypeScript projects from four maintained recipes.
 
-`create-astilba` 0.1.2 is released on npm. Start with [Create your first project](/docs/create/quickstart/), compare the [recipe catalog](/docs/create/recipes/), or check the exact [release and support](/docs/create/release-and-support/) boundary.
+`create-astilba` 0.2.0 is released on npm. Start with [Create your first project](/docs/create/quickstart/), compare the [recipe catalog](/docs/create/recipes/), or check the exact [release and support](/docs/create/release-and-support/) boundary.
 
 ### [Cache](/docs/cache/)
 
