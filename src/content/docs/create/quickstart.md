@@ -7,9 +7,9 @@ Create a project interactively, run its complete local verification command, the
 
 ## Check the prerequisites
 
-Use Node.js 22.18.0 or later. Generated projects pin pnpm 11.10.0 and require that version or later.
+Use Node.js 22.18.0 or later. Generated projects pin pnpm 11.10.0.
 
-Create initializes Git on a fresh `main` branch by default, so use a Git version that supports `git init --initial-branch` or choose `--no-git`. Dependency installation uses `pnpm` when it is available and falls back to `corepack pnpm` only when the `pnpm` command is missing.
+Create initializes Git on a fresh `main` branch by default, so use a Git version that supports `git init --initial-branch` or choose `--no-git`. Dependency installation uses an installed `pnpm` only when its version is exactly 11.10.0. Otherwise, Create asks Corepack for `pnpm@11.10.0`.
 
 ## Run the questionnaire
 
@@ -64,7 +64,7 @@ Open `.astilba/project.json` before your first commit. It records:
 - individually owned `package.json` fields; and
 - the `CLAUDE.md` symbolic link and its target.
 
-The manifest is evidence for future fail-closed migrations. Create 0.1.0 does not include an updater, and the manifest does not prevent you from changing any generated file.
+The manifest is evidence for future fail-closed migrations. Create 0.1.2 does not include an updater, and the manifest does not prevent you from changing any generated file.
 
 ## Make the first commit
 

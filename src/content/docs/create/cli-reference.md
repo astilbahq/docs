@@ -3,7 +3,7 @@ title: CLI reference
 description: Look up Astilba Create commands, inputs, defaults, validation rules, output, and exit behavior.
 ---
 
-The supported public interface of `create-astilba` 0.1.0 is its command-line tool.
+The supported public interface of `create-astilba` 0.1.2 is its command-line tool.
 
 ## Usage
 

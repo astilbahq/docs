@@ -5,7 +5,7 @@ interface Props {
 
 const { expanded = false } = Astro.props;
 const steps = [
-  { action: "Resolve react-vite-spa v1", number: "01", result: "RECIPE" },
+  { action: "Resolve react-vite-spa v2", number: "01", result: "RECIPE" },
   { action: "Validate the complete plan", number: "02", result: "SAFE" },
   { action: "Write the staging tree", number: "03", result: "STAGE" },
   { action: "Publish the new destination", number: "04", result: "READY" },
@@ -15,7 +15,7 @@ const steps = [
 <figure class:list={["execution-proof", { "execution-proof--expanded": expanded }]}>
   <figcaption>
     <span>Project creation</span>
-    <span class="execution-proof__scope">create-astilba 0.1.0</span>
+    <span class="execution-proof__scope">create-astilba 0.1.2</span>
   </figcaption>
   <ol aria-label="Create project generation sequence" class="execution-proof__steps">
     {steps.map((step) => (

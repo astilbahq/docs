@@ -1,11 +1,11 @@
 ---
 title: Choose a recipe
-description: Compare the four versioned project recipes supported by Astilba Create 0.1.0.
+description: Compare the four versioned project recipes supported by Astilba Create 0.1.2.
 ---
 
 Choose the recipe whose complete runtime and verification contract matches your project. Create does not expose its internal profiles as a mix-and-match feature selector.
 
-All four recipes are version `1` in the project manifest.
+All four recipes are version `2` in the project manifest.
 
 ## Compare the recipes
 
@@ -40,13 +40,14 @@ knip.json
 oxfmt.config.ts
 oxlint.config.ts
 package.json
+pnpm-lock.yaml
 pnpm-workspace.yaml
 renovate.json
 tsconfig.json
 vitest.config.ts
 ```
 
-The dependency, toolchain, action, and container references are exact pins. Renovate holds new releases for at least three days and uses conservative automerge rules. The verification workflow runs with a frozen lockfile on Node.js 22.18.0 and 24.18.0 in Create 0.1.0.
+The dependency, toolchain, action, and container references are exact pins. Renovate holds new releases for at least three days and uses conservative automerge rules. The verification workflow runs with a frozen lockfile on Node.js 22.18.0 and 24.18.0 in Create 0.1.2.
 
 ## TypeScript library
 
@@ -143,6 +144,6 @@ The package is private. Its build generates binding types and runs `wrangler dep
 
 ## Know what is not a recipe option
 
-Create 0.1.0 does not offer switches for Panda CSS, browser testing, monitoring, authentication, databases, framework deployment, or other optional systems. It also does not advertise arbitrary combinations of the internal project profiles.
+Create 0.1.2 does not offer switches for Panda CSS, browser testing, monitoring, authentication, databases, framework deployment, or other optional systems. It also does not advertise arbitrary combinations of the internal project profiles.
 
 Add project-specific capabilities after generation and verify them in your repository. A capability becomes part of Create only when Astilba can maintain its complete development, CI, deployment, and verification contract.

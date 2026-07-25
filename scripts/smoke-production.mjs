@@ -347,7 +347,7 @@ const checkCreateDocs = async () => {
   requireGlobalSecurityHeaders(htmlResponse, "Create HTML page");
   const html = await htmlResponse.text();
 
-  if (!(html.includes("Astilba Create") && html.includes("four recipe v1"))) {
+  if (!(html.includes("Astilba Create") && html.includes("four recipe v2"))) {
     throw new Error(
       "[production-smoke] Create HTML page content is incomplete."
     );

@@ -101,7 +101,7 @@ Choose `--no-install` when your workflow wants to inspect, archive, or enter the
 `@latest` selects the npm release current at execution time. If an automation contract must stay on one generator release, invoke that exact package version:
 
 ```sh
-npm create astilba@0.1.0 -- my-project \
+npm create astilba@0.1.2 -- my-project \
   --recipe typescript-library \
   --description "A useful library." \
   --github-owner example \
