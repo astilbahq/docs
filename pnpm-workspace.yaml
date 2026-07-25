@@ -7,6 +7,8 @@ allowBuilds:
   workerd: true
 
 minimumReleaseAgeExclude:
+  - "@astilba/*"
+  - create-astilba
   - "@playwright/test@1.62.0"
   - playwright-core@1.62.0
   - playwright@1.62.0

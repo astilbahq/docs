@@ -25,6 +25,8 @@
     "@astrojs/check": "0.9.9",
     "@axe-core/playwright": "4.12.1",
     "@playwright/test": "1.62.0",
+    "ajv": "8.20.0",
+    "create-astilba": "0.3.0",
     "cross-env": "10.1.0",
     "typescript": "6.0.3",
     "vitest": "4.1.10",

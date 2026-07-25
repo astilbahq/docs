@@ -35,7 +35,7 @@ describe("documentation catalog", () => {
     const version = getDefaultVersion(create);
     const page = getDefaultPage(create, version);
 
-    expect(version.id).toBe("0.2");
+    expect(version.id).toBe("0.3");
     expect(version.lifecycle).toBe("latest");
     expect(page.key).toBe("overview");
     expect(create.repositoryUrl).toBe("https://github.com/astilbahq/create");

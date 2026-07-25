@@ -27,7 +27,7 @@ Fetch https://astilba.com/docs/agent-setup/prompt.md and follow its instructions
 
 Once connected, ask the client questions such as:
 
-- “Which project recipes does Astilba Create 0.2.0 support?”
+- “Which project recipes does Astilba Create 0.3.0 support?”
 - “Is Astilba Cache ready for production?”
 - “Find the documentation for invalidating related cached values.”
 - “How do the Cloudflare Workers platform and React Router framework support differ?”

@@ -18,7 +18,7 @@ Use this skill when a question concerns the `create-astilba` CLI, a maintained p
 
 ## Keep the release boundary explicit
 
-- Treat `create-astilba` 0.2.0 and its four recipe v2 contracts as released.
+- Treat `create-astilba` 0.3.0 and its four recipe v2 contracts as released.
 - Do not present internal source modules as an exported programmatic API.
 - Do not invent switches, recipes, arbitrary profile combinations, `doctor`, updates, or migrations.
 - Distinguish atomic project generation from dependency installation: an install failure leaves the generated project in place.

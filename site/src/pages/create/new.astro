@@ -1,0 +1,282 @@
+---
+import SiteLayout from "../../layouts/SiteLayout.astro";
+import { loadCreateCatalog } from "../../create-catalog";
+
+const catalog = await loadCreateCatalog();
+---
+
+<SiteLayout
+  current="create"
+  description="Configure a paste-ready Astilba Create command from the released project recipe catalog."
+  title="Configure a project — Astilba Create"
+>
+  <section
+    class="configurator section-shell"
+    data-create-configurator
+    data-generator-version={catalog.generator.version}
+  >
+    <header class="configurator__intro">
+      <p class="eyebrow">Create {catalog.generator.version}</p>
+      <h1>Configure a project</h1>
+      <p>
+        Choose one maintained starting point and add the metadata Create needs.
+        Your paste-ready command stays in sync as you work.
+      </p>
+    </header>
+
+    <div class="configurator__layout">
+      <form class="configurator__form">
+        <fieldset class="configurator__question">
+          <legend>
+            <span>What are you building?</span>
+            <small>Choose one complete, versioned recipe.</small>
+          </legend>
+
+          <div class="recipe-options">
+            {
+              catalog.recipes.map((recipe) => (
+                <label class="recipe-option">
+                  <input
+                    data-recipe-version={recipe.version}
+                    name="recipe"
+                    required
+                    type="radio"
+                    value={recipe.id}
+                  />
+                  <span class="recipe-option__icon" aria-hidden="true">
+                    {recipe.id === "typescript-library" && (
+                      <span class="recipe-option__monogram">TS</span>
+                    )}
+                    {recipe.id === "react-vite-spa" && (
+                      <svg viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="1.7" />
+                        <ellipse cx="12" cy="12" rx="10" ry="4.2" />
+                        <ellipse
+                          cx="12"
+                          cy="12"
+                          rx="10"
+                          ry="4.2"
+                          transform="rotate(60 12 12)"
+                        />
+                        <ellipse
+                          cx="12"
+                          cy="12"
+                          rx="10"
+                          ry="4.2"
+                          transform="rotate(120 12 12)"
+                        />
+                      </svg>
+                    )}
+                    {recipe.id === "astro-static-site" && (
+                      <svg viewBox="0 0 24 24">
+                        <path d="M12 2.5 3.8 21h3.4l1.45-3.55h6.7L16.8 21h3.4L12 2.5Zm0 6.2 2.15 5.8h-4.3L12 8.7Z" />
+                      </svg>
+                    )}
+                    {recipe.id === "cloudflare-worker-service" && (
+                      <svg viewBox="0 0 24 24">
+                        <path d="m8.213.063 8.879 12.136-8.67 11.739h2.476l8.665-11.735-8.89-12.14Zm4.728 0 9.02 11.992-9.018 11.883h2.496L24 12.656v-1.199L15.434.063ZM7.178 2.02.01 11.398l-.01 1.2 7.203 9.644 1.238-1.676-6.396-8.556 6.361-8.313Z" />
+                      </svg>
+                    )}
+                  </span>
+                  <span class="recipe-option__copy">
+                    <strong>{recipe.label}</strong>
+                    <span>{recipe.description}</span>
+                  </span>
+                  <span class="recipe-option__version">
+                    Recipe v{recipe.version}
+                  </span>
+                </label>
+              ))
+            }
+          </div>
+        </fieldset>
+
+        <fieldset class="configurator__question">
+          <legend>
+            <span>Project details</span>
+            <small>These values become repository metadata.</small>
+          </legend>
+
+          <div class="configurator-fields">
+            <label class="configurator-field">
+              <span>Directory</span>
+              <input
+                aria-describedby="destination-help destination-error"
+                maxlength="180"
+                name="destination"
+                required
+                spellcheck="false"
+                type="text"
+                value="my-project"
+              />
+              <small id="destination-help">
+                Create infers the project, package, and repository name as <code
+                  data-inferred-name
+                >my-project</code>.
+              </small>
+              <small
+                aria-live="polite"
+                class="configurator-field__error"
+                data-destination-error
+                hidden
+                id="destination-error"
+              ></small>
+            </label>
+
+            <label class="configurator-field">
+              <span>Description</span>
+              <textarea
+                aria-describedby="description-help description-error"
+                maxlength="280"
+                name="description"
+                placeholder="What will this project do?"
+                required
+                rows="3"></textarea>
+              <small id="description-help">
+                Plain text, 1–280 characters. Line breaks are not supported.
+              </small>
+              <small
+                aria-live="polite"
+                class="configurator-field__error"
+                data-description-error
+                hidden
+                id="description-error"
+              ></small>
+            </label>
+
+            <label class="configurator-field">
+              <span>GitHub owner</span>
+              <input
+                aria-describedby="github-owner-help github-owner-error"
+                maxlength="39"
+                name="githubOwner"
+                pattern="[A-Za-z0-9](?:[A-Za-z0-9\-]{0,37}[A-Za-z0-9])?"
+                placeholder="your-account"
+                required
+                spellcheck="false"
+                type="text"
+              />
+              <small id="github-owner-help">
+                The account that will own the generated repository.
+              </small>
+              <small
+                aria-live="polite"
+                class="configurator-field__error"
+                data-github-owner-error
+                hidden
+                id="github-owner-error"
+              ></small>
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset class="configurator__question">
+          <legend>
+            <span>Project setup</span>
+            <small>Both choices are written explicitly into the command.</small>
+          </legend>
+
+          <div class="setup-options">
+            <label>
+              <span>
+                <strong>Initialize Git</strong>
+                <small>Create a fresh <code>main</code> history.</small>
+              </span>
+              <input checked name="initializeGit" type="checkbox" />
+            </label>
+            <label>
+              <span>
+                <strong>Install dependencies</strong>
+                <small>Install the recipe’s pinned packages before finishing.</small>
+              </span>
+              <input checked name="installDependencies" type="checkbox" />
+            </label>
+          </div>
+        </fieldset>
+      </form>
+
+      <aside class="command-panel" data-command-panel data-ready="false">
+        <div class="command-panel__heading">
+          <div>
+            <p class="eyebrow">Your command</p>
+            <h2>Ready for your terminal</h2>
+          </div>
+          <fieldset class="shell-selector">
+            <legend>Command shell</legend>
+            <label>
+              <input checked name="shell" type="radio" value="posix" />
+              <span>Shell</span>
+            </label>
+            <label>
+              <input name="shell" type="radio" value="powershell" />
+              <span>PowerShell</span>
+            </label>
+          </fieldset>
+        </div>
+
+        <pre class="command-panel__code"><code data-create-command tabindex="-1">Choose a recipe and complete the required fields.</code></pre>
+        <label class="command-panel__share-fallback" data-share-fallback hidden>
+          <span>Configuration link</span>
+          <input
+            data-share-fallback-input
+            readonly
+            spellcheck="false"
+            type="url"
+          />
+        </label>
+
+        <p class="command-panel__hint">
+          Run this from the parent directory where the new project should live.
+          This page prepares a command; it does not create, upload, or inspect a
+          project.
+        </p>
+
+        <div class="command-panel__actions">
+          <button
+            class="configurator-button configurator-button--primary"
+            data-copy-command
+            data-copy-state="idle"
+            disabled
+            type="button"
+          >
+            <span class="configurator-button__labels">
+              <span data-copy-label="idle">Copy command</span>
+              <span data-copy-label="copied">Copied!</span>
+              <span data-copy-label="error">Copy failed</span>
+            </span>
+          </button>
+          <button
+            class="configurator-button"
+            data-copy-configuration
+            data-copy-state="idle"
+            disabled
+            type="button"
+          >
+            <span class="configurator-button__labels">
+              <span data-copy-label="idle">Copy configuration link</span>
+              <span data-copy-label="copied">Copied!</span>
+              <span data-copy-label="error">Copy failed</span>
+            </span>
+          </button>
+        </div>
+
+        <p
+          aria-live="polite"
+          class="command-panel__status"
+          data-configurator-status
+        ></p>
+
+        <noscript>
+          <p class="command-panel__noscript">
+            JavaScript is required to assemble the command here. You can still
+            use the <a href="/docs/create/quickstart/">interactive CLI</a>.
+          </p>
+        </noscript>
+      </aside>
+    </div>
+  </section>
+
+  <script>
+    import "../../scripts/create-configurator";
+  </script>
+</SiteLayout>

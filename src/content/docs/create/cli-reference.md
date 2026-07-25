@@ -3,13 +3,14 @@ title: CLI reference
 description: Look up Astilba Create commands, inputs, defaults, validation rules, output, and exit behavior.
 ---
 
-The supported public interface of `create-astilba` 0.2.0 is its command-line tool.
+The supported public interface of `create-astilba` 0.3.0 is its command-line tool.
 
 ## Usage
 
 ```text
 npm create astilba@latest
 npm create astilba@latest -- <directory> --recipe <recipe> [options]
+npm create astilba@latest -- --catalog [--json]
 ```
 
 Use the first form for the interactive questionnaire. In the second form, `--` tells npm to forward the remaining arguments to Create.
@@ -29,6 +30,7 @@ Recipe identifiers are stable. See [Choose a recipe](/docs/create/recipes/) for 
 
 | Option | Short | Meaning |
 | --- | --- | --- |
+| `--catalog` | — | List the released recipes without starting the questionnaire or writing project files. Add `--json` for versioned machine-readable output. |
 | `--description <text>` | — | Project description. Required outside the interactive questionnaire. |
 | `--github-owner <owner>` | — | GitHub account that will own the repository. Required outside the interactive questionnaire. |
 | `--github-repo <name>` | — | GitHub repository name. Defaults to the normalized destination basename. |
@@ -132,13 +134,34 @@ Error:
 
 `error.code` is one of `CANCELLED`, `GENERATION_FAILED`, `INSTALLATION_FAILED`, `INVALID_INPUT`, `PACKAGE_MANAGER_UNAVAILABLE`, or `UNEXPECTED_ERROR`. `CANCELLED` maps to status `130`; the other codes map to status `1`. When `projectCreated` is `false`, inspect a resolved destination for `.astilba-create-incomplete` before treating it as unchanged.
 
+## Recipe catalog output
+
+Use the catalog when an interface or automation needs to discover released recipe IDs without duplicating a list:
+
+```sh
+npm create astilba@latest -- --catalog --json
+```
+
+The command does not start the questionnaire or write project files. It emits one newline-terminated JSON object with:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `command` | `"catalog"` | Catalog result discriminator |
+| `generator.name` | `"create-astilba"` | Package that owns the catalog |
+| `generator.version` | string | Exact installed Create version |
+| `ok` | `true` | Success discriminator |
+| `recipes` | array | Stable recipe IDs, recipe versions, labels, and descriptions |
+| `schemaVersion` | `1` | Catalog output schema version |
+
+The catalog deliberately omits internal profiles, dependency lists, and implementation details. Its schema version is independent from the generator version and recipe versions. The schema ships in the npm package at `schemas/catalog-v1.json`.
+
 `--help --json` returns `command`, `ok`, `schemaVersion`, and `usage`. `--version --json` returns `command`, `ok`, `schemaVersion`, and `version`.
 
 ## Exit status
 
 | Status | Meaning |
 | --- | --- |
-| `0` | Help, version, plan, creation, and any requested install completed successfully |
+| `0` | Help, version, catalog, plan, creation, and any requested install completed successfully |
 | `1` | Input, planning, generation, Git, dependency-installation, or terminal-reporting error |
 | `130` | The operation was cancelled or interrupted |
 

@@ -10,6 +10,7 @@ const requiredFiles = [
   "_headers",
   "cache/index.html",
   "create/index.html",
+  "create/new/index.html",
   "index.html",
   "llms.txt",
   "mcp/server-card",
@@ -45,6 +46,7 @@ const [
   home,
   cache,
   create,
+  createConfigurator,
   schema,
   headers,
   robots,
@@ -55,6 +57,7 @@ const [
   readArtifact("index.html"),
   readArtifact("cache/index.html"),
   readArtifact("create/index.html"),
+  readArtifact("create/new/index.html"),
   readArtifact("schemas/create/v1.json"),
   readArtifact("_headers"),
   readArtifact("robots.txt"),
@@ -79,7 +82,30 @@ assertIncludes(
 );
 assertIncludes(create, "four recipe v2 contracts", "Create page");
 assertIncludes(create, "github.com/astilbahq/create", "Create page");
+assertIncludes(
+  createConfigurator,
+  'href="https://astilba.com/create/new/" rel="canonical"',
+  "Create configurator"
+);
+assertIncludes(
+  createConfigurator,
+  'data-generator-version="0.3.0"',
+  "Create configurator"
+);
+for (const recipe of [
+  "typescript-library",
+  "react-vite-spa",
+  "astro-static-site",
+  "cloudflare-worker-service",
+]) {
+  assertIncludes(
+    createConfigurator,
+    `value="${recipe}"`,
+    "Create configurator"
+  );
+}
 assertIncludes(headers, "Content-Security-Policy:", "Static headers");
+assertIncludes(headers, "clipboard-write=(self)", "Static permissions policy");
 assertIncludes(
   robots,
   "Sitemap: https://astilba.com/sitemap.xml",
@@ -118,6 +144,7 @@ for (const [label, source] of [
   ["Homepage", home],
   ["Cache page", cache],
   ["Create page", create],
+  ["Create configurator", createConfigurator],
 ]) {
   if (
     getAbsoluteAttributeUrls(source).some(

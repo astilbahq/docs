@@ -86,7 +86,7 @@ export const createProduct = {
   description:
     "A deterministic CLI that creates TypeScript projects with Astilba's maintained engineering foundations.",
   availabilityNote:
-    "Released as create-astilba 0.2.0 on npm with four supported recipe v2 contracts.",
+    "Released as create-astilba 0.3.0 on npm with four supported recipe v2 contracts.",
   homePath: "/create/",
   repositoryUrl: "https://github.com/astilbahq/create",
   status: {
@@ -94,11 +94,11 @@ export const createProduct = {
     variant: "success",
   },
   defaultPage: "overview",
-  defaultVersion: "0.2",
+  defaultVersion: "0.3",
   versions: [
     {
-      id: "0.2",
-      label: "0.2",
+      id: "0.3",
+      label: "0.3",
       lifecycle: "latest",
       basePath: "create",
       sections: createSections,

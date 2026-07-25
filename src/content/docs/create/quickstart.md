@@ -71,7 +71,7 @@ Open `.astilba/project.json` before your first commit. It records:
 - individually owned `package.json` fields; and
 - the `CLAUDE.md` symbolic link and its target.
 
-The manifest is evidence for future fail-closed migrations. Create 0.2.0 does not include an updater, and the manifest does not prevent you from changing any generated file.
+The manifest is evidence for future fail-closed migrations. Create 0.3.0 does not include an updater, and the manifest does not prevent you from changing any generated file.
 
 ## Make the first commit
 
