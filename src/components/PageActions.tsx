@@ -56,6 +56,9 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
   const [isReady, setIsReady] = useState(false);
   const [inputModality, setInputModality] = useState<InputModality>("pointer");
   const [status, setStatus] = useState("");
+  const activeCopyFeedback = useRef<
+    Extract<CopyState, "copied" | "error"> | undefined
+  >(undefined);
   const copyInFlight = useRef(false);
   const copyResetTimer = useRef<number | undefined>(undefined);
   const linkCopyRequestId = useRef(0);
@@ -112,9 +115,11 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
       window.clearTimeout(copyResetTimer.current);
     }
 
+    activeCopyFeedback.current = state;
     setCopyState(state);
     announceStatus(message);
     copyResetTimer.current = window.setTimeout(() => {
+      activeCopyFeedback.current = undefined;
       setCopyState("idle");
       copyResetTimer.current = undefined;
     }, 2000);
@@ -125,12 +130,19 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
       return;
     }
 
+    if (activeCopyFeedback.current === "copied") {
+      showCopyFeedback("copied", "Page Markdown copied.");
+      return;
+    }
+
     copyInFlight.current = true;
 
     if (copyResetTimer.current !== undefined) {
       window.clearTimeout(copyResetTimer.current);
       copyResetTimer.current = undefined;
     }
+
+    activeCopyFeedback.current = undefined;
 
     if (statusResetTimer.current !== undefined) {
       window.clearTimeout(statusResetTimer.current);
