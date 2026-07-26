@@ -1,4 +1,4 @@
-import { Button } from "@base-ui/react/button";
+import { Button } from "@astilba/ui";
 import { Menu } from "@base-ui/react/menu";
 import {
   Check,

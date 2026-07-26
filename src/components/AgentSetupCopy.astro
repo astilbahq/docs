@@ -1,8 +1,8 @@
 ---
+import { Button } from "@astilba/ui";
 import { css } from "../../styled-system/css";
 import { AGENT_SETUP_COPY_TEXT } from "../docs/agent-setup";
 import { PageActionBrandIcon } from "./PageActionBrandIcon";
-import Button from "./ui/Button.astro";
 
 const rootClass = css({
   display: "inline-flex",
@@ -112,7 +112,7 @@ const statusClass = css({
   <Button
     appearance="outline"
     aria-label="Copy agent setup"
-    class={buttonClass}
+    className={buttonClass}
     data-agent-setup-button
     size="large"
     title="Copy agent setup prompt"

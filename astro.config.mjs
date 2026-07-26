@@ -145,6 +145,7 @@ export default defineConfig({
         "@fontsource-variable/geist",
         "@fontsource-variable/jetbrains-mono",
         "./src/styles/panda.css",
+        "@astilba/ui/styles.css",
         "./src/styles/starlight.css",
       ],
       components: {
