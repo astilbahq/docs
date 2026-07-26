@@ -1,9 +1,9 @@
+import { Tooltip, TooltipProvider } from "@astilba/ui";
 import { Link } from "lucide-react";
 import { type MouseEvent, useEffect, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
 import { headingAnchorCopyStyles as styles } from "./HeadingAnchorCopy.styles";
-import { Tooltip, TooltipProvider } from "./ui/Tooltip";
 
 interface MountedHeadingAnchor {
   host: HTMLSpanElement;

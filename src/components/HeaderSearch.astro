@@ -1,8 +1,8 @@
 ---
 import { Icon } from "@astrojs/starlight/components";
+import { Button } from "@astilba/ui";
 import Search from "virtual:starlight/components/Search";
 import { css, cx } from "../../styled-system/css";
-import Button from "./ui/Button.astro";
 
 const rootClass = css({ display: "contents" });
 const mobileTriggerClass = css({
@@ -30,7 +30,7 @@ const { hasSidebar } = Astro.locals.starlightRoute;
     aria-haspopup="dialog"
     aria-keyshortcuts="Control+K"
     aria-label={searchLabel}
-    class={mobileTriggerClass}
+    className={mobileTriggerClass}
     data-mobile-search-trigger
     data-search-trigger-proxy
     disabled

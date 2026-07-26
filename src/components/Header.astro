@@ -2,11 +2,11 @@
 import config from "virtual:starlight/user-config";
 import SiteTitle from "virtual:starlight/components/SiteTitle";
 import { Icon } from "@astrojs/starlight/components";
+import { LinkButton } from "@astilba/ui";
 import { css } from "../../styled-system/css";
 import { findDocsProductContext, getProductHomeHref } from "../docs/catalog";
 import ThemeToggle from "./ThemeToggle.astro";
 import HeaderSearch from "./HeaderSearch.astro";
-import LinkButton from "./ui/LinkButton.astro";
 
 const shouldRenderSearch =
   config.pagefind ||

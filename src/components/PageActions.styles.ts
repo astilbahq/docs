@@ -27,10 +27,12 @@ export const pageActionsStyles = {
     },
   }),
   copyControl: cx(
-    ghostControl(),
     css({
       minInlineSize: "8.5rem",
       justifyContent: "flex-start",
+      _disabled: {
+        opacity: 1,
+      },
       '&:disabled[data-copy-state="copying"]': {
         cursor: "default",
       },
