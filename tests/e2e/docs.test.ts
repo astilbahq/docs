@@ -651,8 +651,9 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     `sha256:${createHash("sha256").update(skillContent).digest("hex")}`
   );
 
-  await page.clock.install();
+  await page.clock.install({ time: new Date("2026-01-01T00:00:00Z") });
   await page.goto("/docs/cache/overview/");
+  await page.clock.pauseAt(new Date("2026-01-01T00:05:00Z"));
   const pageTitleBox = await page
     .getByRole("heading", { level: 1, name: "Overview" })
     .boundingBox();
@@ -761,7 +762,6 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   await page.route("**/cache/overview.md", repeatedCopyRoute);
 
   try {
-    await page.clock.pauseAt(await page.evaluate(() => Date.now()));
     await page.clock.runFor(1200);
     await copyMarkdown.click();
     await copyMarkdown.click();
