@@ -1,3 +1,4 @@
+import { setButtonDisabled } from "../configurator-button-state";
 import {
   createPosixCommand,
   createPowerShellCommand,
@@ -267,8 +268,8 @@ const initializeConfigurator = (root: HTMLElement): void => {
     inferredName.textContent =
       inferred.length > 0 ? inferred : "Waiting for a portable directory";
 
-    copyCommand.disabled = configuration === undefined;
-    copyConfiguration.disabled = configuration === undefined;
+    setButtonDisabled(copyCommand, configuration === undefined);
+    setButtonDisabled(copyConfiguration, configuration === undefined);
     commandPanel.dataset.ready = configuration === undefined ? "false" : "true";
     command.textContent =
       configuration === undefined

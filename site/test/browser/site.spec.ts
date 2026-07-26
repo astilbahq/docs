@@ -23,6 +23,30 @@ const waitForVisualTransitions = async (page: Page): Promise<void> => {
   });
 };
 
+const resolveCssColor = async (
+  page: Page,
+  customProperty: string
+): Promise<string> => {
+  const value = await page.evaluate(
+    (property) =>
+      getComputedStyle(document.documentElement)
+        .getPropertyValue(property)
+        .trim(),
+    customProperty
+  );
+
+  const hex = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(value);
+  if (!hex) {
+    return value;
+  }
+
+  const [, red, green, blue] = hex;
+  return `rgb(${Number.parseInt(red, 16)}, ${Number.parseInt(
+    green,
+    16
+  )}, ${Number.parseInt(blue, 16)})`;
+};
+
 test("the public home distinguishes the released and preview products", async ({
   page,
 }) => {
@@ -44,8 +68,14 @@ test("the public home distinguishes the released and preview products", async ({
     .first();
   await expect(configure).toHaveAttribute("href", "/create/new/");
   await configure.hover();
-  await expect(configure).toHaveCSS("background-color", "rgb(42, 42, 42)");
-  await expect(configure).toHaveCSS("color", "rgb(255, 255, 255)");
+  await expect(configure).toHaveCSS(
+    "background-color",
+    await resolveCssColor(page, "--astilba-colors-surface-action-primary-hover")
+  );
+  await expect(configure).toHaveCSS(
+    "color",
+    await resolveCssColor(page, "--astilba-colors-ink-on-primary")
+  );
   await expect(
     page.getByRole("link", { name: "View docs source" })
   ).toHaveAttribute("href", "https://github.com/astilbahq/docs");
@@ -355,6 +385,12 @@ test("the Create configurator provides keyboard-usable fallbacks when clipboard 
   await page.getByLabel("GitHub owner").fill("astilbahq");
 
   const command = page.locator("[data-create-command]");
+  await expect(page.locator("[data-copy-command]")).not.toHaveAttribute(
+    "data-disabled"
+  );
+  await expect(page.locator("[data-copy-configuration]")).not.toHaveAttribute(
+    "data-disabled"
+  );
   await page.locator("[data-copy-command]").click();
   await expect(command).toBeFocused();
   await expect(page.locator("[data-configurator-status]")).toHaveText(
@@ -400,6 +436,14 @@ test("the Create configurator provides keyboard-usable fallbacks when clipboard 
 
 test("theme state persists across public-site pages", async ({ page }) => {
   await page.goto("/");
+  await expect(page.locator("[data-mobile-menu-open] svg")).toHaveCSS(
+    "width",
+    "18px"
+  );
+  await expect(page.locator("[data-mobile-menu-open] svg")).toHaveCSS(
+    "height",
+    "18px"
+  );
   await page.getByRole("button", { name: "Switch to light theme" }).click();
 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");

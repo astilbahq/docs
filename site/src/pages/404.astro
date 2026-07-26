@@ -1,4 +1,5 @@
 ---
+import { LinkButton } from "@astilba/ui/link-button";
 import SiteLayout from "../layouts/SiteLayout.astro";
 ---
 
@@ -8,8 +9,22 @@ import SiteLayout from "../layouts/SiteLayout.astro";
     <h1>This path has no guarantee.</h1>
     <p>The page may have moved, or it may never have existed.</p>
     <div class="action-row">
-      <a class="action action--primary" href="/">Return home</a>
-      <a class="action action--secondary" href="/docs/">Open documentation</a>
+      <LinkButton
+        appearance="primary"
+        className="action"
+        href="/"
+        size="large"
+      >
+        Return home
+      </LinkButton>
+      <LinkButton
+        appearance="outline"
+        className="action"
+        href="/docs/"
+        size="large"
+      >
+        Open documentation
+      </LinkButton>
     </div>
   </section>
 </SiteLayout>
