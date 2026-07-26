@@ -1401,6 +1401,61 @@ test("uses product-aware document titles", async ({ page }) => {
   await expect(page).toHaveTitle("MCP Server | Astilba");
 });
 
+test("omits terminal window headers without removing useful code titles", async ({
+  page,
+}) => {
+  await page.goto("/docs/create/quickstart/");
+
+  const terminalFrames = page.locator(".expressive-code .frame.is-terminal");
+  const terminalFrameCount = await terminalFrames.count();
+  expect(terminalFrameCount).toBeGreaterThan(0);
+  await expect(
+    terminalFrames.locator(":scope > figcaption.header")
+  ).toHaveCount(0);
+
+  for (let index = 0; index < terminalFrameCount; index += 1) {
+    const frame = terminalFrames.nth(index);
+
+    expect(await frame.locator(".ec-line").count()).toBeGreaterThan(0);
+    await expect(
+      frame.getByRole("button", { name: "Copy code" })
+    ).toBeVisible();
+  }
+
+  const firstTerminalFrame = terminalFrames.first();
+  const firstTerminalLine = firstTerminalFrame.locator(".ec-line");
+  const firstTerminalCopy = firstTerminalFrame.getByRole("button", {
+    name: "Copy code",
+  });
+  const [frameBox, lineBox, copyBox] = await Promise.all([
+    firstTerminalFrame.boundingBox(),
+    firstTerminalLine.boundingBox(),
+    firstTerminalCopy.boundingBox(),
+  ]);
+
+  if (!(frameBox && lineBox && copyBox)) {
+    throw new Error("Terminal code and its copy control must be visible.");
+  }
+
+  expect(
+    Math.abs(lineBox.y + lineBox.height / 2 - (copyBox.y + copyBox.height / 2))
+  ).toBeLessThan(1);
+  const rightInset = frameBox.x + frameBox.width - (copyBox.x + copyBox.width);
+  expect(Math.abs(rightInset - 4)).toBeLessThan(1);
+  await expectNoAxeViolations(page);
+
+  await page.goto("/docs/cache/quickstart/");
+
+  const titledCodeFrame = page
+    .locator(".expressive-code .frame.has-title:not(.is-terminal)")
+    .first();
+  await expect(
+    titledCodeFrame.locator(":scope > figcaption.header")
+  ).toBeVisible();
+  await expect(titledCodeFrame.locator(".title")).toHaveText("cache.ts");
+  await expectNoAxeViolations(page);
+});
+
 test("presents products and copies the agent setup prompt from the homepage", async ({
   page,
 }) => {
