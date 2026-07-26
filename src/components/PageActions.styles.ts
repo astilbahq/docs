@@ -26,18 +26,16 @@ export const pageActionsStyles = {
       pointerEvents: "none",
     },
   }),
-  copyControl: cx(
-    css({
-      minInlineSize: "8.5rem",
-      justifyContent: "flex-start",
-      _disabled: {
-        opacity: 1,
-      },
-      '&:disabled[data-copy-state="copying"]': {
-        cursor: "default",
-      },
-    })
-  ),
+  copyControl: css({
+    minInlineSize: "8.5rem",
+    justifyContent: "flex-start",
+    _disabled: {
+      opacity: 1,
+    },
+    '&:disabled[data-copy-state="copying"]': {
+      cursor: "default",
+    },
+  }),
   menuTrigger: cx(
     ghostControl({ iconOnly: true }),
     css({
