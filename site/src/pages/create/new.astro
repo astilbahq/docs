@@ -1,4 +1,5 @@
 ---
+import { Button } from "@astilba/ui/button";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import { loadCreateCatalog } from "../../create-catalog";
 
@@ -232,32 +233,34 @@ const catalog = await loadCreateCatalog();
         </p>
 
         <div class="command-panel__actions">
-          <button
-            class="configurator-button configurator-button--primary"
+          <Button
+            appearance="primary"
+            className="configurator-button"
             data-copy-command
             data-copy-state="idle"
             disabled
-            type="button"
+            size="large"
           >
             <span class="configurator-button__labels">
               <span data-copy-label="idle">Copy command</span>
               <span data-copy-label="copied">Copied!</span>
               <span data-copy-label="error">Copy failed</span>
             </span>
-          </button>
-          <button
-            class="configurator-button"
+          </Button>
+          <Button
+            appearance="outline"
+            className="configurator-button"
             data-copy-configuration
             data-copy-state="idle"
             disabled
-            type="button"
+            size="large"
           >
             <span class="configurator-button__labels">
               <span data-copy-label="idle">Copy configuration link</span>
               <span data-copy-label="copied">Copied!</span>
               <span data-copy-label="error">Copy failed</span>
             </span>
-          </button>
+          </Button>
         </div>
 
         <p

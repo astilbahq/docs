@@ -35,6 +35,14 @@ const writeClipboard = async (value: string): Promise<void> => {
   await navigator.clipboard.writeText(value);
 };
 
+const setButtonDisabled = (
+  button: HTMLButtonElement,
+  disabled: boolean
+): void => {
+  button.disabled = disabled;
+  button.toggleAttribute("data-disabled", disabled);
+};
+
 const initializeConfigurator = (root: HTMLElement): void => {
   const form = requireElement(root, "form", HTMLFormElement);
   const command = requireElement(root, "[data-create-command]", HTMLElement);
@@ -267,8 +275,8 @@ const initializeConfigurator = (root: HTMLElement): void => {
     inferredName.textContent =
       inferred.length > 0 ? inferred : "Waiting for a portable directory";
 
-    copyCommand.disabled = configuration === undefined;
-    copyConfiguration.disabled = configuration === undefined;
+    setButtonDisabled(copyCommand, configuration === undefined);
+    setButtonDisabled(copyConfiguration, configuration === undefined);
     commandPanel.dataset.ready = configuration === undefined ? "false" : "true";
     command.textContent =
       configuration === undefined

@@ -44,6 +44,7 @@ for (const path of requiredFiles) {
 
 const [
   home,
+  notFound,
   cache,
   create,
   createConfigurator,
@@ -55,6 +56,7 @@ const [
   apiCatalog,
 ] = await Promise.all([
   readArtifact("index.html"),
+  readArtifact("404.html"),
   readArtifact("cache/index.html"),
   readArtifact("create/index.html"),
   readArtifact("create/new/index.html"),
@@ -74,6 +76,16 @@ assertIncludes(
 );
 assertIncludes(home, "create-astilba", "Homepage");
 assertIncludes(home, "Cache remains a development preview", "Homepage");
+assertIncludes(
+  home,
+  "astilba-control--appearance_primary",
+  "Homepage shared controls"
+);
+assertIncludes(
+  notFound,
+  "astilba-control--appearance_primary",
+  "Not-found shared controls"
+);
 assertIncludes(cache, "No npm package", "Cache page");
 assertIncludes(
   create,
@@ -91,6 +103,11 @@ assertIncludes(
   createConfigurator,
   'data-generator-version="0.3.0"',
   "Create configurator"
+);
+assertIncludes(
+  createConfigurator,
+  "astilba-control--appearance_primary",
+  "Create configurator shared controls"
 );
 for (const recipe of [
   "typescript-library",
@@ -142,6 +159,7 @@ if (
 
 for (const [label, source] of [
   ["Homepage", home],
+  ["Not-found page", notFound],
   ["Cache page", cache],
   ["Create page", create],
   ["Create configurator", createConfigurator],
@@ -162,6 +180,12 @@ for (const [label, source] of [
 
   if (/<script(?![^>]*\ssrc=)[^>]*>/u.test(source)) {
     throw new Error(`${label} must keep scripts in external assets.`);
+  }
+
+  if (/<astro-island(?:\s|>)/u.test(source)) {
+    throw new Error(
+      `${label} must keep shared controls server-rendered without client React.`
+    );
   }
 }
 

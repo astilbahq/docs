@@ -1,4 +1,5 @@
 ---
+import { LinkButton } from "@astilba/ui/link-button";
 import BrandMark from "../components/BrandMark.astro";
 import CreateProof from "../components/CreateProof.astro";
 import GuaranteeRows from "../components/GuaranteeRows.astro";
@@ -49,14 +50,25 @@ const cacheGuarantees = [
         incomplete.
       </p>
       <div class="action-row">
-        <a class="action action--primary" href="/create/new/">
+        <LinkButton
+          appearance="primary"
+          className="action"
+          href="/create/new/"
+          size="large"
+        >
           Configure a project
           <span aria-hidden="true">→</span>
-        </a>
-        <a class="action action--secondary" href="https://github.com/astilbahq/docs" rel="noopener">
+        </LinkButton>
+        <LinkButton
+          appearance="outline"
+          className="action"
+          href="https://github.com/astilbahq/docs"
+          rel="noopener"
+          size="large"
+        >
           View docs source
           <span aria-hidden="true">↗</span>
-        </a>
+        </LinkButton>
       </div>
       <p class="release-line">
         <span class="status-dot" aria-hidden="true"></span>

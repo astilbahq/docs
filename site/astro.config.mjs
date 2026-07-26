@@ -1,4 +1,5 @@
 // @ts-check
+import react from "@astrojs/react";
 import { defineConfig } from "astro/config";
 
 const DEPLOYED_SITE_ORIGIN = "https://astilba.com";
@@ -46,7 +47,7 @@ const requireSite = {
 
 export default defineConfig({
   site,
-  integrations: [requireSite],
+  integrations: [requireSite, react()],
   build: {
     inlineStylesheets: "never",
   },

@@ -1,4 +1,5 @@
 ---
+import { IconButton } from "@astilba/ui/icon-button";
 import BrandMark from "./BrandMark.astro";
 
 interface Props {
@@ -34,12 +35,12 @@ const links = [
     </nav>
 
     <div class="header-actions">
-      <button
-        aria-label="Toggle color theme"
-        class="icon-button"
+      <IconButton
+        className="site-header__icon-button"
         data-theme-toggle
+        label="Toggle color theme"
+        size="large"
         title="Toggle color theme"
-        type="button"
       >
         <svg aria-hidden="true" class="theme-icon theme-icon--sun" viewBox="0 0 24 24">
           <circle cx="12" cy="12" r="3.5"></circle>
@@ -48,18 +49,18 @@ const links = [
         <svg aria-hidden="true" class="theme-icon theme-icon--moon" viewBox="0 0 24 24">
           <path d="M20.4 15.2A8.7 8.7 0 0 1 8.8 3.6 8.7 8.7 0 1 0 20.4 15.2Z"></path>
         </svg>
-      </button>
-      <button
+      </IconButton>
+      <IconButton
         aria-haspopup="dialog"
-        aria-label="Open navigation"
-        class="icon-button mobile-menu-button"
+        className="site-header__icon-button mobile-menu-button"
         data-mobile-menu-open
-        type="button"
+        label="Open navigation"
+        size="large"
       >
         <svg aria-hidden="true" viewBox="0 0 24 24">
           <path d="M4 7h16M4 12h16M4 17h16"></path>
         </svg>
-      </button>
+      </IconButton>
     </div>
   </div>
 </header>
@@ -67,16 +68,16 @@ const links = [
 <dialog aria-label="Navigation" class="mobile-menu" data-mobile-menu>
   <div class="mobile-menu__topline">
     <span>Navigate</span>
-    <button
-      aria-label="Close navigation"
-      class="icon-button"
+    <IconButton
+      className="site-header__icon-button"
       data-mobile-menu-close
-      type="button"
+      label="Close navigation"
+      size="large"
     >
       <svg aria-hidden="true" viewBox="0 0 24 24">
         <path d="m6 6 12 12M18 6 6 18"></path>
       </svg>
-    </button>
+    </IconButton>
   </div>
   <nav aria-label="Mobile">
     {links.map((link) => (
