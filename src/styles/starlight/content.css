@@ -226,6 +226,16 @@
     padding-inline-end: 1.125rem !important;
   }
 
+  .expressive-code .frame.is-terminal:not(.has-title) .copy {
+    inset-block-start: 0.25rem;
+    inset-inline-end: 0.25rem;
+  }
+
+  .expressive-code
+    .frame.is-terminal:not(.has-title):has(.ec-line:only-child) {
+    --ec-codePadBlk: 0.625rem;
+  }
+
   .expressive-code
     .frame:not(.has-title, .is-terminal):has(.ec-line:only-child) {
     --ec-codePadBlk: 0.625rem;

@@ -9,6 +9,7 @@ import starlightLinksValidator from "starlight-links-validator";
 import starlightLlmsTxt from "starlight-llms-txt";
 
 import { docsProducts, docsSidebar } from "./src/docs/catalog.ts";
+import { removeTerminalWindowHeaders } from "./src/docs/expressive-code.ts";
 import { siteDocsPages } from "./src/docs/site-pages.ts";
 import {
   addDocsSitemapLastModified,
@@ -148,6 +149,9 @@ export default defineConfig({
         "@astilba/ui/styles.css",
         "./src/styles/starlight.css",
       ],
+      expressiveCode: {
+        plugins: [removeTerminalWindowHeaders],
+      },
       components: {
         Banner: "./src/components/VersionBanner.astro",
         Header: "./src/components/Header.astro",
