@@ -15,11 +15,11 @@ importers:
   .:
     dependencies:
       '@astilba/tokens':
-        specifier: 0.1.0
-        version: 0.1.0
+        specifier: 0.1.1
+        version: 0.1.1
       '@astilba/ui':
-        specifier: 0.1.0
-        version: 0.1.0(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.1.1
+        version: 0.1.1(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@astrojs/react':
         specifier: 6.0.1
         version: 6.0.1(@types/node@24.13.3)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(yaml@2.9.0)
@@ -172,11 +172,11 @@ importers:
 
 packages:
 
-  '@astilba/tokens@0.1.0':
-    resolution: {integrity: sha512-5ji5Pcpcmtg5hO5nMErHB6VN0wYkM1n/wl6a2PTFeUzBekYXVmnMmM34shQ8hLd55LHqH8AgTVzFVrZNJBZjfw==}
+  '@astilba/tokens@0.1.1':
+    resolution: {integrity: sha512-2yc20YxH0a4wd4Z3hQFIbckdrU/XakdgMp05wCbvwfRqSdoe8BIHBNB1VHncS31kGhrCDp9AwyXfsWIcbHTEnw==}
 
-  '@astilba/ui@0.1.0':
-    resolution: {integrity: sha512-6XrbluOEhAeiP3leBslkUzbxWboZc5xRVMuIx6vqJWA/EzMpQs0vbL0pcR9sUVDykJRESo7nyjqiknNqaQAgoA==}
+  '@astilba/ui@0.1.1':
+    resolution: {integrity: sha512-UfvRMrW/NW/WVHv+HD6YQEUYRiesedX8ReuzBj+CsZUeeOVqCfuiRrKIAEhpGd1PCXsX2Xo++sA31tUlhd1ihQ==}
     peerDependencies:
       react: '>=19.2.0 <20'
       react-dom: '>=19.2.0 <20'
@@ -4833,11 +4833,11 @@ packages:
 
 snapshots:
 
-  '@astilba/tokens@0.1.0': {}
+  '@astilba/tokens@0.1.1': {}
 
-  '@astilba/ui@0.1.0(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@astilba/ui@0.1.1(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
-      '@astilba/tokens': 0.1.0
+      '@astilba/tokens': 0.1.1
       '@base-ui/react': 1.6.0(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
