@@ -1,4 +1,4 @@
-import { Tooltip, TooltipProvider } from "@astilba/ui";
+import { Tooltip, TooltipProvider } from "@astilba/ui/tooltip";
 import { Link } from "lucide-react";
 import { type MouseEvent, useEffect, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";

@@ -1,4 +1,4 @@
-import { Button } from "@astilba/ui";
+import { Button } from "@astilba/ui/button";
 import { Menu } from "@base-ui/react/menu";
 import {
   Check,
