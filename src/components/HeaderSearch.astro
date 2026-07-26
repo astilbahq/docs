@@ -115,7 +115,9 @@ const { hasSidebar } = Astro.locals.starlightRoute;
       const keyShortcuts = nativeTrigger.getAttribute("aria-keyshortcuts");
 
       for (const trigger of this.proxyTriggers) {
-        trigger.disabled = nativeTrigger.disabled;
+        const isDisabled = nativeTrigger.disabled;
+        trigger.disabled = isDisabled;
+        trigger.toggleAttribute("data-disabled", isDisabled);
 
         if (keyShortcuts) {
           trigger.setAttribute("aria-keyshortcuts", keyShortcuts);

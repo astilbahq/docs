@@ -1917,6 +1917,20 @@ test("keeps native header search available without a sidebar", async ({
   await expect(page.getByRole("dialog", { name: "Search" })).toBeVisible();
 });
 
+test("enables the shared mobile header search proxy", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/docs/cache/quickstart/");
+
+  const searchTrigger = page.locator("[data-mobile-search-trigger]");
+  await expect(searchTrigger).toBeEnabled();
+  await expect(searchTrigger).not.toHaveAttribute("data-disabled");
+  await expect(searchTrigger).toHaveCSS("opacity", "1");
+  await searchTrigger.click();
+  await expect(page.getByRole("dialog", { name: "Search" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(searchTrigger).toBeFocused();
+});
+
 test("switches themes and opens mobile navigation", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/docs/cache/quickstart/");
