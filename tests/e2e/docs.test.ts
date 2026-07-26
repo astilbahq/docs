@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, type Route, test } from "@playwright/test";
 
 import { AGENT_SETUP_COPY_TEXT } from "../../src/docs/agent-setup";
 import { EXPECTED_CORPUS_PAGES } from "../../src/docs/mcp-corpus";
@@ -651,6 +651,7 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
     `sha256:${createHash("sha256").update(skillContent).digest("hex")}`
   );
 
+  await page.clock.install();
   await page.goto("/docs/cache/overview/");
   const pageTitleBox = await page
     .getByRole("heading", { level: 1, name: "Overview" })
@@ -751,9 +752,30 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   expect(await page.evaluate(() => navigator.clipboard.readText())).toContain(
     "# Overview"
   );
-  await expect(copyMarkdown).toHaveAttribute("data-copy-state", "idle", {
-    timeout: 3000,
-  });
+
+  let repeatedCopyRequestCount = 0;
+  const repeatedCopyRoute = async (route: Route): Promise<void> => {
+    repeatedCopyRequestCount += 1;
+    await route.abort("failed");
+  };
+  await page.route("**/cache/overview.md", repeatedCopyRoute);
+
+  try {
+    await page.clock.pauseAt(await page.evaluate(() => Date.now()));
+    await page.clock.runFor(1200);
+    await copyMarkdown.click();
+    await copyMarkdown.click();
+    await copyMarkdown.click();
+    await expect(copyMarkdown).toHaveAttribute("data-copy-state", "copied");
+    await page.clock.runFor(1999);
+    await expect(copyMarkdown).toHaveAttribute("data-copy-state", "copied");
+    await page.clock.runFor(1);
+    await expect(copyMarkdown).toHaveAttribute("data-copy-state", "idle");
+    expect(repeatedCopyRequestCount).toBe(0);
+  } finally {
+    await page.unroute("**/cache/overview.md", repeatedCopyRoute);
+    await page.clock.resume();
+  }
 
   await morePageActions.focus();
   await morePageActions.press("Enter");
