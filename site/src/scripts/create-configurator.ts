@@ -1,3 +1,4 @@
+import { setButtonDisabled } from "../configurator-button-state";
 import {
   createPosixCommand,
   createPowerShellCommand,
@@ -33,14 +34,6 @@ const writeClipboard = async (value: string): Promise<void> => {
   }
 
   await navigator.clipboard.writeText(value);
-};
-
-const setButtonDisabled = (
-  button: HTMLButtonElement,
-  disabled: boolean
-): void => {
-  button.disabled = disabled;
-  button.toggleAttribute("data-disabled", disabled);
 };
 
 const initializeConfigurator = (root: HTMLElement): void => {
