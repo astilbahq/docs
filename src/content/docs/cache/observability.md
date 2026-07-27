@@ -103,7 +103,7 @@ For a hosted sink, set <code>hosted: true</code> and provide a project <code>sal
 | <code>l2_write_error</code> | Another retryable L2 write failure was suppressed. |
 | <code>singleflight_option_mismatch</code> | Production mode ran incompatible same-key work separately. |
 | <code>store_read_suppressed</code> | A classified <code>throttled</code> or <code>unavailable</code> Store read failed. The serving path treated that tier as a miss; the event includes the structural code and canonical key. |
-| <code>neg_suppressed</code> | An opted-in 404 was suppressed in favor of a grace-eligible stale value, or the L2 negative-write guard refused it because L2 held a readable value that was still servable or whose invalidation verdict could not be established. |
+| <code>neg_suppressed</code> | An opted-in 404 was suppressed in favor of a grace-eligible stale value, or the L2 negative-write guard refused it because L2 held a decodable value whose invalidation verdict was fresh or stale, or could not be established. |
 | <code>private_evicted</code> | A configured <code>memory()</code> sink observed a principal-scoped entry evicted by an LRU bound. |
 | <code>poll_tick_failed</code> | Request-driven recovery work rejected in the Workers carrier or React Router lifecycle integration. |
 | <code>l3_ineligible</code> | React Router demoted a managed response for <code>budget</code>, <code>late_tag</code>, <code>scope</code>, or <code>scope_unreadable</code>. |
