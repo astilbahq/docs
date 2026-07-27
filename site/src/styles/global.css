@@ -209,10 +209,6 @@ code {
   gap: 0.25rem;
 }
 
-.site-header__icon-button {
-  padding-inline: 0;
-}
-
 .site-header__icon-button svg {
   inline-size: 1.125rem;
   block-size: 1.125rem;
