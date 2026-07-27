@@ -53,6 +53,7 @@ The Create repository verifies more than its own unit tests:
 - `pnpm verify` runs Ultracite, TypeScript, Vitest, Knip, and the package build;
 - `pnpm test:consumers` generates, installs, and runs `pnpm verify` in every recipe as an independent project;
 - `pnpm test:package` packs the actual npm tarball, verifies its contents and executable, installs it in a clean temporary consumer, generates all four recipes with JSON output, checks each manifest's schema URL and recipe identity, and verifies each project;
+- the on-demand published-package acceptance workflow installs an exact npm version on Linux, macOS, and Windows, follows the public CLI path, checks its catalog and side-effect-free dry run, verifies the generated manifest and agent-instruction link, and runs the generated project's own verification;
 - CI repeats recipe consumers on the supported Node.js lanes;
 - a Windows packed-CLI smoke test exercises symbolic-link creation;
 - Actionlint and Zizmor audit the emitted GitHub workflows; and
@@ -65,6 +66,8 @@ The packed npm artifact contains the license, README, package metadata, compiled
 The [`v0.3.0` GitHub Release](https://github.com/astilbahq/create/releases/tag/v0.3.0) ran the checked-in release workflow. It verified that the release tag pointed to `main` and matched the package version, rebuilt and checked the package, and published through a protected GitHub environment with npm trusted publishing.
 
 The [`create-astilba@0.3.0` npm record](https://www.npmjs.com/package/create-astilba/v/0.3.0) includes a provenance attestation that identifies the public source repository and GitHub Actions release workflow.
+
+After publication, the [`create-astilba@0.3.0` acceptance run](https://github.com/astilbahq/create/actions/runs/30172510973) passed its Linux Astro, macOS TypeScript library, and Windows Cloudflare Workers journeys against the exact public package. These representative cross-platform journeys complement the complete recipe matrix in the ordinary source and packed-package tests; they do not claim every recipe-and-platform combination.
 
 ## Responsibility after generation
 
