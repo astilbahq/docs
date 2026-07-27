@@ -88,7 +88,7 @@ The raw constructor requires <code>namespace</code>, <code>clock</code>, and <co
 | <code>tags</code> | Optional dependency tags. Use branded values created by the tag helpers. |
 | <code>ttl</code> | Intended freshness duration. It participates in singleflight compatibility but elapsed time is not enforced. |
 | <code>grace</code> | Opts a stale candidate into classified error fallback. The declared duration is not enforced. |
-| <code>notFoundTtl</code> | Its presence allows an <code>HttpError</code> 404 to become a negative L2 entry. A negative fill and a later read that reaches the invalidation-fresh negative surface <code>undefined</code>; the duration is not enforced. |
+| <code>notFoundTtl</code> | Its presence allows an <code>HttpError</code> 404 to attempt a negative L2 entry. A negative fill and a later read that reaches an invalidation-fresh negative surface <code>undefined</code>; the duration is not enforced. A current servable value in that L2 can refuse the negative write. |
 | <code>scope</code> | <code>"public"</code> or <code>{ tenant }</code>. When omitted, visible identity derives a principal-local scope; contextless work resolves public. |
 | <code>consistency</code> | <code>"eventual"</code> or <code>"strong"</code>. Strong live-checks a stored entry and pre-checks a miss before running its factory when coordinated invalidation is active. |
 | <code>lock</code> | Requests a configured cross-instance Lock. Without a driver, <code>true</code> currently continues unlocked. |
@@ -99,7 +99,17 @@ The exported option types are <code>GetOptions</code>, <code>GetOrSetOptions</co
 
 Compatible calls share one foreground factory execution only when key, tags, TTL, grace, negative-cache TTL, resolved scope, codec identity, consistency, and API form agree. A successful fill or an already-revalidated stale serve is shared with its evidence. If the factory-running call had no stale candidate and shares only a classified transient failure, each waiting caller makes its own stale-on-error decision using the candidate it read before joining. The classifier is not invoked when <code>grace</code> is absent. If no caller has a candidate, both API forms propagate the error. If serve-time revalidation rejects a waiting caller's candidate after a hard invalidation, the plain form propagates the classified error while the entry form returns its documented miss result.
 
-When serve-time validation completes, an opted-in shared 404 has three served dispositions. If the factory-running caller declared <code>grace</code> and holds a still-servable stale value, it suppresses the negative write and every compatible joiner inherits that value and its evidence. If that grace-eligible candidate revalidates as dead or unknown, the leader makes the negative L2 write attempt and every compatible joiner inherits the negative result. If the leader has no grace-eligible candidate, it makes at most one negative L2 write attempt inside the singleflight window and shares the not-found fact; each waiter then decides its own disposition from its earlier read, so a waiter with a grace-eligible, still-servable stale value returns it while a waiter without one returns <code>undefined</code>. Without <code>grace</code>, every compatible caller takes the negative disposition even if it observed a stale value. Validation may instead throw <code>RegistryUnavailableError</code> under the configured unavailable posture. A suppressed retryable write failure reports a non-durable negative fill. The negative is not hydrated into L1 and triggers a best-effort deletion of any older L1 copy.
+When serve-time validation completes, an opted-in shared 404 has three served dispositions:
+
+- A factory-running caller with <code>grace</code> and a still-servable stale value suppresses the negative write. Every compatible joiner inherits that value and its evidence.
+- If that grace-eligible candidate revalidates as dead or unknown, the leader attempts one negative L2 write and every compatible joiner inherits the negative result.
+- If the leader has no grace-eligible candidate, it attempts the negative once inside the singleflight window and shares the not-found fact. Each waiter then uses its own earlier read: one with a grace-eligible, still-servable stale value returns it, while one without a servable stale candidate returns <code>undefined</code>.
+
+Without <code>grace</code>, every compatible caller takes the negative disposition even if it observed a stale value. Validation may instead throw <code>RegistryUnavailableError</code> under the configured unavailable posture.
+
+Before persistence, every negative attempt passes through the L2 negative-write guard. A decodable existing value whose invalidation verdict is fresh or stale—or cannot be established—refuses the write. The not-found disposition still surfaces <code>undefined</code> from origin with <code>durable: false</code>, while the existing L2 value and L1 state remain unchanged. Codec-incompatible, undecodable, or dead L2 bytes do not trigger this guard; normal newer-envelope arbitration still applies afterward.
+
+A negative result that reaches the serve path skips L1 hydration and triggers best-effort deletion of any older L1 copy unless the guard refused the write. This cleanup still runs after a classified retryable write failure. Both a stale-candidate suppression and a guard refusal emit <code>neg_suppressed</code>.
 
 ### Factory context
 
@@ -132,7 +142,7 @@ Related exports are <code>FactoryCtx</code>, <code>EntryFactoryCtx</code>, <code
 | <code>age</code> | Whole milliseconds since the served envelope's <code>bornMs</code> fill-start timestamp, measured with the injected Clock and clamped at zero. A miss or skip reports zero. This is observability, not TTL enforcement. |
 | <code>tier</code> | <code>l1</code>, <code>l2</code>, <code>origin</code>, or <code>miss</code>. The exported <code>Tier</code> union also declares <code>l1.5</code>, which is not emitted. |
 | <code>servedOnError</code> | Present when a classified transient failure reused a revalidated stale candidate. |
-| <code>durable</code> | Optional serve evidence. Every newly filled origin result reports whether L2 accepted the value or a newer durable entry won; an L2 hit reports <code>true</code>; a principal-scoped L1 hit reports <code>false</code>. A public or tenant L1 hit omits the field because that serve does not consult L2. |
+| <code>durable</code> | Optional serve evidence. Every newly filled origin result reports whether L2 accepted what that turn produced or a newer durable entry won. A refused negative and a suppressed Store write report <code>false</code>; an L2 hit reports <code>true</code>; a principal-scoped L1 hit reports <code>false</code>. A public or tenant L1 hit omits the field because that serve does not consult L2. |
 
 ## Invalidate values
 

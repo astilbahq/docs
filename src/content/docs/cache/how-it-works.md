@@ -24,7 +24,19 @@ The separation is deliberate. A fast storage hit is useful only if the reader ca
 
 Compatible foreground fills share one in-isolate promise. A successful shared fill or revalidated stale serve carries the served value and its evidence to callers waiting for that work. If the factory-running call had no stale candidate and shares only a classified transient failure, each waiting caller makes its own stale-on-error decision using the candidate from its earlier read and revalidates that candidate before serving it.
 
-When serve-time validation completes, an opted-in 404 has three singleflight dispositions. If the factory-running caller declared <code>grace</code> and holds a still-servable stale value, it suppresses the negative write and every compatible joiner inherits that value and its evidence. If that grace-eligible candidate revalidates as dead or unknown, the leader writes and serves the negative as the shared result. If the leader has no grace-eligible candidate, it makes one negative L2 write attempt inside the singleflight window and shares the not-found fact; each waiter then uses its own earlier read, so one with a grace-eligible, still-servable stale value can return its own copy while a waiter without one receives <code>undefined</code>. Without <code>grace</code>, all compatible callers take the negative disposition even if they observed stale values. Validation may instead throw under the configured Registry-unavailable posture. A suppressed retryable write failure leaves the negative-fill outcome non-durable, while a waiter serving its own candidate retains that candidate's evidence. The negative is not hydrated into L1; Cache best-effort removes any older L1 copy. Cross-isolate exclusion is separate and opt-in through a <code>Lock</code> driver.
+When serve-time validation completes, an opted-in 404 has three singleflight dispositions:
+
+- A factory-running caller with <code>grace</code> and a still-servable stale value suppresses the negative write. Every compatible joiner inherits that value and its evidence.
+- If that candidate revalidates as dead or unknown, the leader attempts the negative as the shared result.
+- If the leader has no grace-eligible candidate, it attempts one negative L2 write and shares the not-found fact. A waiter with its own grace-eligible, still-servable stale value can return it; one without a servable stale candidate receives <code>undefined</code>.
+
+Without <code>grace</code>, all compatible callers take the negative disposition even if they observed stale values. Validation may instead throw under the configured Registry-unavailable posture.
+
+Before persistence, the L2 negative-write guard reads the existing entry in the same Store with the serving path's codec and invalidation rules. A readable value that is fresh or stale—or whose invalidation verdict cannot be established—refuses the negative. Callers taking the not-found disposition still receive <code>undefined</code>, but the attempted negative is non-durable and the Store remains unchanged.
+
+A negative result that reaches the serve path skips L1 hydration and triggers best-effort removal of any older L1 copy unless the guard refused the write. This cleanup still runs after a classified retryable write failure. A guard refusal leaves L1 alone, while a waiter serving its own candidate retains that candidate's evidence.
+
+Cross-isolate exclusion is separate and opt-in through a <code>Lock</code> driver.
 
 ## How invalidation travels
 
