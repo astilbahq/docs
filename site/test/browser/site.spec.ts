@@ -436,14 +436,14 @@ test("the Create configurator provides keyboard-usable fallbacks when clipboard 
 
 test("theme state persists across public-site pages", async ({ page }) => {
   await page.goto("/");
-  await expect(page.locator("[data-mobile-menu-open] svg")).toHaveCSS(
-    "width",
-    "18px"
-  );
-  await expect(page.locator("[data-mobile-menu-open] svg")).toHaveCSS(
-    "height",
-    "18px"
-  );
+  const mobileMenu = page.locator("[data-mobile-menu-open]");
+
+  await expect(mobileMenu).toHaveCSS("inline-size", "40px");
+  await expect(mobileMenu).toHaveCSS("block-size", "40px");
+  await expect(mobileMenu).toHaveCSS("padding-inline-start", "0px");
+  await expect(mobileMenu).toHaveCSS("padding-inline-end", "0px");
+  await expect(mobileMenu.locator("svg")).toHaveCSS("width", "18px");
+  await expect(mobileMenu.locator("svg")).toHaveCSS("height", "18px");
   await page.getByRole("button", { name: "Switch to light theme" }).click();
 
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
