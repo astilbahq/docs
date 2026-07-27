@@ -1,5 +1,10 @@
 import { setButtonDisabled } from "../configurator-button-state";
 import {
+  resolveDescribedBy,
+  withCurrentConfigurationHashNavigation,
+} from "../configurator-field-state";
+import type { ConfigurationHashNavigation } from "../configurator-field-state";
+import {
   createPosixCommand,
   createPowerShellCommand,
   getDescriptionValidationMessage,
@@ -204,16 +209,14 @@ const initializeConfigurator = (root: HTMLElement): void => {
       field.setCustomValidity(message ?? "");
       const shouldPresent =
         message !== undefined && interactedFields.has(field);
-      const describedBy = new Set(
-        (field.getAttribute("aria-describedby") ?? "")
-          .split(/\s+/u)
-          .filter(Boolean)
+      const describedBy = resolveDescribedBy(
+        field.getAttribute("aria-describedby"),
+        error.id,
+        shouldPresent
       );
-      describedBy.delete(error.id);
 
       if (shouldPresent) {
         field.setAttribute("aria-invalid", "true");
-        describedBy.add(error.id);
         error.textContent = message;
         error.hidden = false;
       } else {
@@ -222,10 +225,10 @@ const initializeConfigurator = (root: HTMLElement): void => {
         error.hidden = true;
       }
 
-      if (describedBy.size === 0) {
+      if (describedBy === undefined) {
         field.removeAttribute("aria-describedby");
       } else {
-        field.setAttribute("aria-describedby", [...describedBy].join(" "));
+        field.setAttribute("aria-describedby", describedBy);
       }
     };
 
@@ -428,16 +431,10 @@ const initializeConfigurator = (root: HTMLElement): void => {
 
   let lastObservedHash = window.location.hash;
 
-  const hydrateSharedConfiguration = (event?: HashChangeEvent): void => {
-    const currentHash =
-      event === undefined ? window.location.hash : new URL(event.newURL).hash;
-    const previousHash =
-      event === undefined ? lastObservedHash : new URL(event.oldURL).hash;
-
-    if (event !== undefined && currentHash !== window.location.hash) {
-      return;
-    }
-
+  const applySharedConfiguration = ({
+    currentHash,
+    previousHash,
+  }: ConfigurationHashNavigation): void => {
     lastObservedHash = currentHash;
 
     if (
@@ -511,6 +508,15 @@ const initializeConfigurator = (root: HTMLElement): void => {
           ? error.message
           : "The shared configuration could not be loaded.";
     }
+  };
+
+  const hydrateSharedConfiguration = (event?: HashChangeEvent): void => {
+    withCurrentConfigurationHashNavigation(
+      window.location.hash,
+      lastObservedHash,
+      event,
+      applySharedConfiguration
+    );
   };
 
   render();
