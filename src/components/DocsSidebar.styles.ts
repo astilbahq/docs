@@ -231,73 +231,13 @@ export const docsSidebarStyles = {
     flex: "1 1 auto",
     minBlockSize: 0,
     overflow: "hidden",
-    "&:has(> [data-docs-sidebar-scroll]:focus-visible)": {
-      outlineColor: "signal",
-      outlineOffset: "-0.125rem",
-      outlineStyle: "solid",
-      outlineWidth: "0.125rem",
-    },
   }),
   navigationViewport: css({
-    blockSize: "100%",
-    inlineSize: "100%",
-    maskImage:
-      "linear-gradient(to bottom, transparent 0, black min(1.5rem, var(--scroll-area-overflow-y-start, 0px)), black calc(100% - min(1.5rem, var(--scroll-area-overflow-y-end, 1.5rem))), transparent 100%)",
-    maskRepeat: "no-repeat",
     overscrollBehaviorBlock: "contain",
-    scrollPaddingBlock: "1.5rem",
-    _focusVisible: {
-      outlineStyle: "none",
-    },
-    "@media (forced-colors: active)": {
-      maskImage: "none",
-    },
   }),
   navigationContent: css({
     minBlockSize: "100%",
     inlineSize: "100%",
-  }),
-  navigationScrollbar: css({
-    inlineSize: "0.5rem",
-    paddingBlock: "0.25rem",
-    paddingInline: "0.1875rem",
-    opacity: 0,
-    pointerEvents: "none",
-    transitionProperty: "opacity",
-    transitionDuration: "fast",
-    transitionTimingFunction: "outExpo",
-    "&[data-hovering], &[data-scrolling], [data-docs-sidebar-scroll-root]:focus-within > &":
-      {
-        opacity: 1,
-        pointerEvents: "auto",
-      },
-    _reducedMotion: {
-      transitionDuration: "instant",
-    },
-    "@media (forced-colors: active)": {
-      opacity: 1,
-      pointerEvents: "auto",
-    },
-  }),
-  navigationThumb: css({
-    inlineSize: "100%",
-    minBlockSize: "1.5rem",
-    borderRadius: "999px",
-    background: "currentColor",
-    color: "ink.faint",
-    transitionProperty: "color",
-    transitionDuration: "fast",
-    transitionTimingFunction: "outExpo",
-    "[data-hovering] > &, [data-scrolling] > &": {
-      color: "ink.muted",
-    },
-    _reducedMotion: {
-      transitionDuration: "instant",
-    },
-    "@media (forced-colors: active)": {
-      background: "CanvasText",
-      forcedColorAdjust: "none",
-    },
   }),
   tree: css({
     margin: 0,
