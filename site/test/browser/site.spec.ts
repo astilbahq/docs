@@ -47,6 +47,25 @@ const resolveCssColor = async (
   )}, ${Number.parseInt(blue, 16)})`;
 };
 
+test("right-clicking the Astilba brand reveals the interface showcase", async ({
+  page,
+}) => {
+  await page.route("https://ui.astilba.com/", async (route) => {
+    await route.fulfill({
+      body: "<title>Astilba Interface</title>",
+      contentType: "text/html",
+      status: 200,
+    });
+  });
+  await page.goto("/");
+
+  const brand = page.getByRole("link", { name: "Astilba home" });
+  await expect(brand).toHaveAttribute("href", "/");
+  await brand.click({ button: "right" });
+
+  await expect(page).toHaveURL("https://ui.astilba.com/");
+});
+
 test("the public home distinguishes the released and preview products", async ({
   page,
 }) => {

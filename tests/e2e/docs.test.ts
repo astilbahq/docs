@@ -66,6 +66,25 @@ const expectNoAxeViolations = async (page: Page): Promise<void> => {
   ).toEqual([]);
 };
 
+test("right-clicking the Astilba title reveals the interface showcase", async ({
+  page,
+}) => {
+  await page.route("https://ui.astilba.com/", async (route) => {
+    await route.fulfill({
+      body: "<title>Astilba Interface</title>",
+      contentType: "text/html",
+      status: 200,
+    });
+  });
+  await page.goto(withDocsBase("/"));
+
+  const title = page.locator("header a.site-title");
+  await expect(title).toHaveAttribute("href", withDocsBase("/"));
+  await title.click({ button: "right" });
+
+  await expect(page).toHaveURL("https://ui.astilba.com/");
+});
+
 test("serves the public documentation corpus over MCP", async ({ baseURL }) => {
   if (!baseURL) {
     throw new Error("The MCP test requires Playwright's local Worker URL.");
