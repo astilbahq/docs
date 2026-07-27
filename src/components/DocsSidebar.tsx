@@ -1,5 +1,5 @@
+import { Menu } from "@astilba/ui/menu";
 import { Collapsible } from "@base-ui/react/collapsible";
-import { Menu } from "@base-ui/react/menu";
 import { ScrollArea } from "@base-ui/react/scroll-area";
 import {
   useCallback,
@@ -90,9 +90,6 @@ const ContextRowContent = ({ row }: { row: DocsContextRow }) => (
 
 const DocsContextMenu = ({ row }: { row: DocsContextRow }) => {
   const options = row.options ?? [];
-  const [inputModality, setInputModality] = useState<"keyboard" | "pointer">(
-    "pointer"
-  );
 
   return (
     <Menu.Root modal={false}>
@@ -100,8 +97,6 @@ const DocsContextMenu = ({ row }: { row: DocsContextRow }) => {
         aria-label={row.ariaLabel}
         className={cx(styles.contextControl, styles.contextTrigger)}
         data-has-context-meta={row.meta ? "" : undefined}
-        onKeyDown={() => setInputModality("keyboard")}
-        onPointerDown={() => setInputModality("pointer")}
       >
         <ContextRowContent row={row} />
         <DocsIcon
@@ -125,12 +120,7 @@ const DocsContextMenu = ({ row }: { row: DocsContextRow }) => {
           side="bottom"
           sideOffset={4}
         >
-          <Menu.Popup
-            className={styles.selectorMenu}
-            data-input-modality={inputModality}
-            onKeyDownCapture={() => setInputModality("keyboard")}
-            onPointerMoveCapture={() => setInputModality("pointer")}
-          >
+          <Menu.Popup className={styles.selectorMenu}>
             {options.map((option) => (
               <Menu.LinkItem
                 aria-current={option.selected ? "true" : undefined}
@@ -141,17 +131,17 @@ const DocsContextMenu = ({ row }: { row: DocsContextRow }) => {
                 label={option.label}
               >
                 <DocsIcon name={option.icon} size={16} />
-                <span className={styles.selectorLabel}>{option.label}</span>
+                <Menu.ItemLabel>{option.label}</Menu.ItemLabel>
                 {option.status && <DocsBadge badge={option.status} />}
                 {(option.meta || option.selected) && (
-                  <span className={styles.selectorTrailing}>
+                  <Menu.ItemTrailing>
                     {option.meta && (
                       <span className={styles.meta}>{option.meta}</span>
                     )}
                     {option.selected && (
                       <DocsIcon name="approve-check" size={14} />
                     )}
-                  </span>
+                  </Menu.ItemTrailing>
                 )}
               </Menu.LinkItem>
             ))}

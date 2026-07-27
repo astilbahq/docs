@@ -15,11 +15,11 @@ importers:
   .:
     dependencies:
       '@astilba/tokens':
-        specifier: 0.1.2
-        version: 0.1.2
+        specifier: 0.2.1
+        version: 0.2.1
       '@astilba/ui':
-        specifier: 0.1.2
-        version: 0.1.2(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.2.1
+        version: 0.2.1(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@astrojs/react':
         specifier: 6.0.1
         version: 6.0.1(@types/node@24.13.3)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(yaml@2.9.0)
@@ -130,11 +130,11 @@ importers:
   site:
     dependencies:
       '@astilba/tokens':
-        specifier: 0.1.2
-        version: 0.1.2
+        specifier: 0.2.1
+        version: 0.2.1
       '@astilba/ui':
-        specifier: 0.1.2
-        version: 0.1.2(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+        specifier: 0.2.1
+        version: 0.2.1(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@astrojs/react':
         specifier: 6.0.1
         version: 6.0.1(@types/node@24.13.3)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(esbuild@0.28.1)(jiti@2.7.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(supports-color@10.2.2)(yaml@2.9.0)
@@ -187,11 +187,11 @@ importers:
 
 packages:
 
-  '@astilba/tokens@0.1.2':
-    resolution: {integrity: sha512-XQY1CwOrCMaH9VtgENaf5ymOaqzzvdxJ9Duv1kCEBj/nABAYt65YpmNIAqEI38/sBLvoHLVQaXpZnRMLRKqSVg==}
+  '@astilba/tokens@0.2.1':
+    resolution: {integrity: sha512-b7rc4j2ERGNcSTeP+syNHvzgQog5wDB0iU2Gg94k8fyNPuNo4DFTaepyEcqP0ZBdPDWk596cvK8gc88Dbm1ysg==}
 
-  '@astilba/ui@0.1.2':
-    resolution: {integrity: sha512-FyYx5++xWEzLyEuxL7na8+CI1F6EJKILsxKiNe0nZSpTpmI4gejRV4Q67Mgj2V0JktBtQlu5J/XflfYk+2QLJQ==}
+  '@astilba/ui@0.2.1':
+    resolution: {integrity: sha512-ZiGficp0c0sdi+2JLoD26Gs/tMn2GqK5hsbFqDNWYZkXWt8mqvKenU04UDZq1xpZYAPZZWqk/JQSlyRIoQl05Q==}
     peerDependencies:
       react: '>=19.2.0 <20'
       react-dom: '>=19.2.0 <20'
@@ -4848,11 +4848,11 @@ packages:
 
 snapshots:
 
-  '@astilba/tokens@0.1.2': {}
+  '@astilba/tokens@0.2.1': {}
 
-  '@astilba/ui@0.1.2(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
+  '@astilba/ui@0.2.1(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)':
     dependencies:
-      '@astilba/tokens': 0.1.2
+      '@astilba/tokens': 0.2.1
       '@base-ui/react': 1.6.0(@types/react@19.2.17)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)

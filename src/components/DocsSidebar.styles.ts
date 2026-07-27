@@ -1,5 +1,4 @@
-import { css, cx } from "../../styled-system/css";
-import { menuStyles } from "./ui/Menu.styles";
+import { css } from "../../styled-system/css";
 
 export const docsSidebarStyles = {
   root: css({
@@ -119,38 +118,29 @@ export const docsSidebarStyles = {
       transitionDuration: "instant",
     },
   }),
-  selectorPositioner: cx(
-    menuStyles.positioner,
-    css({
-      inlineSize: "calc(var(--anchor-width) - 1rem)",
-    })
-  ),
-  selectorMenu: cx(
-    menuStyles.popup,
-    css({
-      inlineSize: "100%",
-    })
-  ),
-  selectorOption: cx(
-    menuStyles.item,
-    css({
-      minBlockSize: "2.75rem",
-      fontSize: "0.875rem",
-      '&[aria-current="true"]': {
-        background: "surface.selected",
-        color: "ink.strong",
-        fontWeight: "medium",
-      },
-      '&[aria-current="true"]:is(:hover, [data-highlighted])': {
-        background: "surface.selected",
-      },
-      desktop: {
-        minBlockSize: "2.5rem",
-      },
-    })
-  ),
-  selectorLabel: menuStyles.label,
-  selectorTrailing: menuStyles.trailing,
+  selectorPositioner: css({
+    "--astilba-menu-z-index": "var(--sl-z-index-menu)",
+    inlineSize: "calc(var(--anchor-width) - 1rem)",
+  }),
+  selectorMenu: css({
+    inlineSize: "100%",
+  }),
+  selectorOption: css({
+    minBlockSize: "2.75rem",
+    fontSize: "0.875rem",
+    lineHeight: 1.35,
+    '&[aria-current="true"]': {
+      background: "surface.selected",
+      color: "ink.strong",
+      fontWeight: "medium",
+    },
+    '&[aria-current="true"]:is(:hover, [data-highlighted])': {
+      background: "surface.selected",
+    },
+    desktop: {
+      minBlockSize: "2.5rem",
+    },
+  }),
   badge: css({
     display: "inline-flex",
     flex: "0 0 auto",
