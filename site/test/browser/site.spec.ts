@@ -2,6 +2,12 @@ import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
+declare global {
+  interface Window {
+    __setAstilbaFinePointer: (value: boolean) => void;
+  }
+}
+
 const expectNoAxeViolations = async (page: Page): Promise<void> => {
   const results = await new AxeBuilder({ page }).analyze();
 
@@ -46,6 +52,47 @@ const resolveCssColor = async (
     16
   )}, ${Number.parseInt(blue, 16)})`;
 };
+
+test("right-clicking the Astilba brand reveals the interface showcase", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const query = "(hover: hover) and (pointer: fine)";
+    const originalMatchMedia = window.matchMedia.bind(window);
+    const finePointer = originalMatchMedia(query);
+    let matches = false;
+
+    Object.defineProperty(finePointer, "matches", {
+      configurable: true,
+      get: () => matches,
+    });
+    window.matchMedia = (value) =>
+      value === query ? finePointer : originalMatchMedia(value);
+    window.__setAstilbaFinePointer = (value) => {
+      matches = value;
+    };
+  });
+  await page.route("https://ui.astilba.com/", async (route) => {
+    await route.fulfill({
+      body: "<title>Astilba Interface</title>",
+      contentType: "text/html",
+      status: 200,
+    });
+  });
+  await page.goto("/");
+
+  const brand = page.getByRole("link", { name: "Astilba home" });
+  await expect(brand).toHaveAttribute("href", "/");
+  await brand.click({ button: "right" });
+  await expect(page).toHaveURL("/");
+
+  await page.evaluate(() => {
+    window.__setAstilbaFinePointer(true);
+  });
+  await brand.click({ button: "right" });
+
+  await expect(page).toHaveURL("https://ui.astilba.com/");
+});
 
 test("the public home distinguishes the released and preview products", async ({
   page,
