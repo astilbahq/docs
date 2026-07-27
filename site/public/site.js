@@ -45,19 +45,18 @@ const syncAstilbaThemeControls = () => {
       });
     }
 
-    if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
-      for (const link of document.querySelectorAll(
-        "[data-design-system-easter-egg]"
-      )) {
-        link.addEventListener("contextmenu", (event) => {
-          if (event.button !== 2) {
-            return;
-          }
+    const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
+    for (const link of document.querySelectorAll(
+      "[data-design-system-easter-egg]"
+    )) {
+      link.addEventListener("contextmenu", (event) => {
+        if (event.button !== 2 || !finePointer.matches) {
+          return;
+        }
 
-          event.preventDefault();
-          window.location.assign("https://ui.astilba.com/");
-        });
-      }
+        event.preventDefault();
+        window.location.assign("https://ui.astilba.com/");
+      });
     }
 
     const dialog = document.querySelector("[data-mobile-menu]");

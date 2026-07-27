@@ -25,6 +25,7 @@ declare global {
       blockedUri: string;
       effectiveDirective: string;
     }>;
+    __setAstilbaFinePointer: (value: boolean) => void;
     __tooltipExitDuration?: string;
     __webMcpRegistrationMethods?: string[];
     __webMcpTools?: WebMcpToolProbe[];
@@ -69,6 +70,22 @@ const expectNoAxeViolations = async (page: Page): Promise<void> => {
 test("right-clicking the Astilba title reveals the interface showcase", async ({
   page,
 }) => {
+  await page.addInitScript(() => {
+    const query = "(hover: hover) and (pointer: fine)";
+    const originalMatchMedia = window.matchMedia.bind(window);
+    const finePointer = originalMatchMedia(query);
+    let matches = false;
+
+    Object.defineProperty(finePointer, "matches", {
+      configurable: true,
+      get: () => matches,
+    });
+    window.matchMedia = (value) =>
+      value === query ? finePointer : originalMatchMedia(value);
+    window.__setAstilbaFinePointer = (value) => {
+      matches = value;
+    };
+  });
   await page.route("https://ui.astilba.com/", async (route) => {
     await route.fulfill({
       body: "<title>Astilba Interface</title>",
@@ -80,6 +97,12 @@ test("right-clicking the Astilba title reveals the interface showcase", async ({
 
   const title = page.locator("header a.site-title");
   await expect(title).toHaveAttribute("href", withDocsBase("/"));
+  await title.click({ button: "right" });
+  await expect(page).toHaveURL(withDocsBase("/"));
+
+  await page.evaluate(() => {
+    window.__setAstilbaFinePointer(true);
+  });
   await title.click({ button: "right" });
 
   await expect(page).toHaveURL("https://ui.astilba.com/");

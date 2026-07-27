@@ -16,7 +16,7 @@ export const installDesignSystemEasterEgg = (
   root: ParentNode = document,
   targetWindow: Window = window
 ): void => {
-  const hasFinePointer = targetWindow.matchMedia(FINE_POINTER_QUERY).matches;
+  const finePointer = targetWindow.matchMedia(FINE_POINTER_QUERY);
 
   for (const link of root.querySelectorAll(TARGET_SELECTOR)) {
     if (
@@ -31,7 +31,7 @@ export const installDesignSystemEasterEgg = (
       if (
         !shouldOpenDesignSystem({
           button: event.button,
-          hasFinePointer,
+          hasFinePointer: finePointer.matches,
         })
       ) {
         return;
