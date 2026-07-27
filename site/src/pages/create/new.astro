@@ -1,5 +1,6 @@
 ---
 import { Button } from "@astilba/ui/button";
+import { CreateProjectFields } from "../../components/CreateProjectFields";
 import SiteLayout from "../../layouts/SiteLayout.astro";
 import { loadCreateCatalog } from "../../create-catalog";
 
@@ -98,77 +99,7 @@ const catalog = await loadCreateCatalog();
             <small>These values become repository metadata.</small>
           </legend>
 
-          <div class="configurator-fields">
-            <label class="configurator-field">
-              <span>Directory</span>
-              <input
-                aria-describedby="destination-help destination-error"
-                maxlength="180"
-                name="destination"
-                required
-                spellcheck="false"
-                type="text"
-                value="my-project"
-              />
-              <small id="destination-help">
-                Create infers the project, package, and repository name as <code
-                  data-inferred-name
-                >my-project</code>.
-              </small>
-              <small
-                aria-live="polite"
-                class="configurator-field__error"
-                data-destination-error
-                hidden
-                id="destination-error"
-              ></small>
-            </label>
-
-            <label class="configurator-field">
-              <span>Description</span>
-              <textarea
-                aria-describedby="description-help description-error"
-                maxlength="280"
-                name="description"
-                placeholder="What will this project do?"
-                required
-                rows="3"></textarea>
-              <small id="description-help">
-                Plain text, 1–280 characters. Line breaks are not supported.
-              </small>
-              <small
-                aria-live="polite"
-                class="configurator-field__error"
-                data-description-error
-                hidden
-                id="description-error"
-              ></small>
-            </label>
-
-            <label class="configurator-field">
-              <span>GitHub owner</span>
-              <input
-                aria-describedby="github-owner-help github-owner-error"
-                maxlength="39"
-                name="githubOwner"
-                pattern="[A-Za-z0-9](?:[A-Za-z0-9\-]{0,37}[A-Za-z0-9])?"
-                placeholder="your-account"
-                required
-                spellcheck="false"
-                type="text"
-              />
-              <small id="github-owner-help">
-                The account that will own the generated repository.
-              </small>
-              <small
-                aria-live="polite"
-                class="configurator-field__error"
-                data-github-owner-error
-                hidden
-                id="github-owner-error"
-              ></small>
-            </label>
-          </div>
+          <CreateProjectFields />
         </fieldset>
 
         <fieldset class="configurator__question">

@@ -1,5 +1,10 @@
 import { setButtonDisabled } from "../configurator-button-state";
 import {
+  resolveDescribedBy,
+  withCurrentConfigurationHashNavigation,
+} from "../configurator-field-state";
+import type { ConfigurationHashNavigation } from "../configurator-field-state";
+import {
   createPosixCommand,
   createPowerShellCommand,
   getDescriptionValidationMessage,
@@ -204,6 +209,11 @@ const initializeConfigurator = (root: HTMLElement): void => {
       field.setCustomValidity(message ?? "");
       const shouldPresent =
         message !== undefined && interactedFields.has(field);
+      const describedBy = resolveDescribedBy(
+        field.getAttribute("aria-describedby"),
+        error.id,
+        shouldPresent
+      );
 
       if (shouldPresent) {
         field.setAttribute("aria-invalid", "true");
@@ -213,6 +223,12 @@ const initializeConfigurator = (root: HTMLElement): void => {
         field.removeAttribute("aria-invalid");
         error.textContent = "";
         error.hidden = true;
+      }
+
+      if (describedBy === undefined) {
+        field.removeAttribute("aria-describedby");
+      } else {
+        field.setAttribute("aria-describedby", describedBy);
       }
     };
 
@@ -415,9 +431,10 @@ const initializeConfigurator = (root: HTMLElement): void => {
 
   let lastObservedHash = window.location.hash;
 
-  const hydrateSharedConfiguration = (): void => {
-    const currentHash = window.location.hash;
-    const previousHash = lastObservedHash;
+  const applySharedConfiguration = ({
+    currentHash,
+    previousHash,
+  }: ConfigurationHashNavigation): void => {
     lastObservedHash = currentHash;
 
     if (
@@ -442,7 +459,7 @@ const initializeConfigurator = (root: HTMLElement): void => {
 
     try {
       const shared = parseConfigurationHash(
-        window.location.hash,
+        currentHash,
         recipeVersions,
         generatorVersion
       );
@@ -491,6 +508,15 @@ const initializeConfigurator = (root: HTMLElement): void => {
           ? error.message
           : "The shared configuration could not be loaded.";
     }
+  };
+
+  const hydrateSharedConfiguration = (event?: HashChangeEvent): void => {
+    withCurrentConfigurationHashNavigation(
+      window.location.hash,
+      lastObservedHash,
+      event,
+      applySharedConfiguration
+    );
   };
 
   render();
