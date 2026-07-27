@@ -1,6 +1,6 @@
 import { Collapsible } from "@astilba/ui/collapsible";
 import { Menu } from "@astilba/ui/menu";
-import { ScrollArea } from "@base-ui/react/scroll-area";
+import { ScrollArea } from "@astilba/ui/scroll-area";
 import {
   useCallback,
   useEffect,
@@ -403,6 +403,7 @@ export default function DocsSidebar({
           <ScrollArea.Viewport
             className={styles.navigationViewport}
             data-docs-sidebar-scroll=""
+            fade="block"
           >
             <ScrollArea.Content className={styles.navigationContent}>
               <SidebarList
@@ -412,14 +413,8 @@ export default function DocsSidebar({
               />
             </ScrollArea.Content>
           </ScrollArea.Viewport>
-          <ScrollArea.Scrollbar
-            className={styles.navigationScrollbar}
-            data-docs-sidebar-scrollbar=""
-          >
-            <ScrollArea.Thumb
-              className={styles.navigationThumb}
-              data-docs-sidebar-scroll-thumb=""
-            />
+          <ScrollArea.Scrollbar data-docs-sidebar-scrollbar="">
+            <ScrollArea.Thumb data-docs-sidebar-scroll-thumb="" />
           </ScrollArea.Scrollbar>
         </ScrollArea.Root>
       )}
