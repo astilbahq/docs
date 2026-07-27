@@ -1,5 +1,5 @@
 import { Button } from "@astilba/ui/button";
-import { Menu } from "@base-ui/react/menu";
+import { Menu } from "@astilba/ui/menu";
 import {
   Check,
   ChevronDown,
@@ -17,7 +17,6 @@ import { pageActionsStyles as styles } from "./PageActions.styles";
 
 type CopyState = "idle" | "copying" | "copied" | "error";
 type LinkCopyState = Exclude<CopyState, "copying">;
-type InputModality = "keyboard" | "pointer";
 
 interface PageActionsProps {
   markdownPath: string;
@@ -54,7 +53,6 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
   const [copyState, setCopyState] = useState<CopyState>("idle");
   const [linkCopyState, setLinkCopyState] = useState<LinkCopyState>("idle");
   const [isReady, setIsReady] = useState(false);
-  const [inputModality, setInputModality] = useState<InputModality>("pointer");
   const [status, setStatus] = useState("");
   const activeCopyFeedback = useRef<
     Extract<CopyState, "copied" | "error"> | undefined
@@ -259,8 +257,6 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
             aria-label="More page actions"
             className={styles.menuTrigger}
             disabled={!isReady}
-            onKeyDown={() => setInputModality("keyboard")}
-            onPointerDown={() => setInputModality("pointer")}
             title="More page actions"
           >
             <ChevronDown
@@ -286,12 +282,7 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
               side="bottom"
               sideOffset={4}
             >
-              <Menu.Popup
-                className={styles.menu}
-                data-input-modality={inputModality}
-                onKeyDownCapture={() => setInputModality("keyboard")}
-                onPointerMoveCapture={() => setInputModality("pointer")}
-              >
+              <Menu.Popup className={styles.menu}>
                 <Menu.Item
                   aria-label="Copy Markdown link"
                   className={styles.menuItem}
@@ -320,14 +311,14 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
                       </span>
                     </span>
                   </span>
-                  <span
+                  <Menu.ItemLabel
                     aria-hidden="true"
-                    className={`${styles.menuLabel} ${styles.textSwap}`}
+                    className={styles.textSwap}
                     data-state={linkCopyState}
                   >
                     <span data-copy-label="idle">Copy Markdown link</span>
                     <span data-copy-label="copied">Copied!</span>
-                  </span>
+                  </Menu.ItemLabel>
                 </Menu.Item>
 
                 {destinations.map((destination) => {
@@ -349,12 +340,13 @@ export const PageActions = ({ markdownPath, sourceUrl }: PageActionsProps) => {
                           size={14}
                         />
                       </span>
-                      <span className={styles.menuLabel}>
-                        {destination.label}
-                      </span>
-                      <span aria-hidden="true" className={styles.menuTrailing}>
+                      <Menu.ItemLabel>{destination.label}</Menu.ItemLabel>
+                      <Menu.ItemTrailing
+                        aria-hidden="true"
+                        className={styles.menuTrailing}
+                      >
                         <ActionIcon icon={ExternalLink} size={12} />
-                      </span>
+                      </Menu.ItemTrailing>
                     </Menu.LinkItem>
                   );
                 })}

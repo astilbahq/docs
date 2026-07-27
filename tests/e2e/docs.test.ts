@@ -792,6 +792,12 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   const sidebarSubItem = page.locator("[data-docs-nav-link]").first();
 
   await expect(pageActionsMenu).toHaveCSS("opacity", "1");
+  await expect(pageActionsMenu).toHaveAttribute(
+    "data-input-modality",
+    "pointer"
+  );
+  await copyMarkdownLink.hover();
+  await expect(copyMarkdownLink).toHaveCSS("outline-style", "none");
   const [menuItemMetrics, sidebarItemMetrics] = await Promise.all(
     [copyMarkdownLink, sidebarSubItem].map((item) =>
       item.evaluate((element) => {
@@ -1673,6 +1679,37 @@ test("presents Cache as a distinct product home", async ({ page }) => {
       exact: true,
     })
   ).toBeVisible();
+  const productTrigger = sidebar.getByRole("button", {
+    name: "Choose product. Current product: Cache",
+    exact: true,
+  });
+  await productTrigger.focus();
+  await productTrigger.press("Enter");
+  const productMenu = page.getByRole("menu");
+  const createProduct = productMenu.getByRole("menuitem", {
+    name: /Create/,
+  });
+  const cacheProduct = productMenu.getByRole("menuitem", {
+    name: /Cache/,
+  });
+  await expect(productMenu).toBeVisible();
+  await expect(productMenu).toHaveAttribute("data-input-modality", "keyboard");
+  await expect(cacheProduct).toHaveAttribute("aria-current", "true");
+  await page.keyboard.press("ArrowDown");
+  const keyboardHighlightedProduct = productMenu.locator("[data-highlighted]");
+  await expect(keyboardHighlightedProduct).toHaveCount(1);
+  await expect(keyboardHighlightedProduct).toHaveCSS("outline-style", "solid");
+  await expect(keyboardHighlightedProduct).toHaveCSS("outline-width", "2px");
+  await createProduct.hover();
+  await expect(productMenu).toHaveAttribute("data-input-modality", "pointer");
+  await expect(createProduct).toHaveCSS("outline-style", "none");
+  await page.keyboard.press("Escape");
+  await expect(productMenu).toBeHidden();
+  await expect(productTrigger).toBeFocused();
+  await productTrigger.click();
+  await createProduct.click();
+  await expect(page).toHaveURL(/\/docs\/create\/$/);
+  await page.goBack();
   await expect(
     sidebar.getByRole("link", { name: "Overview", exact: true })
   ).toHaveAttribute("href", "/docs/cache/overview/");
