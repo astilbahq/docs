@@ -161,6 +161,12 @@ test("the Create configurator assembles and shares a released command", async ({
   const copyCommand = page.locator("[data-copy-command]");
   const copyConfiguration = page.locator("[data-copy-configuration]");
   const command = page.locator("[data-create-command]");
+  const directory = page.getByLabel("Directory");
+  await expect(directory).toHaveAttribute(
+    "aria-describedby",
+    "destination-help"
+  );
+  await expect(directory).not.toHaveAttribute("aria-invalid");
   await expect(copyCommand).toHaveAccessibleName("Copy command");
   await expect(copyConfiguration).toHaveAccessibleName(
     "Copy configuration link"
@@ -172,24 +178,30 @@ test("the Create configurator assembles and shares a released command", async ({
     .locator(".recipe-option")
     .filter({ hasText: "React + Vite application" })
     .click();
-  await page.getByLabel("Directory").fill("projects/my app");
+  await directory.fill("projects/my app");
   await page.getByLabel("Description").fill("It's a useful application.");
   await page.getByLabel("GitHub owner").fill("astilbahq");
 
   for (const invalidDestination of ["../escape", "CON", ".git"]) {
-    await page.getByLabel("Directory").fill(invalidDestination);
+    await directory.fill(invalidDestination);
     await expect(copyCommand).toBeDisabled();
     await expect(page.locator("[data-destination-error]")).toBeVisible();
-    await expect(page.getByLabel("Directory")).toHaveAttribute(
-      "aria-invalid",
-      "true"
+    await expect(directory).toHaveAttribute("aria-invalid", "true");
+    await expect(directory).toHaveAttribute(
+      "aria-describedby",
+      "destination-help destination-error"
     );
     await expect(command).toContainText(
       "Destination must be a normalized portable relative path"
     );
   }
-  await page.getByLabel("Directory").fill("projects/my app");
+  await directory.fill("projects/my app");
   await expect(page.locator("[data-destination-error]")).toBeHidden();
+  await expect(directory).toHaveAttribute(
+    "aria-describedby",
+    "destination-help"
+  );
+  await expect(directory).not.toHaveAttribute("aria-invalid");
 
   await page.getByLabel("Description").fill(" leading whitespace");
   await expect(copyCommand).toBeDisabled();

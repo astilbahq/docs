@@ -109,6 +109,22 @@ assertIncludes(
   "astilba-control--appearance_primary",
   "Create configurator shared controls"
 );
+assertIncludes(
+  createConfigurator,
+  "astilba-field-root",
+  "Create configurator shared fields"
+);
+for (const association of [
+  'for="destination"',
+  'id="destination"',
+  'aria-describedby="destination-help"',
+]) {
+  assertIncludes(
+    createConfigurator,
+    association,
+    "Create configurator field associations"
+  );
+}
 for (const recipe of [
   "typescript-library",
   "react-vite-spa",

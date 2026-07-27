@@ -204,15 +204,28 @@ const initializeConfigurator = (root: HTMLElement): void => {
       field.setCustomValidity(message ?? "");
       const shouldPresent =
         message !== undefined && interactedFields.has(field);
+      const describedBy = new Set(
+        (field.getAttribute("aria-describedby") ?? "")
+          .split(/\s+/u)
+          .filter(Boolean)
+      );
+      describedBy.delete(error.id);
 
       if (shouldPresent) {
         field.setAttribute("aria-invalid", "true");
+        describedBy.add(error.id);
         error.textContent = message;
         error.hidden = false;
       } else {
         field.removeAttribute("aria-invalid");
         error.textContent = "";
         error.hidden = true;
+      }
+
+      if (describedBy.size === 0) {
+        field.removeAttribute("aria-describedby");
+      } else {
+        field.setAttribute("aria-describedby", [...describedBy].join(" "));
       }
     };
 
@@ -415,9 +428,16 @@ const initializeConfigurator = (root: HTMLElement): void => {
 
   let lastObservedHash = window.location.hash;
 
-  const hydrateSharedConfiguration = (): void => {
-    const currentHash = window.location.hash;
-    const previousHash = lastObservedHash;
+  const hydrateSharedConfiguration = (event?: HashChangeEvent): void => {
+    const currentHash =
+      event === undefined ? window.location.hash : new URL(event.newURL).hash;
+    const previousHash =
+      event === undefined ? lastObservedHash : new URL(event.oldURL).hash;
+
+    if (event !== undefined && currentHash !== window.location.hash) {
+      return;
+    }
+
     lastObservedHash = currentHash;
 
     if (
@@ -442,7 +462,7 @@ const initializeConfigurator = (root: HTMLElement): void => {
 
     try {
       const shared = parseConfigurationHash(
-        window.location.hash,
+        currentHash,
         recipeVersions,
         generatorVersion
       );

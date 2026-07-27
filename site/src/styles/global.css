@@ -881,64 +881,7 @@ h3 {
   gap: 1.5rem;
 }
 
-.configurator-field {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.configurator-field > span {
-  font-size: 0.84rem;
-  font-weight: 600;
-}
-
-.configurator-field :is(input, textarea) {
-  width: 100%;
-  border: 1px solid var(--control-border);
-  border-radius: 0;
-  background: var(--surface);
-  color: var(--ink);
-  transition:
-    border-color var(--astilba-durations-fast)
-      var(--astilba-easings-in-out),
-    background-color var(--astilba-durations-fast)
-      var(--astilba-easings-in-out);
-}
-
-.configurator-field input {
-  min-height: 2.85rem;
-  padding-inline: 0.8rem;
-}
-
-.configurator-field textarea {
-  min-height: 7rem;
-  padding: 0.7rem 0.8rem;
-  resize: vertical;
-}
-
-.configurator-field :is(input, textarea):hover {
-  border-color: var(--ink-faint);
-}
-
-.configurator-field :is(input, textarea):focus {
-  border-color: var(--signal);
-  outline: 2px solid var(--signal);
-  outline-offset: 2px;
-}
-
-.configurator-field > small {
-  color: var(--ink-muted);
-  font-size: 0.76rem;
-}
-
-.configurator-field > .configurator-field__error {
-  color: var(--signal-ink);
-}
-
-.configurator-field__error[hidden] {
-  display: none;
-}
-
-.configurator-field > small code {
+.configurator-fields .astilba-field-description code {
   color: var(--ink);
 }
 
