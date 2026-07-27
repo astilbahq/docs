@@ -1332,19 +1332,50 @@ test("falls back to legacy navigator.provideContext for WebMCP", async ({
   ).toEqual({ readOnlyHint: true, untrustedContentHint: false });
 });
 
-test("persists desktop sidebar disclosure state across navigation", async ({
+test("keeps desktop sidebar disclosures accessible and persistent", async ({
   page,
 }) => {
   await page.goto("/docs/cache/overview/");
-  await expect(page.locator("[data-docs-sidebar-root]")).not.toHaveAttribute(
-    "data-restoring",
-    ""
-  );
+  const sidebarRoot = page.locator("[data-docs-sidebar-root]");
+  await expect(sidebarRoot).not.toHaveAttribute("data-restoring", "");
 
   const getStarted = page.getByRole("button", {
     name: "Get started",
     exact: true,
   });
+  const controlledPanelId = await getStarted.getAttribute("aria-controls");
+  expect(controlledPanelId).toBeTruthy();
+
+  const getStartedPanel = page.locator(`#${controlledPanelId}`);
+  await expect(getStartedPanel).toHaveCount(1);
+  await expect(getStartedPanel).toHaveClass(/\bastilba-collapsible-panel\b/);
+  const reducedMotionDurations = await getStartedPanel.evaluate((element) =>
+    getComputedStyle(element)
+      .transitionDuration.split(",")
+      .map((duration) => Number(duration.trim().replace(/s$/, "")))
+  );
+  expect(reducedMotionDurations.length).toBeGreaterThan(0);
+  expect(reducedMotionDurations.every((duration) => duration <= 0.001)).toBe(
+    true
+  );
+
+  await getStarted.focus();
+  await expect(getStarted).toBeFocused();
+  await expect(getStarted).toHaveCSS("outline-style", "solid");
+  await getStarted.press("Enter");
+  await expect(getStarted).toHaveAttribute("aria-expanded", "false");
+  await expect(getStarted).toBeFocused();
+  await expect(
+    getStartedPanel.getByRole("link", { name: "Overview", exact: true })
+  ).toBeHidden();
+
+  await getStarted.press("Space");
+  await expect(getStarted).toHaveAttribute("aria-expanded", "true");
+  await expect(getStarted).toBeFocused();
+  await expect(
+    getStartedPanel.getByRole("link", { name: "Overview", exact: true })
+  ).toBeVisible();
+
   await getStarted.click();
   await expect(getStarted).toHaveAttribute("aria-expanded", "false");
 
@@ -1356,6 +1387,88 @@ test("persists desktop sidebar disclosure state across navigation", async ({
   await expect(
     page.getByRole("button", { name: "Get started", exact: true })
   ).toHaveAttribute("aria-expanded", "false");
+
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  const currentGuidesPanel = page.locator(
+    '[data-docs-sidebar-group="docs-group-3"] [data-docs-sidebar-panel]'
+  );
+  const normalMotionDurations = await currentGuidesPanel.evaluate((element) =>
+    getComputedStyle(element)
+      .transitionDuration.split(",")
+      .map((duration) => Number(duration.trim().replace(/s$/, "")))
+  );
+  expect(normalMotionDurations.some((duration) => duration >= 0.2)).toBe(true);
+
+  await page.addInitScript(() => {
+    const initialPanelTransitions: string[] = [];
+    Object.defineProperty(window, "__restoringPanelTransitions", {
+      configurable: true,
+      value: initialPanelTransitions,
+    });
+    document.addEventListener(
+      "transitionrun",
+      (event) => {
+        const target = event.target;
+
+        if (
+          target instanceof HTMLElement &&
+          target.matches("[data-docs-sidebar-panel]")
+        ) {
+          initialPanelTransitions.push(event.propertyName);
+        }
+      },
+      true
+    );
+  });
+  await page.evaluate(() => {
+    const storedState = JSON.parse(
+      sessionStorage.getItem("astilba-docs-sidebar-state-v1") ?? "null"
+    ) as { hash?: string } | null;
+
+    if (!storedState?.hash) {
+      throw new Error("Expected the sidebar to persist its navigation hash.");
+    }
+
+    sessionStorage.setItem(
+      "astilba-docs-sidebar-state-v1",
+      JSON.stringify({
+        hash: storedState.hash,
+        open: [],
+        scroll: 0,
+      })
+    );
+  });
+  await page.reload();
+  await expect(sidebarRoot).not.toHaveAttribute("data-restoring", "");
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        window.requestAnimationFrame(() => {
+          window.requestAnimationFrame(() => resolve());
+        });
+      })
+  );
+  await expect(
+    page.getByRole("button", { name: "Get started", exact: true })
+  ).toHaveAttribute("aria-expanded", "false");
+  await expect(
+    page.getByRole("button", { name: "Guides", exact: true })
+  ).toHaveAttribute("aria-expanded", "true");
+  await expect(
+    page
+      .locator("#starlight__sidebar")
+      .getByRole("link", { name: "Invalidate cached data" })
+  ).toHaveAttribute("aria-current", "page");
+  expect(
+    await page.evaluate(
+      () =>
+        (
+          window as typeof window & {
+            __restoringPanelTransitions?: string[];
+          }
+        ).__restoringPanelTransitions ?? []
+    )
+  ).toEqual([]);
 });
 
 test("targets each public product source from product pages", async ({

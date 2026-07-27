@@ -349,45 +349,8 @@ export const docsSidebarStyles = {
     gap: "0.375rem",
   }),
   collapsiblePanel: css({
-    display: "grid",
-    gridTemplateRows: "1fr",
-    transitionProperty: "grid-template-rows",
-    transitionDuration: "disclosure",
-    transitionTimingFunction: "outQuint",
-    "& > ul": {
-      minBlockSize: 0,
-      overflow: "hidden",
-      opacity: 1,
-      filter: "blur(0)",
-      transitionProperty: "opacity, filter",
-      transitionDuration: "disclosure",
-      transitionTimingFunction: "outQuint",
-    },
-    _startingStyle: {
-      gridTemplateRows: "0fr",
-      "& > ul": {
-        opacity: 0,
-        filter: "blur(var(--astilba-blurs-disclosure))",
-      },
-    },
-    _endingStyle: {
-      gridTemplateRows: "0fr",
-      "& > ul": {
-        opacity: 0,
-        filter: "blur(var(--astilba-blurs-disclosure))",
-      },
-    },
     "[data-docs-sidebar-root][data-restoring] &": {
       transition: "none",
-      "& > ul": {
-        transition: "none",
-      },
-    },
-    _reducedMotion: {
-      transitionDuration: "instant",
-      "& > ul": {
-        transitionDuration: "instant",
-      },
     },
   }),
   navLink: css({

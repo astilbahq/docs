@@ -1,5 +1,5 @@
+import { Collapsible } from "@astilba/ui/collapsible";
 import { Menu } from "@astilba/ui/menu";
-import { Collapsible } from "@base-ui/react/collapsible";
 import { ScrollArea } from "@base-ui/react/scroll-area";
 import {
   useCallback,
