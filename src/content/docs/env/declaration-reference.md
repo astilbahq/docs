@@ -28,7 +28,7 @@ defineEnvironment({
 | `id` | A lowercase reverse-DNS identifier such as `com.example.application`. |
 | `entries` | One or more logical entries created by an `env.public.*` or `env.private.*` builder. |
 | `consumers` | One or more named `env.browser(...)` or `env.server(...)` selections. |
-| `targets` | One or more named `env.process(...)` mappings. Each selected consumer lifecycle must have exactly one complete target. |
+| `targets` | One or more named `env.process(...)` mappings. Each target binds one complete lifecycle selected by its consumer. |
 | `rules` | Optional array of `env.together(...)` co-presence rules. |
 
 Entry, consumer, target, and rule identifiers start with a lowercase ASCII letter, contain only ASCII letters or digits, and have at most 64 characters. Identifiers are also unique under ASCII case folding.
@@ -197,7 +197,7 @@ env.process("server", {
 
 The first argument names an existing consumer. The record maps logical entry names to raw source names.
 
-A target must bind all entries selected by that consumer for one lifecycle. Split build, deployment, and request bindings into separate targets.
+A target must bind all entries selected by that consumer for one lifecycle. Split build, deployment, and request bindings into separate targets. You can define alternate complete targets for the same consumer and lifecycle when your application needs different source mappings.
 
 ## Co-presence rules
 

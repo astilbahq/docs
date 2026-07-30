@@ -61,7 +61,7 @@ targets: {
 }
 ```
 
-Each target must bind every selected entry for exactly one lifecycle. A target cannot mix deployment and request bindings, omit one selected deployment entry, or create a second target for the same consumer lifecycle.
+Each target must bind every selected entry for exactly one lifecycle. A target cannot mix deployment and request bindings or omit one selected deployment entry. You can define alternate complete targets for the same consumer and lifecycle when your application needs different source mappings.
 
 The generated module accepts any plain source record, not only `process.env`:
 
