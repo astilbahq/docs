@@ -173,7 +173,7 @@ export default defineConfig({
           ? [
               starlightLlmsTxt({
                 details:
-                  "Astilba Create 0.3.0 is released; Astilba Env 0.2.1 is a public alpha; Astilba Cache remains an unreleased preview. Check each product's release or implementation-status page before making availability claims.",
+                  "Astilba Create 0.3.0 is released; Astilba Env 0.2.2 is a public alpha; Astilba Cache remains an unreleased preview. Check each product's release or implementation-status page before making availability claims.",
                 optionalLinks: [
                   {
                     label: "Astilba documentation MCP",
