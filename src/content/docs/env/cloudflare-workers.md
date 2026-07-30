@@ -60,7 +60,7 @@ Keep non-secret values in `vars`, and declare required secret names with `secret
   "kv_namespaces": [
     {
       "binding": "CACHE",
-      "id": "00000000000000000000000000000000"
+      "id": "<your-staging-cache-kv-namespace-id>"
     }
   ]
 }
@@ -85,7 +85,7 @@ The same built Worker artifact can use another binding set:
   "kv_namespaces": [
     {
       "binding": "CACHE",
-      "id": "11111111111111111111111111111111"
+      "id": "<your-production-cache-kv-namespace-id>"
     }
   ]
 }
@@ -104,7 +104,7 @@ pnpm exec wrangler types
 pnpm exec wrangler types --check
 ```
 
-[`wrangler types`](https://developers.cloudflare.com/workers/languages/typescript/#generate-types) derives binding types from your configuration. Use `--check` in CI so the generated interface cannot drift.
+[`wrangler types`](https://developers.cloudflare.com/workers/languages/typescript/#generate-types) derives binding types from your configuration. Use `--check` in CI, so the generated interface cannot drift.
 
 The generated target accepts that interface without requiring a string index signature:
 

@@ -32,8 +32,8 @@ Portable codecs can participate in public browser projections. A subset also wor
 Generated targets expose two operations:
 
 ```ts
-const result = check(source);
-const configuration = load(source);
+const result = await check(source);
+const configuration = await load(source);
 ```
 
 `check` returns an explicit result:
@@ -47,6 +47,8 @@ if (!result.ok) {
 ```
 
 `load` returns the same typed configuration or throws `EnvironmentConfigurationError`.
+
+This `await` form also works for targets that use built-in codecs only.
 
 Both paths redact rejected values. Diagnostics may contain a stable error code, consumer, entry, lifecycle, or rule identity; they do not contain the value, a fragment, length, or hash. Do not log the source object around that boundary.
 

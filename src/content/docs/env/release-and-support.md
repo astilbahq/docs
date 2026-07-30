@@ -3,12 +3,12 @@ title: Release and support
 description: Check the package, runtime, export, framework, and public-alpha boundaries of Astilba Env 0.2.0.
 ---
 
-`@astilba/env` 0.2.0 is a public alpha. The package and source are public so applications can evaluate the complete contract, but the API may change deliberately before a stable release.
+`@astilba/env` 0.2.0 is a public alpha. The package and source are public, so applications can evaluate the complete contract, but the API may change deliberately before a stable release.
 
 Install the exact alpha when reproducibility matters:
 
 ```sh
-pnpm add @astilba/env@0.2.0
+pnpm add @astilba/env@0.2.0 --save-exact
 ```
 
 ## Supported public surface

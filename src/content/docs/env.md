@@ -11,7 +11,7 @@ Astilba Env is a local-first configuration contract compiler for TypeScript. You
 `@astilba/env` 0.2.0 is a public alpha. It is intended for evaluation and controlled adoption while the contract is still free to improve.
 
 ```sh
-pnpm add @astilba/env@0.2.0
+pnpm add @astilba/env@0.2.0 --save-exact
 ```
 
 Env does not replace your secret manager or `.env` files, and it has no hosted control plane. Generation and checking read only the source values their current operation needs, inside your project. Public build values are deliberately emitted into generated `.build.ts` modules; other generated evidence is value-free. Env does not send your values to Astilba.

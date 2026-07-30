@@ -36,18 +36,30 @@ The returned values are copied into frozen, owned data.
 Use `parseBrowserBootstrap` when a framework has already delivered the exact envelope as inert data:
 
 ```ts
-import { parseBrowserBootstrap } from "@astilba/env/browser";
+import {
+  BootstrapFailure,
+  parseBrowserBootstrap,
+} from "@astilba/env/browser";
 
 import { projection } from "./.astilba/env/browser/browser.deployment";
 
-const bootstrap = parseBrowserBootstrap({
-  expectedAudience: { origin: window.location.origin },
-  projection,
-  source: JSON.parse(document.querySelector("#env")?.textContent ?? ""),
-});
+try {
+  const bootstrap = parseBrowserBootstrap({
+    expectedAudience: { origin: window.location.origin },
+    projection,
+    source: JSON.parse(document.querySelector("#env")?.textContent ?? ""),
+  });
+
+  renderApplication(bootstrap.values);
+} catch (error) {
+  const code =
+    error instanceof BootstrapFailure ? error.code : "BOOTSTRAP_UNEXPECTED";
+
+  renderConfigurationFailure(code);
+}
 ```
 
-The source must remain JSON data. Do not replace it with an executable script assignment or a mutable global.
+The source must remain JSON data. Do not replace it with an executable script assignment or a mutable global. Missing or malformed transported JSON follows the same configuration-failure boundary as an invalid bootstrap.
 
 ## Delay the application import
 

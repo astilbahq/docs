@@ -80,6 +80,7 @@ import { projection } from "../../../.astilba/env/browser/browser.deployment";
 import { check } from "../../../.astilba/env/browserDeployment.server";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 export const GET = (): NextResponse => {
   const result = check(process.env);
@@ -113,7 +114,7 @@ export const GET = (): NextResponse => {
 
 ## Add a Pages Router endpoint
 
-The Pages Router uses the same generated modules and envelope:
+The Pages Router uses the same generated modules and envelope. Keep its API handler on the Node.js runtime, not the Edge Runtime:
 
 ```ts
 // pages/api/env.ts

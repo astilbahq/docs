@@ -18,7 +18,7 @@ Your `package.json` must contain `"type": "module"` when you use the default `as
 Install the exact public-alpha release:
 
 ```sh
-pnpm add @astilba/env@0.2.0
+pnpm add @astilba/env@0.2.0 --save-exact
 ```
 
 ## Declare the configuration
