@@ -186,7 +186,7 @@ jobs:
       - name: Require the documented Env release on npm
         env:
           ASTILBA_ENV_PACKAGE: "@astilba/env"
-          ASTILBA_ENV_VERSION: "0.2.0"
+          ASTILBA_ENV_VERSION: "0.2.1"
           NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
         run: |
           if ! resolved_version="$(
@@ -237,3 +237,8 @@ jobs:
 
       - name: Smoke-test complete public web
         run: pnpm smoke:all
+        env:
+          ASTILBA_SITE_SMOKE_ATTEMPTS: "10"
+          ASTILBA_SITE_SMOKE_RETRY_DELAY_MS: "6000"
+          ASTILBA_DOCS_SMOKE_ATTEMPTS: "10"
+          ASTILBA_DOCS_SMOKE_RETRY_DELAY_MS: "6000"
