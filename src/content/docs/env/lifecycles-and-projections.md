@@ -94,7 +94,7 @@ Generation writes these kinds of files under `.astilba/env/`:
 | `snapshot.json` | Value-free planning input used by `plan --base`. |
 | `manifest.json` | The exact generated-directory file list and format. |
 
-The generated server and metadata files can contain private logical names and source bindings. Physical separation works only when your build graph imports browser modules deliberately. Add the [Vite boundary plugin](/docs/env/browser-delivery/#reject-private-browser-imports) where Vite builds browser code.
+The generated server and metadata files can contain private logical names and source bindings. Physical separation works only when your build graph imports browser modules deliberately. Add the [Vite boundary plugin](/docs/env/vite/) where Vite builds browser code.
 
 ## Treat compatibility as exact or unknown
 

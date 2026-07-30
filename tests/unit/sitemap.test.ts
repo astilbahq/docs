@@ -22,7 +22,7 @@ describe("documentation sitemap", () => {
     );
     const sourcePaths = docsSitemapSources.map(({ sourcePath }) => sourcePath);
 
-    expect(docsSitemapSources).toHaveLength(38);
+    expect(docsSitemapSources).toHaveLength(44);
     expect(new Set(canonicalPaths).size).toBe(canonicalPaths.length);
     expect(new Set(sourcePaths).size).toBe(sourcePaths.length);
     expect(sourcePaths).toEqual(
@@ -30,7 +30,13 @@ describe("documentation sitemap", () => {
         "src/content/docs/env.md",
         "src/content/docs/env/overview.md",
         "src/content/docs/env/quickstart.md",
+        "src/content/docs/env/nodejs.md",
+        "src/content/docs/env/browser-runtime.md",
+        "src/content/docs/env/cloudflare-workers.md",
+        "src/content/docs/env/vite.md",
+        "src/content/docs/env/nextjs.md",
         "src/content/docs/env/lifecycles-and-projections.md",
+        "src/content/docs/env/validation-and-standard-schema.md",
         "src/content/docs/env/browser-delivery.md",
         "src/content/docs/env/migrate-from-next-dynamic-env.md",
         "src/content/docs/env/declaration-reference.md",

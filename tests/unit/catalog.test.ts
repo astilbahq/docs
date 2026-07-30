@@ -52,7 +52,7 @@ describe("documentation catalog", () => {
     const version = getDefaultVersion(env);
     const page = getDefaultPage(env, version);
 
-    expect(version.id).toBe("0.1");
+    expect(version.id).toBe("0.2");
     expect(version.lifecycle).toBe("latest");
     expect(page.key).toBe("overview");
     expect(env.repositoryUrl).toBe("https://github.com/astilbahq/env");
@@ -161,8 +161,16 @@ describe("documentation catalog", () => {
         pages: ["Overview", "Configure a Node application"],
       },
       {
-        label: "Concepts",
-        pages: ["Lifecycles and projections"],
+        label: "Runtimes",
+        pages: ["Node.js", "Browser"],
+      },
+      {
+        label: "Platforms",
+        pages: ["Cloudflare Workers"],
+      },
+      {
+        label: "Frameworks",
+        pages: ["Vite", "Next.js"],
       },
       {
         label: "Guides",
@@ -170,6 +178,10 @@ describe("documentation catalog", () => {
           "Deliver browser configuration",
           "Migrate from next-dynamic-env",
         ],
+      },
+      {
+        label: "Concepts",
+        pages: ["Lifecycles and projections", "Validation and Standard Schema"],
       },
       {
         label: "Reference",

@@ -18,7 +18,7 @@ const skillDefinitions = [
   },
   {
     description:
-      "Consult Astilba's public Env documentation to integrate the 0.1 configuration contract compiler without weakening browser, server, or lifecycle boundaries.",
+      "Consult Astilba's public Env documentation to integrate the 0.2 configuration contract compiler without weakening browser, server, platform, or lifecycle boundaries.",
     name: "astilba-env-docs",
   },
 ] as const;

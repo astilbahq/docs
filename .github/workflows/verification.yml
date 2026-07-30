@@ -183,6 +183,26 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Require the documented Env release on npm
+        env:
+          ASTILBA_ENV_PACKAGE: "@astilba/env"
+          ASTILBA_ENV_VERSION: "0.2.0"
+          NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
+        run: |
+          if ! resolved_version="$(
+            npm view "$ASTILBA_ENV_PACKAGE@$ASTILBA_ENV_VERSION" version
+          )"; then
+            echo "::error::$ASTILBA_ENV_PACKAGE@$ASTILBA_ENV_VERSION is not available from the public npm registry."
+            exit 1
+          fi
+
+          if [[ "$resolved_version" != "$ASTILBA_ENV_VERSION" ]]; then
+            echo "::error::Expected $ASTILBA_ENV_PACKAGE@$ASTILBA_ENV_VERSION, but npm resolved version $resolved_version."
+            exit 1
+          fi
+
+          echo "Confirmed $ASTILBA_ENV_PACKAGE@$resolved_version on the public npm registry."
+
       - name: Reject a stale main revision
         env:
           VERIFIED_SHA: ${{ github.sha }}

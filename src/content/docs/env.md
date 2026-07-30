@@ -8,10 +8,10 @@ next: false
 
 Astilba Env is a local-first configuration contract compiler for TypeScript. You declare which values each application artifact needs, when those values may be resolved, and where they may be exposed. Env generates typed browser and server modules from that contract.
 
-`@astilba/env` 0.1.0 is a public alpha. It is intended for evaluation and controlled adoption while the contract is still free to improve.
+`@astilba/env` 0.2.0 is a public alpha. It is intended for evaluation and controlled adoption while the contract is still free to improve.
 
 ```sh
-pnpm add @astilba/env@0.1.0
+pnpm add @astilba/env@0.2.0 --save-exact
 ```
 
 Env does not replace your secret manager or `.env` files, and it has no hosted control plane. Generation and checking read only the source values their current operation needs, inside your project. Public build values are deliberately emitted into generated `.build.ts` modules; other generated evidence is value-free. Env does not send your values to Astilba.
@@ -22,11 +22,15 @@ Env does not replace your secret manager or `.env` files, and it has no hosted c
 | --- | --- |
 | Decide whether Env fits | [Overview](/docs/env/overview/) |
 | Add Env to a Node application | [Configure a Node application](/docs/env/quickstart/) |
+| Check a runtime boundary | [Node.js](/docs/env/nodejs/) or [Browser](/docs/env/browser-runtime/) |
+| Configure a Cloudflare Worker | [Cloudflare Workers](/docs/env/cloudflare-workers/) |
+| Integrate a framework | [Vite](/docs/env/vite/) or [Next.js](/docs/env/nextjs/) |
 | Understand build, deployment, and request values | [Lifecycles and projections](/docs/env/lifecycles-and-projections/) |
+| Choose built-in or custom validation | [Validation and Standard Schema](/docs/env/validation-and-standard-schema/) |
 | Serve validated browser configuration | [Deliver browser configuration](/docs/env/browser-delivery/) |
 | Replace `next-dynamic-env` | [Migrate from next-dynamic-env](/docs/env/migrate-from-next-dynamic-env/) |
 | Look up builders and codecs | [Declaration reference](/docs/env/declaration-reference/) |
 | Automate generation, checking, and planning | [CLI reference](/docs/env/cli-reference/) |
 | Check runtimes, exports, and alpha boundaries | [Release and support](/docs/env/release-and-support/) |
 
-Start with the Node quickstart for a new integration. Use the migration guide if your application currently exposes runtime configuration through `DynamicEnvScript`, `clientEnv`, or `serverEnv`.
+Start with the Node quickstart for a new integration. Choose a runtime or framework page when the declaration already exists. Use the migration guide if your application currently exposes runtime configuration through `DynamicEnvScript`, `clientEnv`, or `serverEnv`.

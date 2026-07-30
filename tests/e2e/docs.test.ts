@@ -493,6 +493,10 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
       markdownPath: "/docs/env/overview.md",
       pagePath: "/docs/env/overview/",
     },
+    {
+      markdownPath: "/docs/env/cloudflare-workers.md",
+      pagePath: "/docs/env/cloudflare-workers/",
+    },
     { markdownPath: "/docs/cache.md", pagePath: "/docs/cache/" },
     {
       markdownPath: "/docs/cache/overview.md",
@@ -1787,7 +1791,7 @@ test("presents products and copies the agent setup prompt from the homepage", as
     has: page.getByRole("heading", { level: 3, name: "Env" }),
   });
   await expect(envProduct).toContainText("Public alpha");
-  await expect(envProduct).toContainText("@astilba/env 0.1.0");
+  await expect(envProduct).toContainText("@astilba/env 0.2.0");
   await expect(envProduct.getByRole("link", { name: "Env" })).toHaveAttribute(
     "href",
     "/docs/env/"
@@ -2017,7 +2021,7 @@ test("presents Env as a distinct public-alpha product home", async ({
   ).toHaveAttribute("href", "/docs/env/overview/");
   await expect(
     page.getByText(
-      "Released as @astilba/env 0.1.0 for public-alpha evaluation. Expect deliberate breaking changes before a stable release."
+      "Released as @astilba/env 0.2.0 for public-alpha evaluation. Expect deliberate breaking changes before a stable release."
     )
   ).toBeVisible();
   await expect(
@@ -2037,6 +2041,47 @@ test("presents Env as a distinct public-alpha product home", async ({
   await expect(
     page.getByRole("banner").getByRole("link", { name: "Env", exact: true })
   ).toHaveAttribute("aria-current", "page");
+  await expectNoAxeViolations(page);
+});
+
+test("presents the Env runtime, platform, and framework split", async ({
+  page,
+}) => {
+  await page.goto("/docs/env/cloudflare-workers/");
+
+  await expect(page).toHaveTitle("Cloudflare Workers | Astilba Env");
+  await expect(
+    page.getByRole("heading", { level: 1, name: "Cloudflare Workers" })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "Pass string bindings without coercion",
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Wrangler configuration reference" })
+  ).toHaveAttribute(
+    "href",
+    "https://developers.cloudflare.com/workers/wrangler/configuration/"
+  );
+
+  const sidebar = page.locator("#starlight__sidebar");
+  await expect(
+    sidebar.getByRole("link", { name: "Node.js", exact: true })
+  ).toHaveAttribute("href", "/docs/env/nodejs/");
+  await expect(
+    sidebar.getByRole("link", { name: "Browser", exact: true })
+  ).toHaveAttribute("href", "/docs/env/browser-runtime/");
+  await expect(
+    sidebar.getByRole("link", { name: "Cloudflare Workers", exact: true })
+  ).toHaveAttribute("aria-current", "page");
+  await expect(
+    sidebar.getByRole("link", { name: "Vite", exact: true })
+  ).toHaveAttribute("href", "/docs/env/vite/");
+  await expect(
+    sidebar.getByRole("link", { name: "Next.js", exact: true })
+  ).toHaveAttribute("href", "/docs/env/nextjs/");
   await expectNoAxeViolations(page);
 });
 

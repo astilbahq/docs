@@ -6,7 +6,7 @@ tableOfContents: false
 
 Astilba builds portable infrastructure tools and libraries with explicit correctness boundaries. These docs describe each released or reviewed surface, what its guarantees cost, and which parts remain incomplete.
 
-The products are at different lifecycle stages. Create has a public release; Env is a 0.1 public alpha; Cache is a source-reviewed development preview. Read each product's status page before treating an example as a supported setup.
+The products are at different lifecycle stages. Create has a public release; Env is a 0.2 public alpha; Cache is a source-reviewed development preview. Read each product's status page before treating an example as a supported setup.
 
 ## Products
 
@@ -20,7 +20,7 @@ A deterministic CLI that generates complete TypeScript projects from four mainta
 
 A local-first configuration contract compiler with explicit lifecycles and physically separated browser and server projections.
 
-Start with the [overview](/docs/env/overview/), [configure a Node application](/docs/env/quickstart/), follow the [browser delivery guide](/docs/env/browser-delivery/), or check the exact [release and support](/docs/env/release-and-support/) boundary for the 0.1 public alpha.
+Start with the [overview](/docs/env/overview/), [configure a Node application](/docs/env/quickstart/), choose a [runtime or platform](/docs/env/nodejs/), or check the exact [release and support](/docs/env/release-and-support/) boundary for the 0.2 public alpha.
 
 ### [Cache](/docs/cache/)
 
@@ -37,7 +37,7 @@ Start with the [overview](/docs/cache/overview/), check the [implementation stat
 Each product owns its own version tree and release boundary:
 
 - For Create, [Release and support](/docs/create/release-and-support/) records the public package, runtime, recipes, and omitted capabilities supported by 0.3.0.
-- For Env, [Release and support](/docs/env/release-and-support/) records the 0.1 public-alpha package, runtime, exports, and framework boundary.
+- For Env, [Release and support](/docs/env/release-and-support/) records the 0.2 public-alpha package, runtime, exports, and framework boundary.
 - For Cache, [Implementation status](/docs/cache/api-status/) is the authoritative ledger for the reviewed source snapshot, partial behavior, placeholders, and missing release gates.
 
 Guides show an outcome, concepts explain one mental model, and reference pages enumerate the public surface. If an example and a status ledger ever appear to disagree, follow the ledger and report the stale page.

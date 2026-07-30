@@ -543,7 +543,7 @@ assertExact(
         name: "astilba-env-docs",
         type: "skill-md",
         description:
-          "Consult Astilba's public Env documentation to integrate the 0.1 configuration contract compiler without weakening browser, server, or lifecycle boundaries.",
+          "Consult Astilba's public Env documentation to integrate the 0.2 configuration contract compiler without weakening browser, server, platform, or lifecycle boundaries.",
         url: `/${envSkillArtifact}`,
         digest: envSkillDigest,
       },
@@ -804,7 +804,7 @@ assertIncludes(
   "Astilba Cache remains an unreleased preview"
 );
 assertIncludes(llmsArtifact, llmsIndex, "Create 0.3.0 is released");
-assertIncludes(llmsArtifact, llmsIndex, "Env 0.1.0 is a public alpha");
+assertIncludes(llmsArtifact, llmsIndex, "Env 0.2.0 is a public alpha");
 assertIncludes(llmsArtifact, llmsIndex, mcpUrl);
 const llmsFullArtifact = docsArtifact("/llms-full.txt");
 assertIncludes(
@@ -987,7 +987,7 @@ assertIncludes(
   "unreleased source preview"
 );
 assertIncludes(agentSetupArtifact, agentSetupPrompt, "create-astilba` 0.3.0");
-assertIncludes(agentSetupArtifact, agentSetupPrompt, "@astilba/env` 0.1.0");
+assertIncludes(agentSetupArtifact, agentSetupPrompt, "@astilba/env` 0.2.0");
 assertIncludes(agentSetupArtifact, agentSetupPrompt, "Env release and support");
 assertIncludes(agentSetupArtifact, agentSetupPrompt, "public alpha");
 assertIncludes(agentSetupArtifact, agentSetupPrompt, "inline-script transport");

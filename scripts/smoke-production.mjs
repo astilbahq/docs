@@ -11,6 +11,8 @@ const CREATE_HTML_PATH = withDocsBase("/create/overview/");
 const CREATE_MARKDOWN_PATH = withDocsBase("/create/overview.md");
 const ENV_HTML_PATH = withDocsBase("/env/overview/");
 const ENV_MARKDOWN_PATH = withDocsBase("/env/overview.md");
+const ENV_WORKERS_HTML_PATH = withDocsBase("/env/cloudflare-workers/");
+const ENV_WORKERS_MARKDOWN_PATH = withDocsBase("/env/cloudflare-workers.md");
 const HTML_PATH = withDocsBase("/cache/overview/");
 const MARKDOWN_PATH = withDocsBase("/cache/overview.md");
 const MCP_PATH = withDocsBase("/mcp");
@@ -430,11 +432,29 @@ const checkCreateDocs = () =>
 
 const checkEnvDocs = () =>
   checkProductDocs({
-    htmlMarkers: ["Astilba Env", "The 0.1 release is a public alpha"],
+    htmlMarkers: ["Astilba Env", "The 0.2 release is a public alpha"],
     htmlPath: ENV_HTML_PATH,
     label: "Env",
     markdownMarkers: ["# Overview", "@astilba/env", "public alpha"],
     markdownPath: ENV_MARKDOWN_PATH,
+    negotiateMarkdown: true,
+  });
+
+const checkEnvWorkersDocs = () =>
+  checkProductDocs({
+    htmlMarkers: [
+      "Cloudflare Workers",
+      "generated server target",
+      "string or undefined",
+    ],
+    htmlPath: ENV_WORKERS_HTML_PATH,
+    label: "Env Cloudflare Workers",
+    markdownMarkers: [
+      "# Cloudflare Workers",
+      "wrangler types",
+      "nodejs_compat",
+    ],
+    markdownPath: ENV_WORKERS_MARKDOWN_PATH,
     negotiateMarkdown: true,
   });
 
@@ -478,6 +498,8 @@ const PRODUCT_DISCOVERY_CHECKS = [
     documentSetMarkers: [
       "<SYSTEM>Astilba Env:",
       "# Env",
+      "# Cloudflare Workers",
+      "# Validation and Standard Schema",
       "# Release and support",
       "# Migrate from next-dynamic-env",
     ],
@@ -592,6 +614,7 @@ const checkSitemap = async () => {
     !sitemap.includes(`<loc>${docsUrl("/")}</loc>`) ||
     !sitemap.includes(`<loc>${docsUrl("/create/overview/")}</loc>`) ||
     !sitemap.includes(`<loc>${docsUrl("/env/overview/")}</loc>`) ||
+    !sitemap.includes(`<loc>${docsUrl("/env/cloudflare-workers/")}</loc>`) ||
     !/<lastmod>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z<\/lastmod>/.test(
       sitemap
     )
@@ -827,14 +850,16 @@ const checkMcp = async () => {
   }
 
   const envSearch = await callMcp("tools/call", {
-    arguments: { productId: "env", query: "same-origin JSON" },
+    arguments: { productId: "env", query: "Wrangler binding types" },
     name: "search_docs",
   });
   const envResults = envSearch?.structuredContent?.results;
 
   if (
     !Array.isArray(envResults) ||
-    !envResults.some((result) => result?.uri === docsUrl("/env/overview.md"))
+    !envResults.some(
+      (result) => result?.uri === docsUrl("/env/cloudflare-workers.md")
+    )
   ) {
     throw new Error(
       "[production-smoke] MCP search_docs did not return the expected Env resource."
@@ -849,6 +874,7 @@ const runChecks = async () => {
     checkDirectMarkdown(),
     checkCreateDocs(),
     checkEnvDocs(),
+    checkEnvWorkersDocs(),
     checkMissingMarkdown(),
     checkDiscovery(),
     checkSitemap(),

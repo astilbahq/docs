@@ -376,6 +376,18 @@ describe("generated MCP corpus", () => {
       uri: `${docsOrigin}/docs/cache.md`,
       versionId: null,
     });
+    expect(
+      searchDocs(corpus, {
+        productId: "env",
+        query: "Cloudflare Workers",
+        versionId: "0.2",
+      })[0]
+    ).toMatchObject({
+      productId: "env",
+      title: "Cloudflare Workers",
+      uri: `${docsOrigin}/docs/env/cloudflare-workers.md`,
+      versionId: "0.2",
+    });
   });
 
   it("reads only allowlisted resources and avoids splitting surrogate pairs", () => {
@@ -419,6 +431,16 @@ describe("generated MCP corpus", () => {
       content: "😀",
       nextOffset: 3,
       returnedChars: 2,
+    });
+    expect(
+      readDoc(corpus, {
+        limit: 12,
+        uri: `${docsOrigin}/docs/env/cloudflare-workers.md`,
+      })
+    ).toMatchObject({
+      offset: 0,
+      returnedChars: 12,
+      uri: `${docsOrigin}/docs/env/cloudflare-workers.md`,
     });
   });
 });
