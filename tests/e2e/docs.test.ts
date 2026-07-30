@@ -2054,7 +2054,10 @@ test("presents the Env runtime, platform, and framework split", async ({
     page.getByRole("heading", { level: 1, name: "Cloudflare Workers" })
   ).toBeVisible();
   await expect(
-    page.getByText("Pass string bindings without coercion")
+    page.getByRole("heading", {
+      level: 2,
+      name: "Pass string bindings without coercion",
+    })
   ).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Wrangler configuration reference" })
