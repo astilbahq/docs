@@ -27,6 +27,7 @@
     margin-inline-start: -1px;
     padding-block: 0.35rem;
     padding-inline: 0.75rem;
+    padding-inline-start: calc(0.75rem * var(--depth) + 0.75rem);
     border-inline-start: 1px solid transparent;
     border-radius: 0;
     color: var(--astilba-colors-ink-muted);

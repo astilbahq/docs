@@ -163,6 +163,10 @@ export default defineConfig({
         Sidebar: "./src/components/Sidebar.astro",
       },
       lastUpdated: false,
+      tableOfContents: {
+        minHeadingLevel: 2,
+        maxHeadingLevel: 3,
+      },
       plugins: [
         starlightLinksValidator(),
         ...(site
