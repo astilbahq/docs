@@ -225,6 +225,9 @@ jobs:
 
       - name: Smoke-test apex site
         run: pnpm smoke:site
+        env:
+          ASTILBA_SITE_SMOKE_ATTEMPTS: "10"
+          ASTILBA_SITE_SMOKE_RETRY_DELAY_MS: "6000"
 
       - name: Deploy verified docs site
         run: pnpm exec wrangler deploy
