@@ -804,7 +804,7 @@ assertIncludes(
   "Astilba Cache remains an unreleased preview"
 );
 assertIncludes(llmsArtifact, llmsIndex, "Create 0.3.0 is released");
-assertIncludes(llmsArtifact, llmsIndex, "Env 0.2.1 is a public alpha");
+assertIncludes(llmsArtifact, llmsIndex, "Env 0.2.2 is a public alpha");
 assertIncludes(llmsArtifact, llmsIndex, mcpUrl);
 const llmsFullArtifact = docsArtifact("/llms-full.txt");
 assertIncludes(
@@ -987,7 +987,7 @@ assertIncludes(
   "unreleased source preview"
 );
 assertIncludes(agentSetupArtifact, agentSetupPrompt, "create-astilba` 0.3.0");
-assertIncludes(agentSetupArtifact, agentSetupPrompt, "@astilba/env` 0.2.1");
+assertIncludes(agentSetupArtifact, agentSetupPrompt, "@astilba/env` 0.2.2");
 assertIncludes(agentSetupArtifact, agentSetupPrompt, "Env release and support");
 assertIncludes(agentSetupArtifact, agentSetupPrompt, "public alpha");
 assertIncludes(agentSetupArtifact, agentSetupPrompt, "inline-script transport");

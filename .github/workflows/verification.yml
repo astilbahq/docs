@@ -186,7 +186,7 @@ jobs:
       - name: Require the documented Env release on npm
         env:
           ASTILBA_ENV_PACKAGE: "@astilba/env"
-          ASTILBA_ENV_VERSION: "0.2.1"
+          ASTILBA_ENV_VERSION: "0.2.2"
           NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
         run: |
           if ! resolved_version="$(
