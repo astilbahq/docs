@@ -1613,6 +1613,45 @@ test("uses product-aware document titles", async ({ page }) => {
   await expect(page).toHaveTitle("MCP Server | Astilba");
 });
 
+test("nests level-three headings beneath their page-outline parent", async ({
+  page,
+}) => {
+  await page.goto("/docs/create/project-manifest/");
+
+  const outline = page.locator("starlight-toc");
+  const parent = outline.getByRole("link", {
+    name: "Interpret ownership",
+    exact: true,
+  });
+  const child = outline.getByRole("link", {
+    name: "Managed files",
+    exact: true,
+  });
+
+  await expect(outline).toHaveAttribute("data-min-h", "2");
+  await expect(outline).toHaveAttribute("data-max-h", "3");
+  await expect(parent).toBeVisible();
+  await expect(child).toBeVisible();
+
+  expect(
+    await child.evaluate(
+      (link) =>
+        link.closest("ul")?.parentElement?.querySelector(":scope > a")
+          ?.textContent
+    )
+  ).toBe("Interpret ownership");
+
+  const [parentLabelBounds, childLabelBounds] = await Promise.all(
+    [parent, child].map((link) => link.locator("span").boundingBox())
+  );
+
+  if (!(parentLabelBounds && childLabelBounds)) {
+    throw new Error("Expected both page-outline labels to be visible.");
+  }
+
+  expect(childLabelBounds.x).toBeGreaterThan(parentLabelBounds.x);
+});
+
 test("omits terminal window headers without removing useful code titles", async ({
   page,
 }) => {
