@@ -1,6 +1,6 @@
 ---
 title: Declaration reference
-description: Reference the Env 0.1 declaration fields, entry builders, codecs, consumers, targets, and co-presence rules.
+description: Reference the Env 0.2 declaration fields, entry builders, codecs, consumers, targets, and co-presence rules.
 ---
 
 The root `@astilba/env` export contains two runtime values:

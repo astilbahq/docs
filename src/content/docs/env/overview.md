@@ -1,27 +1,35 @@
 ---
 title: Overview
-description: Understand Astilba Env's lifecycle model, generated modules, browser delivery, and responsibility boundary.
+description: Understand Astilba Env's contract model, generated boundaries, supported runtimes, and responsibility boundary.
 ---
 
 Astilba Env turns one portable TypeScript declaration into generated configuration interfaces for the artifacts that consume them. It keeps browser and server projections physically separate, distinguishes build, deployment, and request values, and validates values at the lifecycle where they become available.
 
-The 0.1 release is a public alpha. Use it when explicit configuration boundaries are worth adopting before the API reaches stability.
+The 0.2 release is a public alpha. Use it when explicit configuration boundaries are worth adopting before the API reaches stability.
 
 ## Decide whether Env fits
 
 | You want to… | Fit |
 | --- | --- |
-| Promote one built artifact through several deployments | Declare deployment values and resolve them when the application starts or serves them. |
+| Promote one built artifact through several deployments | Declare deployment values and resolve them from each deployment's source object. |
 | Keep private names and bindings out of browser bundles | Browser consumers receive generated public projections only. |
-| Validate build, deployment, and request values separately | Each entry declares its lifecycle and each generated target resolves one lifecycle. |
+| Validate build, deployment, and request values separately | Each entry declares its lifecycle; each generated target resolves one lifecycle. |
 | Run without an Astilba service | Generation, checking, and planning are local; the application owns value storage and delivery. |
+| Validate Worker bindings without a Node.js compatibility layer | Env 0.2 admits a narrow generated deployment-target path for Cloudflare Workers. |
 | Inject arbitrary configuration through inline JavaScript | Not supported. Browser deployment and request values use inert, same-origin JSON. |
 | Import one mutable environment object everywhere | Not supported. Generated modules create explicit artifact boundaries. |
-| Keep framework-specific runtime semantics | Env supplies portable modules; your framework owns routing and application startup. |
+| Provision secrets or platform bindings | Not supported. Env validates application-owned sources; it does not operate providers. |
 
-## Declare consumers and targets
+## Model four decisions
 
-Create `astilba.env.ts` in an ESM package:
+An Env declaration records four independent decisions:
+
+1. an entry's visibility is `public` or `private`;
+2. its lifecycle is `build`, `deployment`, or `request`;
+3. its codec defines the accepted input and typed output; and
+4. a consumer selects which entries one artifact may know.
+
+A target then maps one consumer and one complete lifecycle to names in an application-owned source object.
 
 ```ts
 import { defineEnvironment, env } from "@astilba/env";
@@ -30,17 +38,15 @@ export default defineEnvironment({
   id: "com.example.application",
   entries: {
     apiOrigin: env.public.deployment.origin(),
-    applicationOrigin: env.public.deployment.origin(),
     databaseUrl: env.private.deployment.secret(),
   },
   consumers: {
-    browser: env.browser(["apiOrigin", "applicationOrigin"]),
+    browser: env.browser(["apiOrigin"]),
     server: env.server(["databaseUrl"]),
   },
   targets: {
     browserDeployment: env.process("browser", {
-      apiOrigin: "PUBLIC_API_ORIGIN",
-      applicationOrigin: "APPLICATION_ORIGIN",
+      apiOrigin: "API_ORIGIN",
     }),
     serverDeployment: env.process("server", {
       databaseUrl: "DATABASE_URL",
@@ -49,24 +55,18 @@ export default defineEnvironment({
 });
 ```
 
-The entry builder fixes three decisions in the contract:
+The declaration does not read either value.
 
-- visibility: `public` or `private`;
-- lifecycle: `build`, `deployment`, or `request`; and
-- codec: the exact accepted input and typed output.
+## Generate artifact-specific modules
 
-A consumer selects the entries one artifact may know. A target maps one consumer and lifecycle to names in an application-owned source record such as `process.env`.
-
-## Generate typed modules
-
-Run generation locally and check drift in CI:
+Run generation on a supported Node.js release and check drift in CI:
 
 ```sh
-astilba-env generate
-astilba-env generate --check
+pnpm exec astilba-env generate
+pnpm exec astilba-env generate --check
 ```
 
-For the declaration above, the application imports these generated modules:
+The declaration above produces separate interfaces:
 
 ```text
 .astilba/env/browser/browser.deployment.ts
@@ -74,73 +74,25 @@ For the declaration above, the application imports these generated modules:
 .astilba/env/serverDeployment.server.ts
 ```
 
-The generated server target modules export typed `check(source)` and `load(source)` functions. `check` returns either a typed value or redacted diagnostics. `load` returns the value or throws an environment-configuration error.
+Generated target modules export typed `check(source)` and `load(source)` functions. Generated browser build modules may contain frozen public build values; deployment and request projection modules contain the public decoder and compatibility identity for one consumer and lifecycle, but no values, private entry names, private bindings, or complete contract metadata.
 
-```ts
-import { load } from "./.astilba/env/serverDeployment.server";
+Read [Lifecycles and projections](/docs/env/lifecycles-and-projections/) for the generated file model.
 
-const configuration = load(process.env);
-configuration.databaseUrl;
-```
+## Choose the runtime boundary
 
-The generated browser module exports a `projection`. It contains the public decoder and compatibility identity for one consumer and lifecycle. It contains no values, private entry names, private bindings, or complete contract metadata.
+| Runtime | Supported Env surface |
+| --- | --- |
+| Node.js | Declaration authoring, generator, CLI, and generated server targets. |
+| Browser | Isolated public bootstrap loading and projection validation. |
+| Cloudflare Workers | Generated deployment-lifecycle server targets using first-party codecs. Authoring and generation stay on Node.js. |
 
-## Deliver browser values as inert JSON
+Framework pages explain application-owned wiring:
 
-Your application owns the JSON endpoint. It resolves the public target, constructs the envelope, and returns only the selected public values:
+- [Vite](/docs/env/vite/) adds a private-module browser-graph boundary;
+- [Next.js](/docs/env/nextjs/) wires generated targets and public JSON delivery into App Router or Pages Router; and
+- [Deliver browser configuration](/docs/env/browser-delivery/) defines the framework-neutral endpoint protocol.
 
-```ts
-import { projection } from "./.astilba/env/browser/browser.deployment";
-import { check } from "./.astilba/env/browserDeployment.server";
-
-export const environmentResponse = (): Response => {
-  const result = check(process.env);
-
-  if (!result.ok) {
-    return Response.json(
-      { diagnostics: result.diagnostics, ok: false },
-      {
-        headers: { "Cache-Control": "private, no-store" },
-        status: 500,
-      }
-    );
-  }
-
-  return Response.json(
-    {
-      audience: { origin: result.value.applicationOrigin },
-      consumer: projection.consumer,
-      contract: projection.contract,
-      lifecycle: projection.lifecycle,
-      projection: projection.digest,
-      protocol: "astilba.env.bootstrap/v1",
-      values: result.value,
-    },
-    { headers: { "Cache-Control": "private, no-store" } }
-  );
-};
-```
-
-Load and validate that envelope before the browser application consumes it:
-
-```ts
-import { loadBrowserBootstrap } from "@astilba/env/browser";
-import { projection } from "./.astilba/env/browser/browser.deployment";
-
-const bootstrap = await loadBrowserBootstrap({
-  endpoint: "/api/env",
-  expectedAudience: { origin: window.location.origin },
-  fetch: globalThis.fetch,
-  projection,
-  requestBaseUrl: window.location.href,
-});
-
-bootstrap.values.apiOrigin;
-```
-
-The browser runtime fetches with `cache: "no-store"` and refuses redirects, cross-origin responses, unexpected content types, incompatible protocol or projection identities, oversized payloads, unknown fields, and invalid typed values.
-
-Responses that can vary by request must use `Cache-Control: private, no-store`. Static public build values use a generated `.build.ts` module instead of a runtime endpoint.
+Check [Release and support](/docs/env/release-and-support/) before choosing a runtime. Evidence for one package export does not make every Env export portable to that runtime.
 
 ## Keep ownership explicit
 
@@ -148,16 +100,16 @@ Env owns:
 
 - contract compilation and deterministic generated output;
 - public and server projection separation;
-- process-source checking and redacted diagnostics;
+- source checking and redacted diagnostics;
 - browser envelope validation; and
 - value-free compatibility planning.
 
-Your application owns:
+Your application and platform own:
 
-- the environment variables, secret manager, or platform bindings;
+- environment variables, secret managers, and provider bindings;
 - when generated targets are checked or loaded;
-- the browser endpoint and its trusted canonical origin;
-- response headers and authentication where request values require it; and
-- framework startup and failure presentation.
+- browser routes, trusted canonical origins, and response policy;
+- framework startup and failure presentation; and
+- provisioning, deployment, and live inventory.
 
-Continue with [Configure a Node application](/docs/env/quickstart/) for the smallest working setup, [Deliver browser configuration](/docs/env/browser-delivery/) for the complete bootstrap boundary, or [Release and support](/docs/env/release-and-support/) for the exact 0.1 surface.
+Continue with [Configure a Node application](/docs/env/quickstart/) for the smallest working setup.

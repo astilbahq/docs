@@ -1,11 +1,11 @@
 ---
 name: "astilba-env-docs"
-description: "Consult Astilba's public Env documentation to integrate the 0.1 configuration contract compiler without weakening browser, server, or lifecycle boundaries."
+description: "Consult Astilba's public Env documentation to integrate the 0.2 configuration contract compiler without weakening browser, server, platform, or lifecycle boundaries."
 ---
 
 # Astilba Env documentation
 
-Use this skill when a question concerns `@astilba/env`, its declaration builders, generated modules, lifecycle model, browser bootstrap protocol, framework wiring, or migration from `next-dynamic-env`.
+Use this skill when a question concerns `@astilba/env`, its declaration builders, generated modules, lifecycle model, runtime and platform boundaries, browser bootstrap protocol, framework wiring, or migration from `next-dynamic-env`.
 
 ## Read the public sources
 
@@ -13,18 +13,22 @@ Use this skill when a question concerns `@astilba/env`, its declaration builders
 2. Otherwise, start with the [Env document set](https://astilba.com/docs/_llms-txt/astilba-env.txt) when the question spans several topics.
 3. When the question is focused, follow the relevant canonical page link in that document set and use the page-specific Markdown alternate it advertises.
 4. Use [Configure a Node application](https://astilba.com/docs/env/quickstart.md) for a first integration.
-5. Use [Lifecycles and projections](https://astilba.com/docs/env/lifecycles-and-projections.md) to decide when and where a value may be resolved.
-6. Use [Declaration reference](https://astilba.com/docs/env/declaration-reference.md) for builders, codecs, consumers, targets, and rules.
-7. Use [Deliver browser configuration](https://astilba.com/docs/env/browser-delivery.md) for endpoint, loader, build-value, failure, and Vite-boundary guidance.
-8. Use [CLI reference](https://astilba.com/docs/env/cli-reference.md) for generation, target checking, planning, machine formats, and exit statuses.
-9. Check [Release and support](https://astilba.com/docs/env/release-and-support.md) before claiming a package, runtime, framework adapter, or compatibility guarantee is supported.
-10. Use [Migrate from next-dynamic-env](https://astilba.com/docs/env/migrate-from-next-dynamic-env.md) for App Router, Pages Router, validation, and intentional non-compatibility guidance.
+5. Use [Node.js](https://astilba.com/docs/env/nodejs.md), [Browser](https://astilba.com/docs/env/browser-runtime.md), and [Cloudflare Workers](https://astilba.com/docs/env/cloudflare-workers.md) for exact runtime or platform boundaries.
+6. Use [Vite](https://astilba.com/docs/env/vite.md) and [Next.js](https://astilba.com/docs/env/nextjs.md) for framework wiring.
+7. Use [Lifecycles and projections](https://astilba.com/docs/env/lifecycles-and-projections.md) to decide when and where a value may be resolved.
+8. Use [Validation and Standard Schema](https://astilba.com/docs/env/validation-and-standard-schema.md) to choose built-in or opaque validation.
+9. Use [Declaration reference](https://astilba.com/docs/env/declaration-reference.md) for builders, codecs, consumers, targets, and rules.
+10. Use [Deliver browser configuration](https://astilba.com/docs/env/browser-delivery.md) for endpoint, loader, build-value, and failure guidance.
+11. Use [CLI reference](https://astilba.com/docs/env/cli-reference.md) for generation, target checking, planning, machine formats, and exit statuses.
+12. Check [Release and support](https://astilba.com/docs/env/release-and-support.md) before claiming a package, runtime, framework adapter, or compatibility guarantee is supported.
+13. Use [Migrate from next-dynamic-env](https://astilba.com/docs/env/migrate-from-next-dynamic-env.md) for legacy API, validation, and intentional non-compatibility guidance.
 
 ## Keep the public-alpha boundary explicit
 
-- Treat `@astilba/env` 0.1.0 as a public alpha, not a stable compatibility promise.
+- Treat `@astilba/env` 0.2.0 as a public alpha, not a stable compatibility promise.
 - Keep browser and server generated modules physically separate.
-- Do not invent a hosted control plane, secret store, `.env` loader, inline-script transport, or `@astilba/env/next` export.
+- Limit Cloudflare Workers claims to generated deployment targets with first-party codecs. Do not extend that support to request targets, opaque schemas, or other package exports.
+- Do not invent a hosted control plane, provider API, secret store, `.env` loader, inline-script transport, or `@astilba/env/next` export.
 - Treat framework routing, startup, endpoint authentication, and response headers as application responsibilities.
 - Use inert same-origin JSON for browser deployment and request values; responses that vary by request require `Cache-Control: private, no-store`.
 

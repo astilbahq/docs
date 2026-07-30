@@ -1,6 +1,6 @@
 ---
 title: Deliver browser configuration
-description: Generate a public projection, serve an inert same-origin JSON envelope, validate it before startup, and reject private imports with Vite.
+description: Generate a public projection, serve an inert same-origin JSON envelope, and validate it before browser application startup.
 ---
 
 Env delivers browser deployment and request configuration as inert JSON. Your application owns the endpoint; the generated projection and browser runtime validate that the response belongs to the expected contract, consumer, lifecycle, and origin before application code uses it.
@@ -220,28 +220,4 @@ configuration.releaseSha;
 
 Changing `RELEASE_SHA` requires generation and a new application build. The generated module contains the public value, so do not use build entries for secrets.
 
-## Reject private browser imports
-
-Add the Vite boundary to every Vite browser build:
-
-```ts
-import { astilbaEnvBrowserBoundary } from "@astilba/env/vite";
-import { defineConfig } from "vite";
-
-export default defineConfig({
-  plugins: [astilbaEnvBrowserBoundary()],
-});
-```
-
-The plugin rejects browser-graph imports of:
-
-- the root `@astilba/env` declaration package;
-- `@astilba/env/runtime` and `@astilba/env/vite`;
-- `astilba.env.ts` or `.mts`;
-- generated `*.server.ts` modules;
-- `contract.json`, `snapshot.json`, and consumer metadata; and
-- package-owned files outside the public browser runtime.
-
-It permits `@astilba/env/browser` and generated `browser/*.build.ts`, `browser/*.deployment.ts`, and `browser/*.request.ts` modules.
-
-The plugin is a build-time guard, not a substitute for deliberate import structure. Frameworks that do not use Vite must enforce the same boundary in their build and tests. Scan production browser artifacts for private entry names, binding names, and test canary values before deployment.
+Keep the browser runtime and generated public modules physically separate from private targets. If Vite builds the browser graph, add the dedicated [Vite boundary](/docs/env/vite/).

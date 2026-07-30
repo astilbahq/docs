@@ -1,15 +1,15 @@
 ---
 title: Migrate from next-dynamic-env
-description: Replace next-dynamic-env proxies and script injection with an explicit Env declaration, generated modules, and application-owned JSON delivery.
+description: Replace next-dynamic-env proxies and script injection with an explicit Env contract and generated application boundaries.
 ---
 
-Astilba Env covers the build-once deployment use case of [`next-dynamic-env`](https://github.com/ReesMorris/next-dynamic-env), but it does not preserve that package's API or runtime mechanism. The migration replaces ambient proxies and script injection with an explicit contract, generated browser and server modules, and an application-owned inert JSON endpoint.
+Astilba Env covers the build-once deployment use case of [`next-dynamic-env`](https://github.com/ReesMorris/next-dynamic-env), but it does not preserve that package's API or runtime mechanism. The migration replaces ambient proxies and script injection with an explicit contract, generated browser and server modules, and application-owned inert JSON delivery.
 
 Treat this as an architectural migration, not a package rename.
 
 ## Map the concepts
 
-| `next-dynamic-env` | Astilba Env 0.1 |
+| `next-dynamic-env` | Astilba Env 0.2 |
 | --- | --- |
 | `createDynamicEnv({ client, server })` | [`defineEnvironment({ entries, consumers, targets })`](/docs/env/declaration-reference/#defineenvironment) |
 | `clientEnv` proxy | Generated browser build configuration or validated bootstrap values |
@@ -62,33 +62,20 @@ export default defineEnvironment({
 
 Public exposure is determined by both the entry visibility and the browser consumer selection. A variable name does not become public merely because it has a `NEXT_PUBLIC_` prefix.
 
-Generate the application-owned interfaces:
+Generate and check the application-owned interfaces:
 
 ```sh
-astilba-env generate
+pnpm exec astilba-env generate
+pnpm exec astilba-env generate --check
 ```
 
-Check generated drift in CI:
+## Replace `serverEnv`
 
-```sh
-astilba-env generate --check
-```
-
-This declaration generates:
-
-```text
-.astilba/env/browser/browser.deployment.ts
-.astilba/env/browserDeployment.server.ts
-.astilba/env/serverDeployment.server.ts
-```
-
-The browser module exports `projection`; it contains a public decoder and compatibility identity, not values. Each server target exports typed `check(source)` and `load(source)` operations for its selected lifecycle.
-
-## Load server configuration explicitly
-
-Replace `serverEnv` property access with a generated target import:
+Replace ambient proxy access with an explicit generated target:
 
 ```ts
+import "server-only";
+
 import { load } from "./.astilba/env/serverDeployment.server";
 
 const configuration = load(process.env);
@@ -97,258 +84,39 @@ configuration.databaseUrl;
 configuration.port;
 ```
 
-Use `check` where the application needs to choose its failure response:
+Use `check` where application code needs to choose the failure response. Diagnostics contain stable codes and logical identities where appropriate; they do not echo configuration values.
 
-```ts
-import { check } from "./.astilba/env/serverDeployment.server";
+## Replace browser injection
 
-const result = check(process.env);
+Remove `DynamicEnvScript`, the mutable `clientEnv` proxy, and `waitForEnv`. Add the application-owned Next.js JSON route and Client Component described in [Next.js](/docs/env/nextjs/).
 
-if (!result.ok) {
-  console.error(result.diagnostics);
-  process.exitCode = 1;
-} else {
-  startServer(result.value);
-}
-```
+The replacement has three explicit pieces:
 
-Diagnostics contain stable codes and entry identities where appropriate; they do not echo configuration values.
+1. a generated server target checks the public source values;
+2. the route returns the exact public envelope with `Cache-Control: private, no-store`; and
+3. `@astilba/env/browser` validates the same-origin response before dependent UI renders.
 
-## Add the application-owned browser endpoint
+Use [Deliver browser configuration](/docs/env/browser-delivery/) when you need the complete framework-neutral protocol and failure behavior.
 
-Replace `DynamicEnvScript` with a route that returns the exact public target as JSON. The envelope carries the generated projection identity so the browser can refuse a stale, cross-origin, or incorrectly shaped response.
-
-The endpoint is application code. Env does not choose its path, authentication, trusted origin source, or deployment policy.
-
-### App Router route
-
-```ts
-// app/api/env/route.ts
-import { NextResponse } from "next/server";
-
-import { projection } from "../../../.astilba/env/browser/browser.deployment";
-import { check } from "../../../.astilba/env/browserDeployment.server";
-
-export const dynamic = "force-dynamic";
-
-export const GET = (): NextResponse => {
-  const result = check(process.env);
-
-  if (!result.ok) {
-    return NextResponse.json(
-      { diagnostics: result.diagnostics, ok: false },
-      {
-        headers: { "Cache-Control": "private, no-store" },
-        status: 500,
-      }
-    );
-  }
-
-  return NextResponse.json(
-    {
-      audience: { origin: result.value.applicationOrigin },
-      consumer: projection.consumer,
-      contract: projection.contract,
-      lifecycle: projection.lifecycle,
-      projection: projection.digest,
-      protocol: "astilba.env.bootstrap/v1",
-      values: result.value,
-    },
-    { headers: { "Cache-Control": "private, no-store" } }
-  );
-};
-```
-
-`APPLICATION_ORIGIN` must be the canonical origin that serves the page and endpoint. If your platform derives that origin from forwarded headers, perform that derivation only at a trusted proxy boundary.
-
-### Pages Router route
-
-```ts
-// pages/api/env.ts
-import type { NextApiRequest, NextApiResponse } from "next";
-
-import { projection } from "../../.astilba/env/browser/browser.deployment";
-import { check } from "../../.astilba/env/browserDeployment.server";
-
-export default function handler(
-  _request: NextApiRequest,
-  response: NextApiResponse
-): void {
-  const result = check(process.env);
-
-  response.setHeader("Cache-Control", "private, no-store");
-
-  if (!result.ok) {
-    response.status(500).json({
-      diagnostics: result.diagnostics,
-      ok: false,
-    });
-    return;
-  }
-
-  response.status(200).json({
-    audience: { origin: result.value.applicationOrigin },
-    consumer: projection.consumer,
-    contract: projection.contract,
-    lifecycle: projection.lifecycle,
-    projection: projection.digest,
-    protocol: "astilba.env.bootstrap/v1",
-    values: result.value,
-  });
-}
-```
-
-`NextResponse.json` and `response.json` produce the required JSON content type. Responses that can vary by request must include `Cache-Control: private, no-store`; the Env browser loader also fetches with `cache: "no-store"` and `redirect: "error"`.
-
-## Load browser configuration before use
-
-Replace the `clientEnv` proxy with values returned by `loadBrowserBootstrap`:
-
-```tsx
-// environment-client.tsx
-"use client";
-
-import { loadBrowserBootstrap } from "@astilba/env/browser";
-import { createContext, useEffect, useState } from "react";
-
-import {
-  type Configuration,
-  projection,
-} from "./.astilba/env/browser/browser.deployment";
-
-export const EnvironmentContext = createContext<
-  Readonly<Configuration> | undefined
->(undefined);
-
-type EnvironmentState =
-  | { status: "loading" }
-  | { status: "ready"; values: Readonly<Configuration> }
-  | { status: "error" };
-
-export const EnvironmentProvider = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
-  const [state, setState] = useState<EnvironmentState>({
-    status: "loading",
-  });
-
-  useEffect(() => {
-    let active = true;
-
-    void loadBrowserBootstrap({
-      endpoint: "/api/env",
-      expectedAudience: { origin: window.location.origin },
-      fetch: globalThis.fetch,
-      projection,
-      requestBaseUrl: window.location.href,
-    }).then(
-      ({ values }) => {
-        if (active) {
-          setState({ status: "ready", values });
-        }
-      },
-      () => {
-        if (active) {
-          setState({ status: "error" });
-        }
-      }
-    );
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  if (state.status === "loading") {
-    return (
-      <p aria-live="polite" role="status">
-        Loading configuration.
-      </p>
-    );
-  }
-
-  if (state.status === "error") {
-    return (
-      <p role="alert">
-        Configuration is unavailable. Refresh to try again.
-      </p>
-    );
-  }
-
-  return (
-    <EnvironmentContext.Provider value={state.values}>
-      {children}
-    </EnvironmentContext.Provider>
-  );
-};
-```
-
-Replace the sample pending and failure text with application-specific UI. Keep both states perceivable, and do not render application children until the bootstrap has validated successfully.
-
-Mount the provider in either router:
-
-```tsx
-// app/layout.tsx
-import { EnvironmentProvider } from "../environment-client";
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  return (
-    <html lang="en">
-      <body>
-        <EnvironmentProvider>{children}</EnvironmentProvider>
-      </body>
-    </html>
-  );
-}
-```
-
-```tsx
-// pages/_app.tsx
-import type { AppProps } from "next/app";
-
-import { EnvironmentProvider } from "../environment-client";
-
-export default function Application({
-  Component,
-  pageProps,
-}: AppProps) {
-  return (
-    <EnvironmentProvider>
-      <Component {...pageProps} />
-    </EnvironmentProvider>
-  );
-}
-```
-
-For a browser entry point that must not import application code until validation succeeds, use `startBrowserApplication`. Public build values do not need an endpoint; import `configuration` from `.astilba/env/browser/<consumer>.build.ts`.
+Do not keep both delivery mechanisms active. Once the JSON bootstrap path passes application tests, remove the inline script and every read from `window.__NEXT_DYNAMIC_ENV__`.
 
 ## Understand the validation differences
 
-| Behavior | Migration decision |
+| Previous behavior | Migration decision |
 | --- | --- |
 | Validation ran while `createDynamicEnv` built its proxies | Env checks a generated target when your code calls `check` or `load`. |
-| Validation was automatically skipped during `next build` | Mark values as `build`, `deployment`, or `request`; resolve each at that lifecycle. There is no automatic Next build bypass. |
+| Validation was automatically skipped during `next build` | Mark values as `build`, `deployment`, or `request`; there is no automatic Next build bypass. |
 | Raw values could be accepted without a schema | Choose an explicit [Env codec](/docs/env/declaration-reference/#built-in-codecs). |
 | One global option converted empty strings to missing values | Configure blank and required behavior on each codec. |
 | Validator transforms supplied defaults or arbitrary output types | Use a built-in codec, a private opaque schema, or application validation after loading. |
 | Validation errors could throw, warn, or call a handler | Use `check` for an explicit result or `load` for an exception. |
 | Client and server values lived behind runtime proxies | Generated browser and server modules create a static import boundary. |
 
-The browser projection accepts only Env's portable public codecs. Arbitrary schemas and opaque transforms cannot cross into a browser consumer.
+The browser projection accepts only Env's portable public codecs. Arbitrary schemas and opaque transforms cannot enter a browser consumer.
 
-## Migrate Yup validation
+## Migrate Yup validation deliberately
 
-Choose one of three paths for existing Yup schemas.
-
-### Prefer built-in codecs
-
-Translate common constraints directly:
+Prefer built-in codecs for common configuration:
 
 ```ts
 entries: {
@@ -362,89 +130,15 @@ entries: {
 }
 ```
 
-This keeps the contract portable and lets generation produce the exact browser and server decoders.
+For a genuinely custom private transform, use an `opaque` entry and pass an exactly typed, synchronous Standard Schema v1 implementation to the generated target. A Yup adapter can wrap `validateSync`; it must translate success or failure into the Standard Schema result without exposing the rejected value.
 
-### Keep a custom private schema
+Read [Validation and Standard Schema](/docs/env/validation-and-standard-schema/) for the exact type, runtime, CLI, and portability limits.
 
-For a genuinely custom private transform, declare an `opaque` entry with a value-free input and output shape:
-
-```ts
-serviceOptions: env.private.deployment.opaque({
-  input: { kind: "string" },
-  output: {
-    kind: "object",
-    properties: [
-      {
-        name: "region",
-        required: true,
-        shape: { kind: "string" },
-      },
-    ],
-  },
-  revision: "1",
-  semantics: "com.example.service-options/v1",
-}),
-```
-
-Add `serviceOptions` to the `server` consumer selection and bind it in `serverDeployment`:
-
-```ts
-consumers: {
-  server: env.server(["databaseUrl", "port", "serviceOptions"]),
-},
-targets: {
-  serverDeployment: env.process("server", {
-    databaseUrl: "DATABASE_URL",
-    port: "PORT",
-    serviceOptions: "SERVICE_OPTIONS",
-  }),
-},
-```
-
-Then pass an exactly typed, synchronous Standard Schema v1 validator to the generated target. If your Yup version does not expose compatible Standard Schema input and output types directly, wrap `validateSync`:
-
-```ts
-import type { StandardSchemaV1 } from "@astilba/env/runtime";
-import * as yup from "yup";
-
-import { load } from "./.astilba/env/serverDeployment.server";
-
-type ServiceOptions = Readonly<{ region: string }>;
-
-const yupOptions = yup
-  .object({ region: yup.string().required() })
-  .required();
-
-const serviceOptions: StandardSchemaV1<string, ServiceOptions> = {
-  "~standard": {
-    validate(input) {
-      try {
-        return {
-          value: yupOptions.validateSync(JSON.parse(input)),
-        };
-      } catch {
-        return {
-          issues: [{ message: "Invalid service options." }],
-        };
-      }
-    },
-    vendor: "yup",
-    version: 1,
-  },
-};
-
-const configuration = await load(process.env, { serviceOptions });
-```
-
-Opaque entries are private server values only. Async Standard Schema validation is not supported in 0.1.
-
-### Validate after loading
-
-If the Yup schema belongs to application business rules rather than the portable configuration contract, load a private `text` or `secret` entry and validate it in application code. Env still owns presence, exposure, lifecycle, and redacted configuration diagnostics; your application owns the additional semantic validation.
+If the Yup schema represents application business rules instead of configuration syntax, load a built-in private value and validate it after the Env boundary.
 
 ## Account for intentional non-compatibilities
 
-Env 0.1 does not provide compatibility exports or shims for:
+Env 0.2 does not provide compatibility exports or shims for:
 
 - `createDynamicEnv`;
 - `clientEnv` or `serverEnv`;
@@ -458,18 +152,24 @@ Env 0.1 does not provide compatibility exports or shims for:
 - implicit `NEXT_PUBLIC_*` exposure; or
 - `@astilba/env/next`.
 
-Do not keep both browser delivery mechanisms active. Remove `DynamicEnvScript` and `waitForEnv` after the JSON bootstrap path is working, then remove `next-dynamic-env` from the application.
+These omissions preserve explicit lifecycles, static artifact boundaries, and inert browser delivery.
 
-## Verify the migration
+## Verify and remove the old package
 
-Before removing the old package:
+Before removing `next-dynamic-env`:
 
-1. run `astilba-env generate --check` in CI;
+1. run `pnpm exec astilba-env generate --check` in CI;
 2. fail application startup or the endpoint when a required deployment value is missing;
 3. verify browser bundles contain no private entry name, binding name, or value;
-4. verify the JSON response has the expected same-origin audience and `Cache-Control: private, no-store`;
+4. verify the JSON response has the expected audience and `Cache-Control: private, no-store`;
 5. change deployment values without rebuilding and confirm one built artifact observes the new values;
-6. exercise both successful and rejected bootstrap responses; and
-7. remove every import and global reference from `next-dynamic-env`.
+6. exercise successful and rejected bootstrap responses; and
+7. remove every import, script component, and global reference from `next-dynamic-env`.
 
-The 0.1 package tests cover App Router and Pages Router builds in static and request modes. That evidence verifies the generated-module boundary; your route, proxy trust, startup policy, and failure UI still require application tests.
+Remove the old dependency only after those checks pass:
+
+```sh
+pnpm remove next-dynamic-env
+```
+
+The Env package tests exercise App Router and Pages Router builds in static and request modes. Your route, proxy trust, startup policy, and failure UI still require application tests.

@@ -7,7 +7,7 @@ In this guide, you will replace direct `process.env` reads with one typed deploy
 
 ## Check the requirements
 
-Env 0.1.0 requires an ESM package and a supported Node.js release:
+Env 0.2.0 requires an ESM package and a supported Node.js release:
 
 - Node.js 22.14.0 or later within Node 22;
 - Node.js 24; or
@@ -18,7 +18,7 @@ Your `package.json` must contain `"type": "module"` when you use the default `as
 Install the exact public-alpha release:
 
 ```sh
-pnpm add @astilba/env@0.1.0
+pnpm add @astilba/env@0.2.0
 ```
 
 ## Declare the configuration

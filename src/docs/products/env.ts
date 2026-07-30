@@ -21,14 +21,52 @@ const envSections = [
     ],
   },
   {
-    label: "Concepts",
+    label: "Runtimes",
     items: [
       {
-        key: "lifecycles-and-projections",
-        label: "Lifecycles and projections",
-        slug: "lifecycles-and-projections",
+        key: "nodejs",
+        label: "Node.js",
+        slug: "nodejs",
+        icon: "server",
+        sourcePath: "src/content/docs/env/nodejs.md",
+      },
+      {
+        key: "browser-runtime",
+        label: "Browser",
+        slug: "browser-runtime",
+        icon: "open-book",
+        sourcePath: "src/content/docs/env/browser-runtime.md",
+      },
+    ],
+  },
+  {
+    label: "Platforms",
+    items: [
+      {
+        key: "cloudflare-workers",
+        label: "Cloudflare Workers",
+        slug: "cloudflare-workers",
+        icon: "cloudflare-workers",
+        sourcePath: "src/content/docs/env/cloudflare-workers.md",
+      },
+    ],
+  },
+  {
+    label: "Frameworks",
+    items: [
+      {
+        key: "vite",
+        label: "Vite",
+        slug: "vite",
         icon: "code-branch",
-        sourcePath: "src/content/docs/env/lifecycles-and-projections.md",
+        sourcePath: "src/content/docs/env/vite.md",
+      },
+      {
+        key: "nextjs",
+        label: "Next.js",
+        slug: "nextjs",
+        icon: "code-branch",
+        sourcePath: "src/content/docs/env/nextjs.md",
       },
     ],
   },
@@ -48,6 +86,25 @@ const envSections = [
         slug: "migrate-from-next-dynamic-env",
         icon: "code-branch",
         sourcePath: "src/content/docs/env/migrate-from-next-dynamic-env.md",
+      },
+    ],
+  },
+  {
+    label: "Concepts",
+    items: [
+      {
+        key: "lifecycles-and-projections",
+        label: "Lifecycles and projections",
+        slug: "lifecycles-and-projections",
+        icon: "code-branch",
+        sourcePath: "src/content/docs/env/lifecycles-and-projections.md",
+      },
+      {
+        key: "validation-and-standard-schema",
+        label: "Validation and Standard Schema",
+        slug: "validation-and-standard-schema",
+        icon: "approve-check-circle",
+        sourcePath: "src/content/docs/env/validation-and-standard-schema.md",
       },
     ],
   },
@@ -86,7 +143,7 @@ export const envProduct = {
   description:
     "A local-first configuration contract compiler with explicit lifecycles and physically separated browser and server projections.",
   availabilityNote:
-    "Released as @astilba/env 0.1.0 for public-alpha evaluation. Expect deliberate breaking changes before a stable release.",
+    "Released as @astilba/env 0.2.0 for public-alpha evaluation. Expect deliberate breaking changes before a stable release.",
   homePath: "/env/",
   repositoryUrl: "https://github.com/astilbahq/env",
   status: {
@@ -94,11 +151,11 @@ export const envProduct = {
     variant: "caution",
   },
   defaultPage: "overview",
-  defaultVersion: "0.1",
+  defaultVersion: "0.2",
   versions: [
     {
-      id: "0.1",
-      label: "0.1",
+      id: "0.2",
+      label: "0.2",
       lifecycle: "latest",
       basePath: "env",
       sections: envSections,
