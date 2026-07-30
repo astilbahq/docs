@@ -488,6 +488,11 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
 
   for (const { markdownPath, pagePath } of [
     { markdownPath: "/docs/index.md", pagePath: "/docs/" },
+    { markdownPath: "/docs/env.md", pagePath: "/docs/env/" },
+    {
+      markdownPath: "/docs/env/overview.md",
+      pagePath: "/docs/env/overview/",
+    },
     { markdownPath: "/docs/cache.md", pagePath: "/docs/cache/" },
     {
       markdownPath: "/docs/cache/overview.md",
@@ -684,6 +689,11 @@ test("serves agent-readable Markdown and keeps copy states independent", async (
   const skillsIndex = await skillsIndexResponse.json();
   const skillEntry = skillsIndex.skills[0];
   expect(skillEntry.name).toBe("astilba-cache-docs");
+  expect(
+    skillsIndex.skills.some(
+      ({ name }: { name: string }) => name === "astilba-env-docs"
+    )
+  ).toBe(true);
 
   const skillResponse = await request.get(skillEntry.url);
   expect(skillResponse.ok()).toBe(true);
@@ -1550,6 +1560,14 @@ test("targets each public product source from product pages", async ({
       exact: true,
     })
   ).toHaveAttribute("href", "https://github.com/astilbahq/create");
+
+  await page.goto("/docs/env/overview/");
+  await expect(
+    page.getByRole("link", {
+      name: "Astilba Env on GitHub",
+      exact: true,
+    })
+  ).toHaveAttribute("href", "https://github.com/astilbahq/env");
 });
 
 test("uses product-aware document titles", async ({ page }) => {
@@ -1578,6 +1596,17 @@ test("uses product-aware document titles", async ({ page }) => {
   await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
     "content",
     "Create | Astilba"
+  );
+
+  await page.goto("/docs/env/migrate-from-next-dynamic-env/");
+  await expect(page).toHaveTitle("Migrate from next-dynamic-env | Astilba Env");
+  await expectNoAxeViolations(page);
+
+  await page.goto("/docs/env/");
+  await expect(page).toHaveTitle("Env | Astilba");
+  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
+    "content",
+    "Env | Astilba"
   );
 
   await page.goto("/docs/agents/mcp/");
@@ -1661,6 +1690,12 @@ test("presents products and copies the agent setup prompt from the homepage", as
   ).toHaveAttribute("href", "/docs/create/");
   await expect(
     sidebar.getByRole("link", {
+      name: "Env documentation",
+      exact: true,
+    })
+  ).toHaveAttribute("href", "/docs/env/");
+  await expect(
+    sidebar.getByRole("link", {
       name: "Cache documentation",
       exact: true,
     })
@@ -1708,6 +1743,16 @@ test("presents products and copies the agent setup prompt from the homepage", as
   await expect(
     createProduct.getByRole("link", { name: "Create" })
   ).toHaveAttribute("href", "/docs/create/");
+
+  const envProduct = page.getByRole("article").filter({
+    has: page.getByRole("heading", { level: 3, name: "Env" }),
+  });
+  await expect(envProduct).toContainText("Public alpha");
+  await expect(envProduct).toContainText("@astilba/env 0.1.0");
+  await expect(envProduct.getByRole("link", { name: "Env" })).toHaveAttribute(
+    "href",
+    "/docs/env/"
+  );
 
   const cacheProduct = page.getByRole("article").filter({
     has: page.getByRole("heading", { level: 3, name: "Cache" }),
@@ -1904,6 +1949,47 @@ test("presents Create as a distinct released product home", async ({
   ).toHaveAttribute("href", "/docs/create/overview/");
   await expect(
     page.getByRole("banner").getByRole("link", { name: "Create", exact: true })
+  ).toHaveAttribute("aria-current", "page");
+  await expectNoAxeViolations(page);
+});
+
+test("presents Env as a distinct public-alpha product home", async ({
+  page,
+}) => {
+  await page.goto("/docs/env/");
+
+  const title = page.getByRole("heading", { level: 1, name: "Env" });
+  await expect(title).toBeVisible();
+  await expect(title).toHaveCSS("font-size", "56px");
+  await expect(
+    page.getByText(
+      "Compile one portable configuration declaration into separated, typed browser and server interfaces."
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Read the docs", exact: true })
+  ).toHaveAttribute("href", "/docs/env/overview/");
+  await expect(
+    page.getByText(
+      "Released as @astilba/env 0.1.0 for public-alpha evaluation. Expect deliberate breaking changes before a stable release."
+    )
+  ).toBeVisible();
+  await expect(
+    page.getByText("Public alpha", { exact: true }).first()
+  ).toBeVisible();
+
+  const sidebar = page.locator("#starlight__sidebar");
+  await expect(
+    sidebar.getByRole("button", {
+      name: "Choose product. Current product: Env",
+      exact: true,
+    })
+  ).toBeVisible();
+  await expect(
+    sidebar.getByRole("link", { name: "Overview", exact: true })
+  ).toHaveAttribute("href", "/docs/env/overview/");
+  await expect(
+    page.getByRole("banner").getByRole("link", { name: "Env", exact: true })
   ).toHaveAttribute("aria-current", "page");
   await expectNoAxeViolations(page);
 });

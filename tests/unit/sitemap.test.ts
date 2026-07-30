@@ -22,9 +22,22 @@ describe("documentation sitemap", () => {
     );
     const sourcePaths = docsSitemapSources.map(({ sourcePath }) => sourcePath);
 
-    expect(docsSitemapSources).toHaveLength(29);
+    expect(docsSitemapSources).toHaveLength(38);
     expect(new Set(canonicalPaths).size).toBe(canonicalPaths.length);
     expect(new Set(sourcePaths).size).toBe(sourcePaths.length);
+    expect(sourcePaths).toEqual(
+      expect.arrayContaining([
+        "src/content/docs/env.md",
+        "src/content/docs/env/overview.md",
+        "src/content/docs/env/quickstart.md",
+        "src/content/docs/env/lifecycles-and-projections.md",
+        "src/content/docs/env/browser-delivery.md",
+        "src/content/docs/env/migrate-from-next-dynamic-env.md",
+        "src/content/docs/env/declaration-reference.md",
+        "src/content/docs/env/cli-reference.md",
+        "src/content/docs/env/release-and-support.md",
+      ])
+    );
 
     for (const sourcePath of sourcePaths) {
       expect(existsSync(resolve(process.cwd(), sourcePath))).toBe(true);

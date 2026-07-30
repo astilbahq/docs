@@ -9,6 +9,8 @@ import {
 const CANONICAL_ORIGIN = ASTILBA_ORIGIN;
 const CREATE_HTML_PATH = withDocsBase("/create/overview/");
 const CREATE_MARKDOWN_PATH = withDocsBase("/create/overview.md");
+const ENV_HTML_PATH = withDocsBase("/env/overview/");
+const ENV_MARKDOWN_PATH = withDocsBase("/env/overview.md");
 const HTML_PATH = withDocsBase("/cache/overview/");
 const MARKDOWN_PATH = withDocsBase("/cache/overview.md");
 const MCP_PATH = withDocsBase("/mcp");
@@ -373,6 +375,91 @@ const checkCreateDocs = async () => {
   }
 };
 
+const requireEnvMarkdownBody = (markdown, label) => {
+  if (
+    !(
+      markdown.includes("# Overview") &&
+      markdown.includes("@astilba/env") &&
+      markdown.includes("public alpha")
+    )
+  ) {
+    throw new Error(`[production-smoke] ${label} content is incomplete.`);
+  }
+};
+
+const checkEnvDocs = async () => {
+  const htmlResponse = await request(ENV_HTML_PATH, {
+    headers: { Accept: "text/html" },
+  });
+  requireStatus(htmlResponse, "Env HTML page");
+  requireHeaderIncludes(
+    htmlResponse,
+    "Content-Type",
+    "text/html",
+    "Env HTML page"
+  );
+  requireHeaderIncludes(
+    htmlResponse,
+    "Link",
+    `<${ENV_MARKDOWN_PATH}>; rel="alternate"`,
+    "Env HTML page"
+  );
+  requireGlobalSecurityHeaders(htmlResponse, "Env HTML page");
+  const html = await htmlResponse.text();
+
+  if (!(html.includes("Astilba Env") && html.includes("0.1"))) {
+    throw new Error("[production-smoke] Env HTML page content is incomplete.");
+  }
+
+  const negotiatedMarkdownResponse = await request(ENV_HTML_PATH, {
+    headers: { Accept: "text/markdown" },
+  });
+  requireStatus(negotiatedMarkdownResponse, "negotiated Env Markdown");
+  requireHeaderIncludes(
+    negotiatedMarkdownResponse,
+    "Content-Type",
+    "text/markdown",
+    "negotiated Env Markdown"
+  );
+  requireHeaderIncludes(
+    negotiatedMarkdownResponse,
+    "Content-Type",
+    "charset=utf-8",
+    "negotiated Env Markdown"
+  );
+  requireHeaderEquals(
+    negotiatedMarkdownResponse,
+    "Content-Location",
+    ENV_MARKDOWN_PATH,
+    "negotiated Env Markdown"
+  );
+  requireHeaderIncludes(
+    negotiatedMarkdownResponse,
+    "Vary",
+    "accept",
+    "negotiated Env Markdown"
+  );
+  requireGlobalSecurityHeaders(
+    negotiatedMarkdownResponse,
+    "negotiated Env Markdown"
+  );
+  requireEnvMarkdownBody(
+    await negotiatedMarkdownResponse.text(),
+    "negotiated Env Markdown"
+  );
+
+  const markdownResponse = await request(ENV_MARKDOWN_PATH);
+  requireStatus(markdownResponse, "Env Markdown");
+  requireHeaderEquals(
+    markdownResponse,
+    "Content-Type",
+    "text/markdown; charset=utf-8",
+    "Env Markdown"
+  );
+  requireGlobalSecurityHeaders(markdownResponse, "Env Markdown");
+  requireEnvMarkdownBody(await markdownResponse.text(), "Env Markdown");
+};
+
 const checkMissingMarkdown = async () => {
   const response = await request(
     withDocsBase("/cache/production-smoke-missing.md")
@@ -429,6 +516,9 @@ const checkDiscovery = async () => {
   const createSkill = discovery.skills?.find(
     ({ name }) => name === "astilba-create-docs"
   );
+  const envSkill = discovery.skills?.find(
+    ({ name }) => name === "astilba-env-docs"
+  );
 
   if (
     createSkill?.url !==
@@ -437,6 +527,16 @@ const checkDiscovery = async () => {
   ) {
     throw new Error(
       "[production-smoke] Agent Skills discovery is missing the Create skill."
+    );
+  }
+
+  if (
+    envSkill?.url !==
+      "/docs/.well-known/agent-skills/astilba-env-docs/SKILL.md" ||
+    !/^sha256:[0-9a-f]{64}$/.test(envSkill.digest ?? "")
+  ) {
+    throw new Error(
+      "[production-smoke] Agent Skills discovery is missing the Env skill."
     );
   }
 
@@ -454,6 +554,23 @@ const checkDiscovery = async () => {
   ) {
     throw new Error(
       "[production-smoke] Create Agent Skill content is incomplete."
+    );
+  }
+
+  const envSkillResponse = await request(envSkill.url);
+  requireStatus(envSkillResponse, "Env Agent Skill");
+  requireHeaderIncludes(
+    envSkillResponse,
+    "Content-Type",
+    "text/markdown",
+    "Env Agent Skill"
+  );
+  requireGlobalSecurityHeaders(envSkillResponse, "Env Agent Skill");
+  if (
+    !(await envSkillResponse.text()).includes("# Astilba Env documentation")
+  ) {
+    throw new Error(
+      "[production-smoke] Env Agent Skill content is incomplete."
     );
   }
 
@@ -480,6 +597,31 @@ const checkDiscovery = async () => {
       "[production-smoke] Create LLM document set content is incomplete."
     );
   }
+
+  const envCustomSetResponse = await request(
+    withDocsBase("/_llms-txt/astilba-env.txt")
+  );
+  requireStatus(envCustomSetResponse, "Env LLM document set");
+  requireHeaderIncludes(
+    envCustomSetResponse,
+    "Content-Type",
+    "text/plain",
+    "Env LLM document set"
+  );
+  requireGlobalSecurityHeaders(envCustomSetResponse, "Env LLM document set");
+  const envCustomSet = await envCustomSetResponse.text();
+  if (
+    !(
+      envCustomSet.includes("<SYSTEM>Astilba Env:") &&
+      envCustomSet.includes("# Env") &&
+      envCustomSet.includes("# Release and support") &&
+      envCustomSet.includes("# Migrate from next-dynamic-env")
+    )
+  ) {
+    throw new Error(
+      "[production-smoke] Env LLM document set content is incomplete."
+    );
+  }
 };
 
 const checkSitemap = async () => {
@@ -495,6 +637,7 @@ const checkSitemap = async () => {
     ) ||
     !sitemap.includes(`<loc>${docsUrl("/")}</loc>`) ||
     !sitemap.includes(`<loc>${docsUrl("/create/overview/")}</loc>`) ||
+    !sitemap.includes(`<loc>${docsUrl("/env/overview/")}</loc>`) ||
     !/<lastmod>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z<\/lastmod>/.test(
       sitemap
     )
@@ -728,6 +871,21 @@ const checkMcp = async () => {
       "[production-smoke] MCP search_docs did not return the expected Create resource."
     );
   }
+
+  const envSearch = await callMcp("tools/call", {
+    arguments: { productId: "env", query: "same-origin JSON" },
+    name: "search_docs",
+  });
+  const envResults = envSearch?.structuredContent?.results;
+
+  if (
+    !Array.isArray(envResults) ||
+    !envResults.some((result) => result?.uri === docsUrl("/env/overview.md"))
+  ) {
+    throw new Error(
+      "[production-smoke] MCP search_docs did not return the expected Env resource."
+    );
+  }
 };
 
 const runChecks = async () => {
@@ -736,6 +894,7 @@ const runChecks = async () => {
     checkMarkdown(),
     checkDirectMarkdown(),
     checkCreateDocs(),
+    checkEnvDocs(),
     checkMissingMarkdown(),
     checkDiscovery(),
     checkSitemap(),

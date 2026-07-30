@@ -1,0 +1,218 @@
+---
+title: Declaration reference
+description: Reference the Env 0.1 declaration fields, entry builders, codecs, consumers, targets, and co-presence rules.
+---
+
+The root `@astilba/env` export contains two runtime values:
+
+```ts
+import { defineEnvironment, env } from "@astilba/env";
+```
+
+`defineEnvironment` validates one complete declaration and returns an opaque `EnvironmentDefinition`. The `env` object creates branded entries, consumers, targets, and rules that only `defineEnvironment` can compile.
+
+## `defineEnvironment`
+
+```ts
+defineEnvironment({
+  id,
+  entries,
+  consumers,
+  targets,
+  rules,
+});
+```
+
+| Field | Requirement |
+| --- | --- |
+| `id` | A lowercase reverse-DNS identifier such as `com.example.application`. |
+| `entries` | One or more logical entries created by an `env.public.*` or `env.private.*` builder. |
+| `consumers` | One or more named `env.browser(...)` or `env.server(...)` selections. |
+| `targets` | One or more named `env.process(...)` mappings. Each selected consumer lifecycle must have exactly one complete target. |
+| `rules` | Optional array of `env.together(...)` co-presence rules. |
+
+Entry, consumer, target, and rule identifiers start with a lowercase ASCII letter, contain only ASCII letters or digits, and have at most 64 characters. Identifiers are also unique under ASCII case folding.
+
+Process source names use the environment-variable form `[A-Z_][A-Z0-9_]{0,127}`.
+
+## Visibility and lifecycle builders
+
+Choose visibility and lifecycle before the codec:
+
+```ts
+env.public.build
+env.public.deployment
+env.public.request
+
+env.private.deployment
+env.private.request
+```
+
+Every builder below supports `required: false`. Entries are required by default.
+
+There is no private build builder. `secret` and `opaque` are available only on private deployment and request builders.
+
+## Built-in codecs
+
+The source column describes an `env.process` source such as `process.env`. The browser bootstrap receives already-typed JSON values and validates them against the same portable contract.
+
+| Builder | Source and output | Important options and defaults | Browser portable |
+| --- | --- | --- | --- |
+| `boolean(options?)` | Exact source token to `boolean`. | `trueInput: "true"`; `falseInput: "false"`; `blank: "missing"`. | Yes |
+| `enum(values, options?)` | Exact source string to the declared string union. | One or more unique portable strings. | Yes |
+| `integer(options)` | Trimmed signed decimal to a safe integer in range. | Required `minimum` and `maximum`; `blank: "missing"`. | No |
+| `json(shape, options?)` | Bounded JSON text to the exact typed shape. | `blank: "missing"`. | Yes |
+| `origin(options?)` | Canonical HTTPS origin string. | No path, query, fragment, credentials, IP literal, or `localhost`; default port and trailing slash are normalised away. | Yes |
+| `safeInteger(options)` | Canonical decimal to a safe integer in range. | Required `minimum` and `maximum`; no leading `+`, whitespace, or non-canonical leading zero; `blank: "missing"`. | Yes |
+| `string(options?)` | Preserved portable string. | `minimumCodePoints: 0`; `maximumCodePoints: 65_535`. Empty string is valid unless you raise the minimum. | Yes |
+| `stringList(options?)` | Comma-separated source to a readonly string array. | Empty items `drop`; 0–64 items; 1–1,024 code points per item. | Yes |
+| `text(options?)` | Optional trim-aware server string. | `normalise: "preserve"`; `blank: "missing"`; 1–65,535 code points. | No |
+| `secret(options?)` | Preserved private string with no trimming. | `blank: "missing"`; 1–65,535 code points. | No; private only |
+| `opaque(options)` | Private source string through a caller-supplied synchronous Standard Schema v1 validator. | Exact `input` and `output` shapes plus value-free `semantics` and `revision`. | No; private only |
+
+`integer` accepts conventional signed, whitespace-trimmed server input. Use `safeInteger` when the same canonical decimal contract must work in server and browser projections.
+
+`text` treats a whitespace-only value as blank even when `normalise` is `"preserve"`. `string` preserves and can accept an empty string. Choose deliberately instead of relying on a global empty-string policy.
+
+### Boolean options
+
+```ts
+enabled: env.public.deployment.boolean({
+  blank: "invalid",
+  falseInput: "disabled",
+  trueInput: "enabled",
+})
+```
+
+`trueInput` and `falseInput` are case-sensitive, non-empty printable ASCII tokens and must differ.
+
+### String-list options
+
+```ts
+regions: env.public.deployment.stringList({
+  emptyItems: "invalid",
+  minimumItems: 1,
+  maximumItems: 8,
+  minimumItemCodePoints: 2,
+  maximumItemCodePoints: 32,
+})
+```
+
+The separator is always a comma. Items are not trimmed automatically.
+
+### Portable JSON shapes
+
+`json` uses data-only shape descriptors:
+
+```ts
+clientConfiguration: env.public.deployment.json({
+  kind: "object",
+  properties: [
+    {
+      name: "region",
+      required: true,
+      shape: { kind: "string" },
+    },
+    {
+      name: "retryCount",
+      required: false,
+      shape: {
+        kind: "safe-integer",
+        minimum: 0,
+        maximum: 5,
+      },
+    },
+  ],
+})
+```
+
+Shape kinds are:
+
+- `string`, `boolean`, and `null`;
+- `safe-integer` with `minimum` and `maximum`;
+- `array` with `items`, `minimumItems`, and `maximumItems`; and
+- `object` with named, required or optional `properties`.
+
+Objects are exact: unknown properties are rejected. Values are copied into frozen, owned data before the application receives them.
+
+### Opaque schemas
+
+Use `opaque` only for private semantics that a built-in codec cannot express:
+
+```ts
+serviceOptions: env.private.deployment.opaque({
+  input: { kind: "string" },
+  output: {
+    kind: "object",
+    properties: [
+      {
+        name: "region",
+        required: true,
+        shape: { kind: "string" },
+      },
+    ],
+  },
+  semantics: "com.example.service-options/v1",
+  revision: "1",
+})
+```
+
+The generated target requires a schema map and returns promises:
+
+```ts
+import { load } from "./.astilba/env/serverDeployment.server";
+
+const configuration = await load(process.env, {
+  serviceOptions: serviceOptionsSchema,
+});
+```
+
+The schema's declared input and output types must exactly match the shapes in the declaration. Validation must settle synchronously; a returned promise produces `ENV_VALIDATOR_ASYNC_UNSUPPORTED`.
+
+The CLI `check` command cannot accept application schema implementations. Validate an opaque target through its generated `check` or `load` function.
+
+## Consumers
+
+```ts
+env.browser(["apiOrigin", "featureMode"])
+env.server(["databaseUrl", "port"])
+```
+
+An explicit list must contain at least one unique entry. Omitting the list selects every declared entry:
+
+```ts
+env.server()
+```
+
+Browser consumers may select only public entries using `boolean`, `enum`, `json`, `origin`, `safeInteger`, `string`, or `stringList`.
+
+## Process targets
+
+```ts
+env.process("server", {
+  databaseUrl: "DATABASE_URL",
+  port: "PORT",
+})
+```
+
+The first argument names an existing consumer. The record maps logical entry names to raw source names.
+
+A target must bind all entries selected by that consumer for one lifecycle. Split build, deployment, and request bindings into separate targets.
+
+## Co-presence rules
+
+Use `env.together` when optional entries form one configuration unit:
+
+```ts
+rules: [
+  env.together("smtpCredentials", [
+    "smtpHost",
+    "smtpUser",
+    "smtpPassword",
+  ]),
+]
+```
+
+Resolution succeeds when all rule entries are present or all are absent. A partial set returns `ENV_RULE_VIOLATION` with the logical rule and entry names, not their values.
+
+Rule entries must belong to the same lifecycle where a consumer resolves them. Keep a co-presence rule within one operational configuration unit.

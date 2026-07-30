@@ -107,6 +107,8 @@ const run = async () => {
     "Homepage"
   );
   requireBodyIncludes(home, "create-astilba", "Homepage");
+  requireBodyIncludes(home, "@astilba/env", "Homepage");
+  requireBodyIncludes(home, "0.1.0 is a public alpha", "Homepage");
   requireBodyIncludes(home, "Cache remains a development preview", "Homepage");
 
   const createResponse = await request("/create/");
@@ -151,6 +153,12 @@ const run = async () => {
     "Cache page"
   );
 
+  const envResponse = await request("/env/");
+  requireStatus(envResponse, 200, "Env page");
+  const env = await envResponse.text();
+  requireBodyIncludes(env, "0.1.0 · public alpha · local-first", "Env page");
+  requireBodyIncludes(env, "github.com/astilbahq/env", "Env page");
+
   const schemaResponse = await request("/schemas/create/v1.json");
   requireStatus(schemaResponse, 200, "Create project manifest schema");
   requireHeaderIncludes(
@@ -190,6 +198,7 @@ const run = async () => {
     "[Create](https://astilba.com/create/)",
     "LLMs.txt"
   );
+  requireBodyIncludes(llms, "[Env](https://astilba.com/env/)", "LLMs.txt");
   requireBodyIncludes(llms, "[Cache](https://astilba.com/cache/)", "LLMs.txt");
 
   const skillsResponse = await request("/.well-known/agent-skills/index.json");
@@ -205,10 +214,11 @@ const run = async () => {
   if (
     !Array.isArray(skillNames) ||
     !skillNames.includes("astilba-create-docs") ||
+    !skillNames.includes("astilba-env-docs") ||
     !skillNames.includes("astilba-cache-docs")
   ) {
     throw new Error(
-      "Agent Skills discovery must publish the Create and Cache skills."
+      "Agent Skills discovery must publish the Create, Env, and Cache skills."
     );
   }
 
@@ -254,6 +264,11 @@ const run = async () => {
   requireBodyIncludes(
     siteSitemap,
     "<loc>https://astilba.com/create/new/</loc>",
+    "Site sitemap"
+  );
+  requireBodyIncludes(
+    siteSitemap,
+    "<loc>https://astilba.com/env/</loc>",
     "Site sitemap"
   );
 };

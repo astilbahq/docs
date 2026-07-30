@@ -16,10 +16,15 @@ const skillDefinitions = [
       "Consult Astilba's public Create documentation to generate or evaluate projects with the released CLI, supported recipes, and explicit safety boundaries.",
     name: "astilba-create-docs",
   },
+  {
+    description:
+      "Consult Astilba's public Env documentation to integrate the 0.1 configuration contract compiler without weakening browser, server, or lifecycle boundaries.",
+    name: "astilba-env-docs",
+  },
 ] as const;
 
 describe("Agent Skills discovery", () => {
-  it("publishes both public skills with content-derived digests", async () => {
+  it("publishes every public skill with content-derived digests", async () => {
     const expectedSkills = await Promise.all(
       skillDefinitions.map(async ({ description, name }) => {
         const skill = await readFile(

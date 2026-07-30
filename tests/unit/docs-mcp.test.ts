@@ -35,6 +35,12 @@ const getSitePageFixture = (
         description: "A deterministic TypeScript project generator.",
         title: "Create",
       };
+    case "env":
+      return {
+        content: "# Env\n\nExplore the public Env documentation.",
+        description: "A local-first configuration contract compiler.",
+        title: "Env",
+      };
     case "agents/llms-txt":
       return {
         content: "# LLMs.txt\n\nChoose a generated documentation corpus.",

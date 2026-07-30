@@ -20,6 +20,24 @@ const createGuarantees = [
   },
 ] as const;
 
+const envGuarantees = [
+  {
+    guarantee: "Every value belongs to a declared lifecycle.",
+    boundary:
+      "Build, deployment, and request values are resolved where they become available.",
+  },
+  {
+    guarantee: "Browser exposure is an explicit projection.",
+    boundary:
+      "Generated browser modules contain no private names, bindings, values, or full-contract metadata.",
+  },
+  {
+    guarantee: "Runtime browser configuration stays inert.",
+    boundary:
+      "The application owns a same-origin JSON endpoint and its cache, trust, and failure policy.",
+  },
+] as const;
+
 const cacheGuarantees = [
   {
     guarantee: "Uncertain invalidation knowledge never becomes false freshness.",
@@ -38,7 +56,7 @@ const cacheGuarantees = [
 
 <SiteLayout
   description="Astilba builds portable infrastructure tools and libraries with explicit correctness boundaries."
-  title="Astilba — Portable infrastructure, explicit boundaries"
+  title="Astilba; portable infrastructure, explicit boundaries"
 >
   <section aria-labelledby="home-heading" class="hero section-shell">
     <div class="hero__copy">
@@ -72,7 +90,7 @@ const cacheGuarantees = [
       </div>
       <p class="release-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <span><code>create-astilba</code> 0.3.0 is released · Cache remains a development preview</span>
+        <span><code>create-astilba</code> 0.3.0 is released · <code>@astilba/env</code> 0.1.0 is a public alpha · Cache remains a development preview</span>
       </p>
     </div>
 
@@ -101,10 +119,29 @@ const cacheGuarantees = [
     </div>
   </section>
 
+  <section aria-labelledby="env-heading" class="section-shell ruled-section">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">02 · Public alpha</p>
+        <h2 id="env-heading">Env</h2>
+      </div>
+      <span class="lifecycle-badge">0.1.0 public alpha</span>
+    </div>
+    <p class="section-intro">
+      A local-first TypeScript configuration contract compiler with explicit
+      lifecycles and physically separated browser and server projections.
+    </p>
+    <GuaranteeRows rows={[...envGuarantees]} />
+    <div class="section-actions">
+      <a href="/env/">Explore Env <span aria-hidden="true">→</span></a>
+      <a href="/docs/env/migrate-from-next-dynamic-env/">Migrate from next-dynamic-env <span aria-hidden="true">→</span></a>
+    </div>
+  </section>
+
   <section aria-labelledby="cache-heading" class="section-shell ruled-section">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">02 · Development preview</p>
+        <p class="eyebrow">03 · Development preview</p>
         <h2 id="cache-heading">Cache</h2>
       </div>
       <span class="lifecycle-badge">Unreleased preview</span>
@@ -124,7 +161,7 @@ const cacheGuarantees = [
   <section aria-labelledby="docs-heading" class="section-shell ruled-section docs-formats">
     <div class="section-heading section-heading--compact">
       <div>
-        <p class="eyebrow">03 · One public corpus</p>
+        <p class="eyebrow">04 · One public corpus</p>
         <h2 id="docs-heading">For people and agents</h2>
       </div>
     </div>

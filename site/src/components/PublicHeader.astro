@@ -3,12 +3,13 @@ import { IconButton } from "@astilba/ui/icon-button";
 import BrandMark from "./BrandMark.astro";
 
 interface Props {
-  current?: "cache" | "create" | "home";
+  current?: "cache" | "create" | "env" | "home";
 }
 
 const { current = "home" } = Astro.props;
 const links = [
   { href: "/create/", label: "Create", key: "create" },
+  { href: "/env/", label: "Env", key: "env" },
   { href: "/cache/", label: "Cache", key: "cache" },
   { href: "/docs/", label: "Docs", key: "docs" },
   { href: "https://github.com/astilbahq", label: "GitHub", key: "github" },
