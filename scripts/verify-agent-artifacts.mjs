@@ -208,6 +208,7 @@ const requiredArtifacts = [
   docsArtifact("/.well-known/api-catalog"),
   docsArtifact("/.well-known/agent-skills/astilba-cache-docs/SKILL.md"),
   docsArtifact("/.well-known/agent-skills/astilba-create-docs/SKILL.md"),
+  docsArtifact("/.well-known/agent-skills/astilba-env-docs/SKILL.md"),
   docsArtifact("/.well-known/agent-skills/index.json"),
   docsArtifact("/.well-known/mcp/catalog.json"),
   docsArtifact("/.well-known/mcp/server-card.json"),
@@ -216,6 +217,7 @@ const requiredArtifacts = [
   CONTENT_SECURITY_POLICY_ASSET_PATH.slice(1),
   docsArtifact("/_llms-txt/astilba-cache.txt"),
   docsArtifact("/_llms-txt/astilba-create.txt"),
+  docsArtifact("/_llms-txt/astilba-env.txt"),
   docsArtifact("/_mcp/docs.json"),
   docsArtifact("/agents/llms-txt.md"),
   docsArtifact("/agents/llms-txt/index.html"),
@@ -228,6 +230,10 @@ const requiredArtifacts = [
   docsArtifact("/create.md"),
   docsArtifact("/create/index.html"),
   docsArtifact("/create/overview.md"),
+  docsArtifact("/env.md"),
+  docsArtifact("/env/index.html"),
+  docsArtifact("/env/overview.md"),
+  docsArtifact("/env/overview/index.html"),
   docsArtifact("/create/overview/index.html"),
   docsArtifact("/create/recipes.md"),
   docsArtifact("/create/release-and-support.md"),
@@ -492,13 +498,20 @@ const cacheSkillArtifact = docsArtifact(
 const createSkillArtifact = docsArtifact(
   "/.well-known/agent-skills/astilba-create-docs/SKILL.md"
 );
+const envSkillArtifact = docsArtifact(
+  "/.well-known/agent-skills/astilba-env-docs/SKILL.md"
+);
 const cacheSkill = artifacts.get(cacheSkillArtifact);
 const createSkill = artifacts.get(createSkillArtifact);
+const envSkill = artifacts.get(envSkillArtifact);
 const cacheSkillDigest = `sha256:${createHash("sha256")
   .update(cacheSkill)
   .digest("hex")}`;
 const createSkillDigest = `sha256:${createHash("sha256")
   .update(createSkill)
+  .digest("hex")}`;
+const envSkillDigest = `sha256:${createHash("sha256")
+  .update(envSkill)
   .digest("hex")}`;
 const skillsIndex = JSON.parse(
   artifacts.get(docsArtifact("/.well-known/agent-skills/index.json"))
@@ -526,6 +539,14 @@ assertExact(
         url: `/${createSkillArtifact}`,
         digest: createSkillDigest,
       },
+      {
+        name: "astilba-env-docs",
+        type: "skill-md",
+        description:
+          "Consult Astilba's public Env documentation to integrate the 0.1 configuration contract compiler without weakening browser, server, or lifecycle boundaries.",
+        url: `/${envSkillArtifact}`,
+        digest: envSkillDigest,
+      },
     ],
   }
 );
@@ -537,6 +558,13 @@ assertIncludes(
   createSkill,
   "# Astilba Create documentation"
 );
+assertIncludes(envSkillArtifact, envSkill, "# Astilba Env documentation");
+assertIncludes(
+  envSkillArtifact,
+  envSkill,
+  docsUrl("/env/release-and-support.md")
+);
+assertIncludes(envSkillArtifact, envSkill, docsUrl("/mcp"));
 assertIncludes(
   createSkillArtifact,
   createSkill,
@@ -557,11 +585,16 @@ const createPageUrl = docsUrl("/create/overview/");
 const createMarkdownUrl = docsUrl("/create/overview.md");
 const createHomeUrl = docsUrl("/create/");
 const createHomeMarkdownUrl = docsUrl("/create.md");
+const envPageUrl = docsUrl("/env/overview/");
+const envMarkdownUrl = docsUrl("/env/overview.md");
+const envHomeUrl = docsUrl("/env/");
+const envHomeMarkdownUrl = docsUrl("/env.md");
 const homeUrl = docsUrl("/");
 const homeMarkdownUrl = docsUrl("/index.md");
 const llmsUrl = docsUrl("/llms.txt");
 const cacheSetUrl = docsUrl("/_llms-txt/astilba-cache.txt");
 const createSetUrl = docsUrl("/_llms-txt/astilba-create.txt");
+const envSetUrl = docsUrl("/_llms-txt/astilba-env.txt");
 const mcpUrl = docsUrl("/mcp");
 const apiCatalogUrl = new URL(API_CATALOG_PATH, site).href;
 const mcpCatalogUrl = new URL(MCP_CATALOG_PATH, site).href;
@@ -764,12 +797,14 @@ const llmsArtifact = docsArtifact("/llms.txt");
 const llmsIndex = artifacts.get(llmsArtifact);
 assertIncludes(llmsArtifact, llmsIndex, cacheSetUrl);
 assertIncludes(llmsArtifact, llmsIndex, createSetUrl);
+assertIncludes(llmsArtifact, llmsIndex, envSetUrl);
 assertIncludes(
   llmsArtifact,
   llmsIndex,
   "Astilba Cache remains an unreleased preview"
 );
 assertIncludes(llmsArtifact, llmsIndex, "Create 0.3.0 is released");
+assertIncludes(llmsArtifact, llmsIndex, "Env 0.1.0 is a public alpha");
 assertIncludes(llmsArtifact, llmsIndex, mcpUrl);
 const llmsFullArtifact = docsArtifact("/llms-full.txt");
 assertIncludes(
@@ -797,6 +832,15 @@ if (firstCreateHeading !== "# Create") {
   );
 }
 
+const envSet = artifacts.get(docsArtifact("/_llms-txt/astilba-env.txt"));
+const firstEnvHeading = envSet.match(/^# .+$/m)?.[0];
+
+if (firstEnvHeading !== "# Env") {
+  throw new Error(
+    `[agent-artifacts] The Env document set must begin with Env, found ${JSON.stringify(firstEnvHeading)}.`
+  );
+}
+
 const html = artifacts.get(docsArtifact("/cache/overview/index.html"));
 assertLink(html, "alternate", markdownUrl);
 assertLink(html, "describedby", llmsUrl);
@@ -804,6 +848,14 @@ assertLink(html, "describedby", llmsUrl);
 const createHtml = artifacts.get(docsArtifact("/create/overview/index.html"));
 assertLink(createHtml, "alternate", createMarkdownUrl);
 assertLink(createHtml, "describedby", llmsUrl);
+
+const envHtml = artifacts.get(docsArtifact("/env/overview/index.html"));
+assertLink(envHtml, "alternate", envMarkdownUrl);
+assertLink(envHtml, "describedby", llmsUrl);
+
+const envHomeHtml = artifacts.get(docsArtifact("/env/index.html"));
+assertLink(envHomeHtml, "alternate", envHomeMarkdownUrl);
+assertLink(envHomeHtml, "describedby", llmsUrl);
 
 const homeHtml = artifacts.get(docsArtifact("/index.html"));
 assertLink(homeHtml, "alternate", homeMarkdownUrl);
@@ -892,6 +944,20 @@ assertIncludes(
   withDocsBase("/create/overview/")
 );
 
+const envHomeMarkdownArtifact = docsArtifact("/env.md");
+const envHomeMarkdown = artifacts.get(envHomeMarkdownArtifact);
+assertIncludes(
+  envHomeMarkdownArtifact,
+  envHomeMarkdown,
+  `canonical: ${JSON.stringify(envHomeUrl)}`
+);
+assertIncludes(envHomeMarkdownArtifact, envHomeMarkdown, "# Env");
+assertIncludes(
+  envHomeMarkdownArtifact,
+  envHomeMarkdown,
+  withDocsBase("/env/overview/")
+);
+
 const agentSetupArtifact = docsArtifact("/agent-setup/prompt.md");
 const agentSetupPrompt = artifacts.get(agentSetupArtifact);
 assertIncludes(
@@ -913,9 +979,19 @@ assertIncludes(
 assertIncludes(
   agentSetupArtifact,
   agentSetupPrompt,
+  "astilba-env-docs/SKILL.md"
+);
+assertIncludes(
+  agentSetupArtifact,
+  agentSetupPrompt,
   "unreleased source preview"
 );
 assertIncludes(agentSetupArtifact, agentSetupPrompt, "create-astilba` 0.3.0");
+assertIncludes(agentSetupArtifact, agentSetupPrompt, "@astilba/env` 0.1.0");
+assertIncludes(agentSetupArtifact, agentSetupPrompt, "Env release and support");
+assertIncludes(agentSetupArtifact, agentSetupPrompt, "public alpha");
+assertIncludes(agentSetupArtifact, agentSetupPrompt, "inline-script transport");
+assertIncludes(agentSetupArtifact, agentSetupPrompt, "@astilba/env/next");
 
 const overviewArtifact = docsArtifact("/cache/overview.md");
 const markdown = artifacts.get(overviewArtifact);
@@ -960,6 +1036,20 @@ assertIncludes(
   createOverviewArtifact,
   createOverviewMarkdown,
   "The current release is `create-astilba` 0.3.0"
+);
+
+const envOverviewArtifact = docsArtifact("/env/overview.md");
+const envOverviewMarkdown = artifacts.get(envOverviewArtifact);
+assertIncludes(
+  envOverviewArtifact,
+  envOverviewMarkdown,
+  `canonical: ${JSON.stringify(envPageUrl)}`
+);
+assertIncludes(envOverviewArtifact, envOverviewMarkdown, "@astilba/env");
+assertIncludes(
+  envOverviewArtifact,
+  envOverviewMarkdown,
+  'source: "https://github.com/astilbahq/docs/blob/main/src/content/docs/env/overview.md"'
 );
 
 const createRecipesArtifact = docsArtifact("/create/recipes.md");
@@ -1022,6 +1112,7 @@ assertExact(
 );
 assertIncludes(sitemapArtifact, sitemap, pageUrl);
 assertIncludes(sitemapArtifact, sitemap, createPageUrl);
+assertIncludes(sitemapArtifact, sitemap, envPageUrl);
 
 console.log(
   `[agent-artifacts] Verified ${requiredArtifacts.length} production artifacts for ${site.origin}.`

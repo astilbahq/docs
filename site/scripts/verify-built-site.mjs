@@ -11,6 +11,7 @@ const requiredFiles = [
   "cache/index.html",
   "create/index.html",
   "create/new/index.html",
+  "env/index.html",
   "index.html",
   "llms.txt",
   "mcp/server-card",
@@ -48,6 +49,7 @@ const [
   cache,
   create,
   createConfigurator,
+  env,
   schema,
   headers,
   robots,
@@ -60,6 +62,7 @@ const [
   readArtifact("cache/index.html"),
   readArtifact("create/index.html"),
   readArtifact("create/new/index.html"),
+  readArtifact("env/index.html"),
   readArtifact("schemas/create/v1.json"),
   readArtifact("_headers"),
   readArtifact("robots.txt"),
@@ -75,6 +78,8 @@ assertIncludes(
   "Cache page"
 );
 assertIncludes(home, "create-astilba", "Homepage");
+assertIncludes(home, "@astilba/env", "Homepage");
+assertIncludes(home, "0.1.0 is a public alpha", "Homepage");
 assertIncludes(home, "Cache remains a development preview", "Homepage");
 assertIncludes(
   home,
@@ -94,6 +99,13 @@ assertIncludes(
 );
 assertIncludes(create, "four recipe v2 contracts", "Create page");
 assertIncludes(create, "github.com/astilbahq/create", "Create page");
+assertIncludes(
+  env,
+  'href="https://astilba.com/env/" rel="canonical"',
+  "Env page"
+);
+assertIncludes(env, "0.1.0 · public alpha · local-first", "Env page");
+assertIncludes(env, "github.com/astilbahq/env", "Env page");
 assertIncludes(
   createConfigurator,
   'href="https://astilba.com/create/new/" rel="canonical"',
@@ -160,6 +172,11 @@ assertIncludes(
   "Agent Skills discovery"
 );
 assertIncludes(
+  skills,
+  '"url": "/docs/.well-known/agent-skills/astilba-env-docs/SKILL.md"',
+  "Agent Skills discovery"
+);
+assertIncludes(
   apiCatalog,
   '"anchor": "https://astilba.com/docs/mcp"',
   "API catalog"
@@ -179,6 +196,7 @@ for (const [label, source] of [
   ["Cache page", cache],
   ["Create page", create],
   ["Create configurator", createConfigurator],
+  ["Env page", env],
 ]) {
   if (
     getAbsoluteAttributeUrls(source).some(

@@ -107,6 +107,7 @@ test("the public home distinguishes the released and preview products", async ({
   ).toBeVisible();
   await expect(page.getByText("create-astilba", { exact: true })).toBeVisible();
   await expect(page.getByText("0.3.0 is released")).toBeVisible();
+  await expect(page.getByText("0.1.0 is a public alpha")).toBeVisible();
   await expect(
     page.getByText("Cache remains a development preview")
   ).toBeVisible();
@@ -129,6 +130,32 @@ test("the public home distinguishes the released and preview products", async ({
   await expect(
     page.locator('a[href*="github.com/astilbahq/cache"]')
   ).toHaveCount(0);
+  await expectNoAxeViolations(page);
+});
+
+test("the Env page presents the public-alpha boundary", async ({ page }) => {
+  await page.goto("/env/");
+
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "Configure once; expose only what each artifact needs.",
+    })
+  ).toBeVisible();
+  await expect(page.getByText("@astilba/env", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("0.1.0 · public alpha · local-first")
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "View the source" })
+  ).toHaveAttribute("href", "https://github.com/astilbahq/env");
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "Public for evaluation; deliberately not stable",
+    })
+  ).toBeVisible();
+  await expect(page.getByText(/@astilba\/env\/next/)).toHaveCount(0);
   await expectNoAxeViolations(page);
 });
 

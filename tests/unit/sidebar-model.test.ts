@@ -109,6 +109,11 @@ describe("documentation sidebar model", () => {
         selected: false,
       },
       {
+        href: "/docs/env/",
+        label: "Env",
+        selected: false,
+      },
+      {
         href: "/docs/cache/",
         label: "Cache",
         selected: true,
@@ -119,6 +124,10 @@ describe("documentation sidebar model", () => {
       {
         label: "Create",
         href: "/docs/create/",
+      },
+      {
+        label: "Env",
+        href: "/docs/env/",
       },
       {
         label: "Cache",
@@ -155,6 +164,11 @@ describe("documentation sidebar model", () => {
           ariaLabel: "Create documentation",
           href: "/docs/create/",
           label: "Create",
+        },
+        {
+          ariaLabel: "Env documentation",
+          href: "/docs/env/",
+          label: "Env",
         },
         {
           ariaLabel: "Cache documentation",

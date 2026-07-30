@@ -28,9 +28,14 @@ const getProduct = (id: string) => {
 describe("documentation catalog", () => {
   const cache = getProduct("cache");
   const create = getProduct("create");
+  const env = getProduct("env");
 
   it("leads with the released Create product", () => {
-    expect(docsProducts.map(({ id }) => id)).toEqual(["create", "cache"]);
+    expect(docsProducts.map(({ id }) => id)).toEqual([
+      "create",
+      "env",
+      "cache",
+    ]);
 
     const version = getDefaultVersion(create);
     const page = getDefaultPage(create, version);
@@ -41,6 +46,18 @@ describe("documentation catalog", () => {
     expect(create.repositoryUrl).toBe("https://github.com/astilbahq/create");
     expect(getProductHomeHref(create)).toBe("/docs/create/");
     expect(getPageHref(version, page)).toBe("/docs/create/overview/");
+  });
+
+  it("resolves the configured Env public-alpha route", () => {
+    const version = getDefaultVersion(env);
+    const page = getDefaultPage(env, version);
+
+    expect(version.id).toBe("0.1");
+    expect(version.lifecycle).toBe("latest");
+    expect(page.key).toBe("overview");
+    expect(env.repositoryUrl).toBe("https://github.com/astilbahq/env");
+    expect(getProductHomeHref(env)).toBe("/docs/env/");
+    expect(getPageHref(version, page)).toBe("/docs/env/overview/");
   });
 
   it("resolves the configured Cache default route", () => {
@@ -126,6 +143,41 @@ describe("documentation catalog", () => {
       {
         label: "Reference",
         pages: ["API reference", "Driver implementations"],
+      },
+    ]);
+  });
+
+  it("organizes Env pages by reader intent", () => {
+    const version = getDefaultVersion(env);
+
+    expect(
+      version.sections.map(({ items, label }) => ({
+        label,
+        pages: items.map((page) => page.label),
+      }))
+    ).toEqual([
+      {
+        label: "Get started",
+        pages: ["Overview", "Configure a Node application"],
+      },
+      {
+        label: "Concepts",
+        pages: ["Lifecycles and projections"],
+      },
+      {
+        label: "Guides",
+        pages: [
+          "Deliver browser configuration",
+          "Migrate from next-dynamic-env",
+        ],
+      },
+      {
+        label: "Reference",
+        pages: [
+          "Declaration reference",
+          "CLI reference",
+          "Release and support",
+        ],
       },
     ]);
   });

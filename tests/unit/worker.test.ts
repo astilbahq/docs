@@ -22,6 +22,19 @@ const expectGlobalSecurityHeaders = (response: Response): void => {
 const getExpectedPageDiscoveryLink = (markdownPath: string): string =>
   `<${markdownPath}>; rel="alternate"; type="text/markdown", </docs/llms.txt>; rel="describedby"; type="text/plain", </docs/.well-known/api-catalog>; rel="api-catalog"; type="application/linkset+json"`;
 
+const MARKDOWN_FIXTURES = new Map([
+  ["/docs/index.md", "# Home"],
+  ["/docs/agents/llms-txt.md", "# Overview"],
+  ["/docs/agents/mcp.md", "# Overview"],
+  ["/docs/cache.md", "# Overview"],
+  ["/docs/cache/overview.md", "# Overview"],
+  ["/docs/env.md", "# Astilba Env"],
+  [
+    "/docs/env/overview.md",
+    "# Overview\n\n@astilba/env 0.1.0 is a public alpha.",
+  ],
+]);
+
 const createAssets = ({
   policyBody = `${TEST_CONTENT_SECURITY_POLICY}\n`,
   policyStatus = 200,
@@ -37,13 +50,9 @@ const createAssets = ({
       });
     }
 
-    if (
-      path === "/docs/index.md" ||
-      path === "/docs/agents/llms-txt.md" ||
-      path === "/docs/agents/mcp.md" ||
-      path === "/docs/cache.md" ||
-      path === "/docs/cache/overview.md"
-    ) {
+    const markdownFixture = MARKDOWN_FIXTURES.get(path);
+
+    if (markdownFixture !== undefined) {
       if (request.headers.get("If-None-Match") === '"markdown"') {
         return new Response(null, {
           headers: {
@@ -54,16 +63,13 @@ const createAssets = ({
         });
       }
 
-      return new Response(
-        `# ${path === "/docs/index.md" ? "Home" : "Overview"}`,
-        {
-          headers: {
-            "Content-Signal": "ai-train=yes, search=yes, ai-input=yes",
-            "Content-Type": "text/markdown; charset=utf-8",
-            ETag: '"markdown"',
-          },
-        }
-      );
+      return new Response(markdownFixture, {
+        headers: {
+          "Content-Signal": "ai-train=yes, search=yes, ai-input=yes",
+          "Content-Type": "text/markdown; charset=utf-8",
+          ETag: '"markdown"',
+        },
+      });
     }
 
     if (path.endsWith("/missing.md") || path.endsWith("/missing/")) {
@@ -155,6 +161,10 @@ describe("Markdown negotiation", () => {
 
   it("maps canonical pages to their authored Markdown siblings", () => {
     expect(getMarkdownPath("/docs/")).toBe("/docs/index.md");
+    expect(getMarkdownPath("/docs/env/")).toBe("/docs/env.md");
+    expect(getMarkdownPath("/docs/env/overview/")).toBe(
+      "/docs/env/overview.md"
+    );
     expect(getMarkdownPath("/docs/cache/")).toBe("/docs/cache.md");
     expect(getMarkdownPath("/docs/cache/overview/")).toBe(
       "/docs/cache/overview.md"
@@ -180,57 +190,84 @@ describe("Markdown negotiation", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("streams the Markdown asset at the canonical URL", async () => {
-    const { assets, fetch } = createAssets();
-    const response = await handleRequest(
-      new Request("https://astilba.com/docs/cache/overview/", {
-        headers: { Accept: "text/markdown" },
-      }),
-      assets
-    );
+  it.each([
+    {
+      markdownPath: "/docs/cache/overview.md",
+      pagePath: "/docs/cache/overview/",
+    },
+    {
+      markdownPath: "/docs/env/overview.md",
+      pagePath: "/docs/env/overview/",
+    },
+  ])(
+    "streams the Markdown asset for $pagePath",
+    async ({ markdownPath, pagePath }) => {
+      const body = MARKDOWN_FIXTURES.get(markdownPath);
+      const { assets, fetch } = createAssets();
+      const response = await handleRequest(
+        new Request(`https://astilba.com${pagePath}`, {
+          headers: { Accept: "text/markdown" },
+        }),
+        assets
+      );
 
-    expect(response.headers.get("Content-Type")).toBe(
-      "text/markdown; charset=utf-8"
-    );
-    expect(response.headers.get("Content-Location")).toBe(
-      "/docs/cache/overview.md"
-    );
-    expect(response.headers.get("Link")).toBe(
-      getExpectedPageDiscoveryLink("/docs/cache/overview.md")
-    );
-    expect(response.headers.get("Vary")).toBe("Accept");
-    expect(response.headers.get("ETag")).toBe('"markdown"');
-    expect(await response.text()).toBe("# Overview");
-    const assetInput = fetch.mock.calls[0]?.[0];
-    const assetUrl =
-      assetInput instanceof Request ? assetInput.url : assetInput?.toString();
-    expect(new URL(assetUrl ?? "").pathname).toBe("/docs/cache/overview.md");
-  });
+      expect(response.headers.get("Content-Type")).toBe(
+        "text/markdown; charset=utf-8"
+      );
+      expect(response.headers.get("Content-Location")).toBe(markdownPath);
+      expect(response.headers.get("Link")).toBe(
+        getExpectedPageDiscoveryLink(markdownPath)
+      );
+      expect(response.headers.get("Vary")).toBe("Accept");
+      expect(response.headers.get("ETag")).toBe('"markdown"');
+      expect(await response.text()).toBe(body);
+      const assetInput = fetch.mock.calls[0]?.[0];
+      const assetUrl =
+        assetInput instanceof Request ? assetInput.url : assetInput?.toString();
+      expect(new URL(assetUrl ?? "").pathname).toBe(markdownPath);
+    }
+  );
 
-  it("preserves Markdown revalidation responses", async () => {
-    const { assets, fetch } = createAssets();
-    const response = await handleRequest(
-      new Request("https://astilba.com/docs/cache/overview/", {
-        headers: {
-          Accept: "text/markdown",
-          "If-None-Match": '"markdown"',
-        },
-      }),
-      assets
-    );
+  it.each([
+    {
+      markdownPath: "/docs/cache/overview.md",
+      pagePath: "/docs/cache/overview/",
+    },
+    {
+      markdownPath: "/docs/env/overview.md",
+      pagePath: "/docs/env/overview/",
+    },
+  ])(
+    "preserves Markdown revalidation for $pagePath",
+    async ({ markdownPath, pagePath }) => {
+      const { assets, fetch } = createAssets();
+      const response = await handleRequest(
+        new Request(`https://astilba.com${pagePath}`, {
+          headers: {
+            Accept: "text/markdown",
+            "If-None-Match": '"markdown"',
+          },
+        }),
+        assets
+      );
 
-    expect(response.status).toBe(304);
-    expect(response.headers.get("Content-Type")).toBe(
-      "text/markdown; charset=utf-8"
-    );
-    expect(response.headers.get("Content-Location")).toBe(
-      "/docs/cache/overview.md"
-    );
-    expect(response.headers.get("Vary")).toBe("Accept");
-    expect(fetch).toHaveBeenCalledTimes(1);
-  });
+      expect(response.status).toBe(304);
+      expect(response.headers.get("Content-Type")).toBe(
+        "text/markdown; charset=utf-8"
+      );
+      expect(response.headers.get("Content-Location")).toBe(markdownPath);
+      expect(response.headers.get("Vary")).toBe("Accept");
+      expect(fetch).toHaveBeenCalledTimes(1);
+    }
+  );
 
-  it.each(["/docs/index.md", "/docs/cache.md", "/docs/cache/overview.md"])(
+  it.each([
+    "/docs/index.md",
+    "/docs/cache.md",
+    "/docs/cache/overview.md",
+    "/docs/env.md",
+    "/docs/env/overview.md",
+  ])(
     "sets direct Markdown headers for %s without buffering the asset",
     async (path) => {
       const { assets, fetch } = createAssets();
@@ -293,6 +330,11 @@ describe("Markdown negotiation", () => {
 
   it.each([
     { markdownPath: "/docs/index.md", pagePath: "/docs/" },
+    { markdownPath: "/docs/env.md", pagePath: "/docs/env/" },
+    {
+      markdownPath: "/docs/env/overview.md",
+      pagePath: "/docs/env/overview/",
+    },
     { markdownPath: "/docs/cache.md", pagePath: "/docs/cache/" },
     {
       markdownPath: "/docs/cache/overview.md",

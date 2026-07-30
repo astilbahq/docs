@@ -2,6 +2,7 @@ import type { StarlightUserConfig } from "@astrojs/starlight/types";
 
 import { cacheProduct } from "./products/cache.ts";
 import { createProduct } from "./products/create.ts";
+import { envProduct } from "./products/env.ts";
 import { siteDocsPages } from "./site-pages.ts";
 import {
   docsIcons,
@@ -157,7 +158,11 @@ export const validateDocsProducts = (products: DocsProduct[]): void => {
   }
 };
 
-export const docsProducts: DocsProduct[] = [createProduct, cacheProduct];
+export const docsProducts: DocsProduct[] = [
+  createProduct,
+  envProduct,
+  cacheProduct,
+];
 validateDocsProducts(docsProducts);
 
 export const docsSidebar: NonNullable<StarlightUserConfig["sidebar"]> =

@@ -33,6 +33,14 @@ export const siteDocsPages: readonly SiteDocsPage[] = Object.freeze([
     sourcePath: "src/content/docs/create.md",
   },
   {
+    canonicalPath: withDocsBase("/env/"),
+    id: "env",
+    markdownPath: withDocsBase("/env.md"),
+    presentation: "product-home",
+    productId: "env",
+    sourcePath: "src/content/docs/env.md",
+  },
+  {
     canonicalPath: withDocsBase("/cache/"),
     id: "cache",
     markdownPath: withDocsBase("/cache.md"),

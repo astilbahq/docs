@@ -15,6 +15,7 @@ Astilba publishes build-generated text files for language models and other clien
 | [`/docs/llms-small.txt`](https://astilba.com/docs/llms-small.txt) | Context is limited and an abridged copy of the documentation is sufficient. |
 | [`/docs/llms-full.txt`](https://astilba.com/docs/llms-full.txt) | The client can accept the complete published documentation in one response. |
 | [`/docs/_llms-txt/astilba-create.txt`](https://astilba.com/docs/_llms-txt/astilba-create.txt) | The task concerns only Astilba Create and does not need site-wide material. |
+| [`/docs/_llms-txt/astilba-env.txt`](https://astilba.com/docs/_llms-txt/astilba-env.txt) | The task concerns only Astilba Env and does not need site-wide material. |
 | [`/docs/_llms-txt/astilba-cache.txt`](https://astilba.com/docs/_llms-txt/astilba-cache.txt) | The task concerns only Astilba Cache and does not need site-wide material. |
 
 The generated files are snapshots of the current deployment. Fetch them again when current behavior or release status matters.
@@ -23,11 +24,18 @@ The generated files are snapshots of the current deployment. Fetch them again wh
 
 Every published documentation page is also available as Markdown. Replace the trailing slash in a documentation URL with `.md`:
 
-- [`/docs/create/overview.md`](https://astilba.com/docs/create/overview.md) — Create overview and release context.
-- [`/docs/create/cli-reference.md`](https://astilba.com/docs/create/cli-reference.md) — Create command-line reference.
-- [`/docs/cache/overview.md`](https://astilba.com/docs/cache/overview.md) — Cache overview and preview context.
-- [`/docs/cache/api-reference.md`](https://astilba.com/docs/cache/api-reference.md) — Cache API reference.
-- [`/docs/agents/mcp.md`](https://astilba.com/docs/agents/mcp.md) — MCP Server connection and usage guide.
+- [`/docs/create/overview.md`](https://astilba.com/docs/create/overview.md); Create overview and release context.
+- [`/docs/create/cli-reference.md`](https://astilba.com/docs/create/cli-reference.md); Create command-line reference.
+- [`/docs/env/overview.md`](https://astilba.com/docs/env/overview.md); Env overview and public-alpha context.
+- [`/docs/env/quickstart.md`](https://astilba.com/docs/env/quickstart.md); first server-side Env integration.
+- [`/docs/env/browser-delivery.md`](https://astilba.com/docs/env/browser-delivery.md); validated JSON bootstrap and browser import boundary.
+- [`/docs/env/declaration-reference.md`](https://astilba.com/docs/env/declaration-reference.md); declaration builders, codecs, consumers, targets, and rules.
+- [`/docs/env/cli-reference.md`](https://astilba.com/docs/env/cli-reference.md); generation, target checking, planning, JSON formats, and exit statuses.
+- [`/docs/env/migrate-from-next-dynamic-env.md`](https://astilba.com/docs/env/migrate-from-next-dynamic-env.md); migration guidance for Next.js applications.
+- [`/docs/env/release-and-support.md`](https://astilba.com/docs/env/release-and-support.md); package, runtime, export, and public-alpha support boundaries.
+- [`/docs/cache/overview.md`](https://astilba.com/docs/cache/overview.md); Cache overview and preview context.
+- [`/docs/cache/api-reference.md`](https://astilba.com/docs/cache/api-reference.md); Cache API reference.
+- [`/docs/agents/mcp.md`](https://astilba.com/docs/agents/mcp.md); MCP Server connection and usage guide.
 
 Clients that control request headers can instead request the ordinary page URL with `Accept: text/markdown`. Prefer an individual page when the task is narrow; it consumes less context than a combined documentation set.
 

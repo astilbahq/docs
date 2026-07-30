@@ -9,6 +9,8 @@ import {
 const CANONICAL_ORIGIN = ASTILBA_ORIGIN;
 const CREATE_HTML_PATH = withDocsBase("/create/overview/");
 const CREATE_MARKDOWN_PATH = withDocsBase("/create/overview.md");
+const ENV_HTML_PATH = withDocsBase("/env/overview/");
+const ENV_MARKDOWN_PATH = withDocsBase("/env/overview.md");
 const HTML_PATH = withDocsBase("/cache/overview/");
 const MARKDOWN_PATH = withDocsBase("/cache/overview.md");
 const MCP_PATH = withDocsBase("/mcp");
@@ -327,51 +329,114 @@ const checkDirectMarkdown = async () => {
   }
 };
 
-const checkCreateDocs = async () => {
-  const htmlResponse = await request(CREATE_HTML_PATH, {
+const requireBodyMarkers = (body, markers, label) => {
+  if (!markers.every((marker) => body.includes(marker))) {
+    throw new Error(`[production-smoke] ${label} content is incomplete.`);
+  }
+};
+
+const checkProductDocs = async ({
+  htmlMarkers,
+  htmlPath,
+  label,
+  markdownMarkers,
+  markdownPath,
+  negotiateMarkdown = false,
+}) => {
+  const htmlResponse = await request(htmlPath, {
     headers: { Accept: "text/html" },
   });
-  requireStatus(htmlResponse, "Create HTML page");
+  requireStatus(htmlResponse, `${label} HTML page`);
   requireHeaderIncludes(
     htmlResponse,
     "Content-Type",
     "text/html",
-    "Create HTML page"
+    `${label} HTML page`
   );
   requireHeaderIncludes(
     htmlResponse,
     "Link",
-    `<${CREATE_MARKDOWN_PATH}>; rel="alternate"`,
-    "Create HTML page"
+    `<${markdownPath}>; rel="alternate"`,
+    `${label} HTML page`
   );
-  requireGlobalSecurityHeaders(htmlResponse, "Create HTML page");
+  requireGlobalSecurityHeaders(htmlResponse, `${label} HTML page`);
   const html = await htmlResponse.text();
+  requireBodyMarkers(html, htmlMarkers, `${label} HTML page`);
 
-  if (!(html.includes("Astilba Create") && html.includes("four recipe v2"))) {
-    throw new Error(
-      "[production-smoke] Create HTML page content is incomplete."
+  if (negotiateMarkdown) {
+    const negotiatedResponse = await request(htmlPath, {
+      headers: { Accept: "text/markdown" },
+    });
+    requireStatus(negotiatedResponse, `negotiated ${label} Markdown`);
+    requireHeaderIncludes(
+      negotiatedResponse,
+      "Content-Type",
+      "text/markdown",
+      `negotiated ${label} Markdown`
+    );
+    requireHeaderIncludes(
+      negotiatedResponse,
+      "Content-Type",
+      "charset=utf-8",
+      `negotiated ${label} Markdown`
+    );
+    requireHeaderEquals(
+      negotiatedResponse,
+      "Content-Location",
+      markdownPath,
+      `negotiated ${label} Markdown`
+    );
+    requireHeaderIncludes(
+      negotiatedResponse,
+      "Vary",
+      "accept",
+      `negotiated ${label} Markdown`
+    );
+    requireGlobalSecurityHeaders(
+      negotiatedResponse,
+      `negotiated ${label} Markdown`
+    );
+    requireBodyMarkers(
+      await negotiatedResponse.text(),
+      markdownMarkers,
+      `negotiated ${label} Markdown`
     );
   }
 
-  const markdownResponse = await request(CREATE_MARKDOWN_PATH);
-  requireStatus(markdownResponse, "Create Markdown");
+  const markdownResponse = await request(markdownPath);
+  requireStatus(markdownResponse, `${label} Markdown`);
   requireHeaderEquals(
     markdownResponse,
     "Content-Type",
     "text/markdown; charset=utf-8",
-    "Create Markdown"
+    `${label} Markdown`
   );
-  requireGlobalSecurityHeaders(markdownResponse, "Create Markdown");
-  const markdown = await markdownResponse.text();
-
-  if (
-    !(markdown.includes("# Overview") && markdown.includes("create-astilba"))
-  ) {
-    throw new Error(
-      "[production-smoke] Create Markdown content is incomplete."
-    );
-  }
+  requireGlobalSecurityHeaders(markdownResponse, `${label} Markdown`);
+  requireBodyMarkers(
+    await markdownResponse.text(),
+    markdownMarkers,
+    `${label} Markdown`
+  );
 };
+
+const checkCreateDocs = () =>
+  checkProductDocs({
+    htmlMarkers: ["Astilba Create", "four recipe v2"],
+    htmlPath: CREATE_HTML_PATH,
+    label: "Create",
+    markdownMarkers: ["# Overview", "create-astilba"],
+    markdownPath: CREATE_MARKDOWN_PATH,
+  });
+
+const checkEnvDocs = () =>
+  checkProductDocs({
+    htmlMarkers: ["Astilba Env", "The 0.1 release is a public alpha"],
+    htmlPath: ENV_HTML_PATH,
+    label: "Env",
+    markdownMarkers: ["# Overview", "@astilba/env", "public alpha"],
+    markdownPath: ENV_MARKDOWN_PATH,
+    negotiateMarkdown: true,
+  });
 
 const checkMissingMarkdown = async () => {
   const response = await request(
@@ -392,6 +457,86 @@ const checkMissingMarkdown = async () => {
   );
   requireGlobalSecurityHeaders(response, "missing Markdown");
   await response.body?.cancel();
+};
+
+const PRODUCT_DISCOVERY_CHECKS = [
+  {
+    documentSetMarkers: [
+      "<SYSTEM>Astilba Create:",
+      "# Create",
+      "# Release and support",
+    ],
+    documentSetPath: withDocsBase("/_llms-txt/astilba-create.txt"),
+    label: "Create",
+    skillHeading: "# Astilba Create documentation",
+    skillName: "astilba-create-docs",
+    skillUrl: withDocsBase(
+      "/.well-known/agent-skills/astilba-create-docs/SKILL.md"
+    ),
+  },
+  {
+    documentSetMarkers: [
+      "<SYSTEM>Astilba Env:",
+      "# Env",
+      "# Release and support",
+      "# Migrate from next-dynamic-env",
+    ],
+    documentSetPath: withDocsBase("/_llms-txt/astilba-env.txt"),
+    label: "Env",
+    skillHeading: "# Astilba Env documentation",
+    skillName: "astilba-env-docs",
+    skillUrl: withDocsBase(
+      "/.well-known/agent-skills/astilba-env-docs/SKILL.md"
+    ),
+  },
+];
+
+const checkProductDiscovery = async (discovery, product) => {
+  const skill = discovery.skills?.find(
+    ({ name }) => name === product.skillName
+  );
+
+  if (
+    skill?.url !== product.skillUrl ||
+    !/^sha256:[0-9a-f]{64}$/.test(skill.digest ?? "")
+  ) {
+    throw new Error(
+      `[production-smoke] Agent Skills discovery is missing the ${product.label} skill.`
+    );
+  }
+
+  const skillResponse = await request(skill.url);
+  requireStatus(skillResponse, `${product.label} Agent Skill`);
+  requireHeaderIncludes(
+    skillResponse,
+    "Content-Type",
+    "text/markdown",
+    `${product.label} Agent Skill`
+  );
+  requireGlobalSecurityHeaders(skillResponse, `${product.label} Agent Skill`);
+  requireBodyMarkers(
+    await skillResponse.text(),
+    [product.skillHeading],
+    `${product.label} Agent Skill`
+  );
+
+  const documentSetResponse = await request(product.documentSetPath);
+  requireStatus(documentSetResponse, `${product.label} LLM document set`);
+  requireHeaderIncludes(
+    documentSetResponse,
+    "Content-Type",
+    "text/plain",
+    `${product.label} LLM document set`
+  );
+  requireGlobalSecurityHeaders(
+    documentSetResponse,
+    `${product.label} LLM document set`
+  );
+  requireBodyMarkers(
+    await documentSetResponse.text(),
+    product.documentSetMarkers,
+    `${product.label} LLM document set`
+  );
 };
 
 const checkDiscovery = async () => {
@@ -426,60 +571,11 @@ const checkDiscovery = async () => {
   );
   requireGlobalSecurityHeaders(skillsResponse, "Agent Skills discovery");
   const discovery = await skillsResponse.json();
-  const createSkill = discovery.skills?.find(
-    ({ name }) => name === "astilba-create-docs"
-  );
-
-  if (
-    createSkill?.url !==
-      "/docs/.well-known/agent-skills/astilba-create-docs/SKILL.md" ||
-    !/^sha256:[0-9a-f]{64}$/.test(createSkill.digest ?? "")
-  ) {
-    throw new Error(
-      "[production-smoke] Agent Skills discovery is missing the Create skill."
-    );
-  }
-
-  const skillResponse = await request(createSkill.url);
-  requireStatus(skillResponse, "Create Agent Skill");
-  requireHeaderIncludes(
-    skillResponse,
-    "Content-Type",
-    "text/markdown",
-    "Create Agent Skill"
-  );
-  requireGlobalSecurityHeaders(skillResponse, "Create Agent Skill");
-  if (
-    !(await skillResponse.text()).includes("# Astilba Create documentation")
-  ) {
-    throw new Error(
-      "[production-smoke] Create Agent Skill content is incomplete."
-    );
-  }
-
-  const customSetResponse = await request(
-    withDocsBase("/_llms-txt/astilba-create.txt")
-  );
-  requireStatus(customSetResponse, "Create LLM document set");
-  requireHeaderIncludes(
-    customSetResponse,
-    "Content-Type",
-    "text/plain",
-    "Create LLM document set"
-  );
-  requireGlobalSecurityHeaders(customSetResponse, "Create LLM document set");
-  const customSet = await customSetResponse.text();
-  if (
-    !(
-      customSet.includes("<SYSTEM>Astilba Create:") &&
-      customSet.includes("# Create") &&
-      customSet.includes("# Release and support")
+  await Promise.all(
+    PRODUCT_DISCOVERY_CHECKS.map((product) =>
+      checkProductDiscovery(discovery, product)
     )
-  ) {
-    throw new Error(
-      "[production-smoke] Create LLM document set content is incomplete."
-    );
-  }
+  );
 };
 
 const checkSitemap = async () => {
@@ -495,6 +591,7 @@ const checkSitemap = async () => {
     ) ||
     !sitemap.includes(`<loc>${docsUrl("/")}</loc>`) ||
     !sitemap.includes(`<loc>${docsUrl("/create/overview/")}</loc>`) ||
+    !sitemap.includes(`<loc>${docsUrl("/env/overview/")}</loc>`) ||
     !/<lastmod>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z<\/lastmod>/.test(
       sitemap
     )
@@ -728,6 +825,21 @@ const checkMcp = async () => {
       "[production-smoke] MCP search_docs did not return the expected Create resource."
     );
   }
+
+  const envSearch = await callMcp("tools/call", {
+    arguments: { productId: "env", query: "same-origin JSON" },
+    name: "search_docs",
+  });
+  const envResults = envSearch?.structuredContent?.results;
+
+  if (
+    !Array.isArray(envResults) ||
+    !envResults.some((result) => result?.uri === docsUrl("/env/overview.md"))
+  ) {
+    throw new Error(
+      "[production-smoke] MCP search_docs did not return the expected Env resource."
+    );
+  }
 };
 
 const runChecks = async () => {
@@ -736,6 +848,7 @@ const runChecks = async () => {
     checkMarkdown(),
     checkDirectMarkdown(),
     checkCreateDocs(),
+    checkEnvDocs(),
     checkMissingMarkdown(),
     checkDiscovery(),
     checkSitemap(),
