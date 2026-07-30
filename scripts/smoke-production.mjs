@@ -445,7 +445,7 @@ const checkEnvWorkersDocs = () =>
     htmlMarkers: [
       "Cloudflare Workers",
       "generated server target",
-      "string or undefined",
+      'must be a string or <code dir="auto">undefined</code>',
     ],
     htmlPath: ENV_WORKERS_HTML_PATH,
     label: "Env Cloudflare Workers",
