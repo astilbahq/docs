@@ -1883,6 +1883,13 @@ test("presents Cache as a distinct product home", async ({ page }) => {
     name: "Choose product. Current product: Cache",
     exact: true,
   });
+  await expect
+    .poll(() =>
+      productTrigger.evaluate(
+        (element) => !element.closest("astro-island")?.hasAttribute("ssr")
+      )
+    )
+    .toBe(true);
   await productTrigger.focus();
   await productTrigger.press("Enter");
   const productMenu = page.getByRole("menu");
