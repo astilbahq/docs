@@ -3,7 +3,7 @@ title: Cloudflare Workers
 description: Generate a deployment target on Node.js and validate Wrangler bindings directly inside a Cloudflare Worker.
 ---
 
-Env 0.2.0 admits a narrow Cloudflare Workers runtime path: a generated server target for the `deployment` lifecycle may call `check(env)` or `load(env)` inside a Worker handler when every selected entry uses a first-party Env codec.
+Env 0.2 admits a narrow Cloudflare Workers runtime path: a generated server target for the `deployment` lifecycle may call `check(env)` or `load(env)` inside a Worker handler when every selected entry uses a first-party Env codec.
 
 Authoring, generation, CLI checks, and planning still run on a [supported Node.js release](/docs/env/nodejs/). The Worker imports the generated target and the `@astilba/env/runtime` dependency behind it; it does not import the root package, browser runtime, CLI, or Vite integration.
 
@@ -148,7 +148,7 @@ Unselected bindings are different: Env does not read or reject them. Keep `CACHE
 
 Env's generated runtime does not need the [`nodejs_compat` compatibility flag](https://developers.cloudflare.com/workers/runtime-apis/nodejs/) for this path. Add that flag only when other application dependencies require Node.js APIs.
 
-The 0.2.0 Workers claim includes:
+The Env 0.2 Workers claim includes:
 
 - generated server targets for the `deployment` lifecycle;
 - first-party Env codecs; and

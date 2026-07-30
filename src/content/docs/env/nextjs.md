@@ -7,7 +7,7 @@ Next.js integration is application-owned wiring around generated Env modules. Th
 
 Use a generated server target wherever Next.js runs server code. When the browser needs deployment configuration, expose the public target through an inert JSON route and validate it with `@astilba/env/browser`.
 
-Env 0.2.0 has package-consumer evidence for Next.js 15.5.22 and 16.2.12 across App Router static, App Router request, Pages Router static, and Pages Router request modes. The server side of that evidence uses the Node.js runtime.
+Env 0.2 has package-consumer evidence for Next.js 15.5.22 and 16.2.12 across App Router static, App Router request, Pages Router static, and Pages Router request modes. The server side of that evidence uses the Node.js runtime.
 
 This page does not claim support for Next.js Edge Runtime or a Next.js deployment on Cloudflare Workers. The separate [Cloudflare Workers](/docs/env/cloudflare-workers/) boundary admits only the documented direct Worker-handler path.
 

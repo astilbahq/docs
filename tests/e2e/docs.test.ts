@@ -1791,7 +1791,7 @@ test("presents products and copies the agent setup prompt from the homepage", as
     has: page.getByRole("heading", { level: 3, name: "Env" }),
   });
   await expect(envProduct).toContainText("Public alpha");
-  await expect(envProduct).toContainText("@astilba/env 0.2.0");
+  await expect(envProduct).toContainText("@astilba/env 0.2.1");
   await expect(envProduct.getByRole("link", { name: "Env" })).toHaveAttribute(
     "href",
     "/docs/env/"
@@ -2021,7 +2021,7 @@ test("presents Env as a distinct public-alpha product home", async ({
   ).toHaveAttribute("href", "/docs/env/overview/");
   await expect(
     page.getByText(
-      "Released as @astilba/env 0.2.0 for public-alpha evaluation. Expect deliberate breaking changes before a stable release."
+      "Released as @astilba/env 0.2.1 for public-alpha evaluation. Expect deliberate breaking changes before a stable release."
     )
   ).toBeVisible();
   await expect(
