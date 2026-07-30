@@ -23,7 +23,7 @@ pnpm add @astilba/env@0.1.0
 | Generated server `check` and `load` functions | Public |
 | Generated public browser projections | Public |
 | Inert same-origin JSON browser protocol | Public |
-| Vite private-module boundary | Public for Vite 8 |
+| Vite private-module boundary | Public for Vite 8.1.5 or later within Vite 8 |
 | Next.js App and Pages Router wiring | Application-owned integration; no Astilba adapter |
 | Hosted configuration service | Not provided |
 | Secret storage or `.env` loading | Not provided |

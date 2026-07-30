@@ -329,136 +329,114 @@ const checkDirectMarkdown = async () => {
   }
 };
 
-const checkCreateDocs = async () => {
-  const htmlResponse = await request(CREATE_HTML_PATH, {
-    headers: { Accept: "text/html" },
-  });
-  requireStatus(htmlResponse, "Create HTML page");
-  requireHeaderIncludes(
-    htmlResponse,
-    "Content-Type",
-    "text/html",
-    "Create HTML page"
-  );
-  requireHeaderIncludes(
-    htmlResponse,
-    "Link",
-    `<${CREATE_MARKDOWN_PATH}>; rel="alternate"`,
-    "Create HTML page"
-  );
-  requireGlobalSecurityHeaders(htmlResponse, "Create HTML page");
-  const html = await htmlResponse.text();
-
-  if (!(html.includes("Astilba Create") && html.includes("four recipe v2"))) {
-    throw new Error(
-      "[production-smoke] Create HTML page content is incomplete."
-    );
-  }
-
-  const markdownResponse = await request(CREATE_MARKDOWN_PATH);
-  requireStatus(markdownResponse, "Create Markdown");
-  requireHeaderEquals(
-    markdownResponse,
-    "Content-Type",
-    "text/markdown; charset=utf-8",
-    "Create Markdown"
-  );
-  requireGlobalSecurityHeaders(markdownResponse, "Create Markdown");
-  const markdown = await markdownResponse.text();
-
-  if (
-    !(markdown.includes("# Overview") && markdown.includes("create-astilba"))
-  ) {
-    throw new Error(
-      "[production-smoke] Create Markdown content is incomplete."
-    );
-  }
-};
-
-const requireEnvMarkdownBody = (markdown, label) => {
-  if (
-    !(
-      markdown.includes("# Overview") &&
-      markdown.includes("@astilba/env") &&
-      markdown.includes("public alpha")
-    )
-  ) {
+const requireBodyMarkers = (body, markers, label) => {
+  if (!markers.every((marker) => body.includes(marker))) {
     throw new Error(`[production-smoke] ${label} content is incomplete.`);
   }
 };
 
-const checkEnvDocs = async () => {
-  const htmlResponse = await request(ENV_HTML_PATH, {
+const checkProductDocs = async ({
+  htmlMarkers,
+  htmlPath,
+  label,
+  markdownMarkers,
+  markdownPath,
+  negotiateMarkdown = false,
+}) => {
+  const htmlResponse = await request(htmlPath, {
     headers: { Accept: "text/html" },
   });
-  requireStatus(htmlResponse, "Env HTML page");
+  requireStatus(htmlResponse, `${label} HTML page`);
   requireHeaderIncludes(
     htmlResponse,
     "Content-Type",
     "text/html",
-    "Env HTML page"
+    `${label} HTML page`
   );
   requireHeaderIncludes(
     htmlResponse,
     "Link",
-    `<${ENV_MARKDOWN_PATH}>; rel="alternate"`,
-    "Env HTML page"
+    `<${markdownPath}>; rel="alternate"`,
+    `${label} HTML page`
   );
-  requireGlobalSecurityHeaders(htmlResponse, "Env HTML page");
+  requireGlobalSecurityHeaders(htmlResponse, `${label} HTML page`);
   const html = await htmlResponse.text();
+  requireBodyMarkers(html, htmlMarkers, `${label} HTML page`);
 
-  if (!(html.includes("Astilba Env") && html.includes("0.1"))) {
-    throw new Error("[production-smoke] Env HTML page content is incomplete.");
+  if (negotiateMarkdown) {
+    const negotiatedResponse = await request(htmlPath, {
+      headers: { Accept: "text/markdown" },
+    });
+    requireStatus(negotiatedResponse, `negotiated ${label} Markdown`);
+    requireHeaderIncludes(
+      negotiatedResponse,
+      "Content-Type",
+      "text/markdown",
+      `negotiated ${label} Markdown`
+    );
+    requireHeaderIncludes(
+      negotiatedResponse,
+      "Content-Type",
+      "charset=utf-8",
+      `negotiated ${label} Markdown`
+    );
+    requireHeaderEquals(
+      negotiatedResponse,
+      "Content-Location",
+      markdownPath,
+      `negotiated ${label} Markdown`
+    );
+    requireHeaderIncludes(
+      negotiatedResponse,
+      "Vary",
+      "accept",
+      `negotiated ${label} Markdown`
+    );
+    requireGlobalSecurityHeaders(
+      negotiatedResponse,
+      `negotiated ${label} Markdown`
+    );
+    requireBodyMarkers(
+      await negotiatedResponse.text(),
+      markdownMarkers,
+      `negotiated ${label} Markdown`
+    );
   }
 
-  const negotiatedMarkdownResponse = await request(ENV_HTML_PATH, {
-    headers: { Accept: "text/markdown" },
-  });
-  requireStatus(negotiatedMarkdownResponse, "negotiated Env Markdown");
-  requireHeaderIncludes(
-    negotiatedMarkdownResponse,
-    "Content-Type",
-    "text/markdown",
-    "negotiated Env Markdown"
-  );
-  requireHeaderIncludes(
-    negotiatedMarkdownResponse,
-    "Content-Type",
-    "charset=utf-8",
-    "negotiated Env Markdown"
-  );
-  requireHeaderEquals(
-    negotiatedMarkdownResponse,
-    "Content-Location",
-    ENV_MARKDOWN_PATH,
-    "negotiated Env Markdown"
-  );
-  requireHeaderIncludes(
-    negotiatedMarkdownResponse,
-    "Vary",
-    "accept",
-    "negotiated Env Markdown"
-  );
-  requireGlobalSecurityHeaders(
-    negotiatedMarkdownResponse,
-    "negotiated Env Markdown"
-  );
-  requireEnvMarkdownBody(
-    await negotiatedMarkdownResponse.text(),
-    "negotiated Env Markdown"
-  );
-
-  const markdownResponse = await request(ENV_MARKDOWN_PATH);
-  requireStatus(markdownResponse, "Env Markdown");
+  const markdownResponse = await request(markdownPath);
+  requireStatus(markdownResponse, `${label} Markdown`);
   requireHeaderEquals(
     markdownResponse,
     "Content-Type",
     "text/markdown; charset=utf-8",
-    "Env Markdown"
+    `${label} Markdown`
   );
-  requireGlobalSecurityHeaders(markdownResponse, "Env Markdown");
-  requireEnvMarkdownBody(await markdownResponse.text(), "Env Markdown");
+  requireGlobalSecurityHeaders(markdownResponse, `${label} Markdown`);
+  requireBodyMarkers(
+    await markdownResponse.text(),
+    markdownMarkers,
+    `${label} Markdown`
+  );
 };
+
+const checkCreateDocs = () =>
+  checkProductDocs({
+    htmlMarkers: ["Astilba Create", "four recipe v2"],
+    htmlPath: CREATE_HTML_PATH,
+    label: "Create",
+    markdownMarkers: ["# Overview", "create-astilba"],
+    markdownPath: CREATE_MARKDOWN_PATH,
+  });
+
+const checkEnvDocs = () =>
+  checkProductDocs({
+    htmlMarkers: ["Astilba Env", "The 0.1 release is a public alpha"],
+    htmlPath: ENV_HTML_PATH,
+    label: "Env",
+    markdownMarkers: ["# Overview", "@astilba/env", "public alpha"],
+    markdownPath: ENV_MARKDOWN_PATH,
+    negotiateMarkdown: true,
+  });
 
 const checkMissingMarkdown = async () => {
   const response = await request(
@@ -479,6 +457,86 @@ const checkMissingMarkdown = async () => {
   );
   requireGlobalSecurityHeaders(response, "missing Markdown");
   await response.body?.cancel();
+};
+
+const PRODUCT_DISCOVERY_CHECKS = [
+  {
+    documentSetMarkers: [
+      "<SYSTEM>Astilba Create:",
+      "# Create",
+      "# Release and support",
+    ],
+    documentSetPath: withDocsBase("/_llms-txt/astilba-create.txt"),
+    label: "Create",
+    skillHeading: "# Astilba Create documentation",
+    skillName: "astilba-create-docs",
+    skillUrl: withDocsBase(
+      "/.well-known/agent-skills/astilba-create-docs/SKILL.md"
+    ),
+  },
+  {
+    documentSetMarkers: [
+      "<SYSTEM>Astilba Env:",
+      "# Env",
+      "# Release and support",
+      "# Migrate from next-dynamic-env",
+    ],
+    documentSetPath: withDocsBase("/_llms-txt/astilba-env.txt"),
+    label: "Env",
+    skillHeading: "# Astilba Env documentation",
+    skillName: "astilba-env-docs",
+    skillUrl: withDocsBase(
+      "/.well-known/agent-skills/astilba-env-docs/SKILL.md"
+    ),
+  },
+];
+
+const checkProductDiscovery = async (discovery, product) => {
+  const skill = discovery.skills?.find(
+    ({ name }) => name === product.skillName
+  );
+
+  if (
+    skill?.url !== product.skillUrl ||
+    !/^sha256:[0-9a-f]{64}$/.test(skill.digest ?? "")
+  ) {
+    throw new Error(
+      `[production-smoke] Agent Skills discovery is missing the ${product.label} skill.`
+    );
+  }
+
+  const skillResponse = await request(skill.url);
+  requireStatus(skillResponse, `${product.label} Agent Skill`);
+  requireHeaderIncludes(
+    skillResponse,
+    "Content-Type",
+    "text/markdown",
+    `${product.label} Agent Skill`
+  );
+  requireGlobalSecurityHeaders(skillResponse, `${product.label} Agent Skill`);
+  requireBodyMarkers(
+    await skillResponse.text(),
+    [product.skillHeading],
+    `${product.label} Agent Skill`
+  );
+
+  const documentSetResponse = await request(product.documentSetPath);
+  requireStatus(documentSetResponse, `${product.label} LLM document set`);
+  requireHeaderIncludes(
+    documentSetResponse,
+    "Content-Type",
+    "text/plain",
+    `${product.label} LLM document set`
+  );
+  requireGlobalSecurityHeaders(
+    documentSetResponse,
+    `${product.label} LLM document set`
+  );
+  requireBodyMarkers(
+    await documentSetResponse.text(),
+    product.documentSetMarkers,
+    `${product.label} LLM document set`
+  );
 };
 
 const checkDiscovery = async () => {
@@ -513,115 +571,11 @@ const checkDiscovery = async () => {
   );
   requireGlobalSecurityHeaders(skillsResponse, "Agent Skills discovery");
   const discovery = await skillsResponse.json();
-  const createSkill = discovery.skills?.find(
-    ({ name }) => name === "astilba-create-docs"
-  );
-  const envSkill = discovery.skills?.find(
-    ({ name }) => name === "astilba-env-docs"
-  );
-
-  if (
-    createSkill?.url !==
-      "/docs/.well-known/agent-skills/astilba-create-docs/SKILL.md" ||
-    !/^sha256:[0-9a-f]{64}$/.test(createSkill.digest ?? "")
-  ) {
-    throw new Error(
-      "[production-smoke] Agent Skills discovery is missing the Create skill."
-    );
-  }
-
-  if (
-    envSkill?.url !==
-      "/docs/.well-known/agent-skills/astilba-env-docs/SKILL.md" ||
-    !/^sha256:[0-9a-f]{64}$/.test(envSkill.digest ?? "")
-  ) {
-    throw new Error(
-      "[production-smoke] Agent Skills discovery is missing the Env skill."
-    );
-  }
-
-  const skillResponse = await request(createSkill.url);
-  requireStatus(skillResponse, "Create Agent Skill");
-  requireHeaderIncludes(
-    skillResponse,
-    "Content-Type",
-    "text/markdown",
-    "Create Agent Skill"
-  );
-  requireGlobalSecurityHeaders(skillResponse, "Create Agent Skill");
-  if (
-    !(await skillResponse.text()).includes("# Astilba Create documentation")
-  ) {
-    throw new Error(
-      "[production-smoke] Create Agent Skill content is incomplete."
-    );
-  }
-
-  const envSkillResponse = await request(envSkill.url);
-  requireStatus(envSkillResponse, "Env Agent Skill");
-  requireHeaderIncludes(
-    envSkillResponse,
-    "Content-Type",
-    "text/markdown",
-    "Env Agent Skill"
-  );
-  requireGlobalSecurityHeaders(envSkillResponse, "Env Agent Skill");
-  if (
-    !(await envSkillResponse.text()).includes("# Astilba Env documentation")
-  ) {
-    throw new Error(
-      "[production-smoke] Env Agent Skill content is incomplete."
-    );
-  }
-
-  const customSetResponse = await request(
-    withDocsBase("/_llms-txt/astilba-create.txt")
-  );
-  requireStatus(customSetResponse, "Create LLM document set");
-  requireHeaderIncludes(
-    customSetResponse,
-    "Content-Type",
-    "text/plain",
-    "Create LLM document set"
-  );
-  requireGlobalSecurityHeaders(customSetResponse, "Create LLM document set");
-  const customSet = await customSetResponse.text();
-  if (
-    !(
-      customSet.includes("<SYSTEM>Astilba Create:") &&
-      customSet.includes("# Create") &&
-      customSet.includes("# Release and support")
+  await Promise.all(
+    PRODUCT_DISCOVERY_CHECKS.map((product) =>
+      checkProductDiscovery(discovery, product)
     )
-  ) {
-    throw new Error(
-      "[production-smoke] Create LLM document set content is incomplete."
-    );
-  }
-
-  const envCustomSetResponse = await request(
-    withDocsBase("/_llms-txt/astilba-env.txt")
   );
-  requireStatus(envCustomSetResponse, "Env LLM document set");
-  requireHeaderIncludes(
-    envCustomSetResponse,
-    "Content-Type",
-    "text/plain",
-    "Env LLM document set"
-  );
-  requireGlobalSecurityHeaders(envCustomSetResponse, "Env LLM document set");
-  const envCustomSet = await envCustomSetResponse.text();
-  if (
-    !(
-      envCustomSet.includes("<SYSTEM>Astilba Env:") &&
-      envCustomSet.includes("# Env") &&
-      envCustomSet.includes("# Release and support") &&
-      envCustomSet.includes("# Migrate from next-dynamic-env")
-    )
-  ) {
-    throw new Error(
-      "[production-smoke] Env LLM document set content is incomplete."
-    );
-  }
 };
 
 const checkSitemap = async () => {

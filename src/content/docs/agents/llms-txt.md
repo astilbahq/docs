@@ -32,6 +32,7 @@ Every published documentation page is also available as Markdown. Replace the tr
 - [`/docs/env/declaration-reference.md`](https://astilba.com/docs/env/declaration-reference.md); declaration builders, codecs, consumers, targets, and rules.
 - [`/docs/env/cli-reference.md`](https://astilba.com/docs/env/cli-reference.md); generation, target checking, planning, JSON formats, and exit statuses.
 - [`/docs/env/migrate-from-next-dynamic-env.md`](https://astilba.com/docs/env/migrate-from-next-dynamic-env.md); migration guidance for Next.js applications.
+- [`/docs/env/release-and-support.md`](https://astilba.com/docs/env/release-and-support.md); package, runtime, export, and public-alpha support boundaries.
 - [`/docs/cache/overview.md`](https://astilba.com/docs/cache/overview.md); Cache overview and preview context.
 - [`/docs/cache/api-reference.md`](https://astilba.com/docs/cache/api-reference.md); Cache API reference.
 - [`/docs/agents/mcp.md`](https://astilba.com/docs/agents/mcp.md); MCP Server connection and usage guide.
