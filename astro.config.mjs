@@ -8,6 +8,7 @@ import { defineConfig } from "astro/config";
 import starlightLinksValidator from "starlight-links-validator";
 import starlightLlmsTxt from "starlight-llms-txt";
 
+import { check as checkDocsBuild } from "./.astilba/env/docsBuild.server.ts";
 import { docsProducts, docsSidebar } from "./src/docs/catalog.ts";
 import { removeTerminalWindowHeaders } from "./src/docs/expressive-code.ts";
 import { siteDocsPages } from "./src/docs/site-pages.ts";
@@ -15,36 +16,16 @@ import {
   addDocsSitemapLastModified,
   createDocsSitemapLastModified,
 } from "./src/docs/sitemap.ts";
-import { ASTILBA_ORIGIN, DOCS_BASE_PATH, docsUrl } from "./src/docs/urls.ts";
+import { DOCS_BASE_PATH, docsUrl } from "./src/docs/urls.ts";
+import { resolveCanonicalOrigin } from "./src/env/origin.ts";
 
 // starlight-llms-txt needs the deployed origin to generate canonical links.
-const siteValue = process.env.ASTILBA_DOCS_SITE;
-const siteUrl = siteValue ? new URL(siteValue) : undefined;
-
-if (siteUrl && !["http:", "https:"].includes(siteUrl.protocol)) {
-  throw new Error("ASTILBA_DOCS_SITE must use the http or https protocol.");
-}
-
-if (
-  siteUrl &&
-  (siteUrl.username ||
-    siteUrl.password ||
-    siteUrl.pathname !== "/" ||
-    siteUrl.search ||
-    siteUrl.hash)
-) {
-  throw new Error(
-    "ASTILBA_DOCS_SITE must be a public origin without credentials, a path, a query, or a fragment."
-  );
-}
-
-if (siteUrl && siteUrl.origin !== ASTILBA_ORIGIN) {
-  throw new Error(
-    `ASTILBA_DOCS_SITE must use the canonical deployed origin ${ASTILBA_ORIGIN}.`
-  );
-}
-
-const site = siteUrl?.origin;
+const docsBuild = checkDocsBuild(process.env);
+const site = resolveCanonicalOrigin(
+  "ASTILBA_DOCS_SITE",
+  docsBuild,
+  docsBuild.ok ? docsBuild.value.docsOrigin : undefined
+);
 const sitemapLastModified = site ? createDocsSitemapLastModified() : new Map();
 
 /** @type {import("astro").AstroIntegration} */

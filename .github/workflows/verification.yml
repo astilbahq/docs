@@ -41,6 +41,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Check generated Env output
+        run: pnpm env:check
+
       - name: Generate Panda bindings
         run: pnpm panda:codegen
 

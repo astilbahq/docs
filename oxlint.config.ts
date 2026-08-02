@@ -11,6 +11,7 @@ const ignorePatterns = [
   "**/*.css",
   "**/*.md",
   "public/**",
+  ".astilba/env/**",
   "styled-system/**",
   "vendor/**",
   "src/env.d.ts",
