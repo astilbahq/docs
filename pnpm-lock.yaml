@@ -14,6 +14,9 @@ importers:
 
   .:
     dependencies:
+      '@astilba/env':
+        specifier: 0.2.2
+        version: 0.2.2(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))
       '@astilba/tokens':
         specifier: 0.5.0
         version: 0.5.0
@@ -183,6 +186,16 @@ importers:
         version: 4.114.0(@types/node@24.13.3)
 
 packages:
+
+  '@astilba/env@0.2.2':
+    resolution: {integrity: sha512-B6UaBdrKPRPvwNzo5CIhWtBiZjijxxAObj62TIA8Z52HBwVYyy//IjcxVNe2e+TUvmh0cFsg2WzvCBHrOylrng==}
+    engines: {node: '>=22.14.0 <23.0.0 || >=24.0.0 <25.0.0 || >=26.0.0 <27.0.0'}
+    hasBin: true
+    peerDependencies:
+      vite: '>=8.1.5 <9.0.0'
+    peerDependenciesMeta:
+      vite:
+        optional: true
 
   '@astilba/tokens@0.5.0':
     resolution: {integrity: sha512-/Us0mItxwv+qe8w9rkBgiRn/rKk4Ukum8blZT5/IkVPoMLvPUnKue7kABe7IXo7JOxn91BRszNvl8aPCaPNAeg==}
@@ -4844,6 +4857,10 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
+
+  '@astilba/env@0.2.2(vite@8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0))':
+    optionalDependencies:
+      vite: 8.1.5(@types/node@24.13.3)(esbuild@0.28.1)(jiti@2.7.0)(yaml@2.9.0)
 
   '@astilba/tokens@0.5.0': {}
 

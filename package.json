@@ -10,6 +10,8 @@
     "deploy": "pnpm build:production && wrangler deploy",
     "deploy:dry-run": "pnpm build:production && wrangler deploy --dry-run",
     "dev": "astro dev",
+    "env:check": "astilba-env generate --check",
+    "env:generate": "astilba-env generate",
     "knip": "knip",
     "lint": "ultracite check",
     "lint:fix": "ultracite fix",
@@ -26,12 +28,13 @@
     "test:browser:run": "playwright test",
     "test:watch": "vitest",
     "typecheck": "pnpm check",
-    "verify": "pnpm panda:codegen && pnpm lint && pnpm check && pnpm test && pnpm knip && pnpm deploy:dry-run && pnpm test:browser:run && pnpm verify:site",
+    "verify": "pnpm env:check && pnpm panda:codegen && pnpm lint && pnpm check && pnpm test && pnpm knip && pnpm deploy:dry-run && pnpm test:browser:run && pnpm verify:site",
     "verify:site": "pnpm --dir site check && pnpm --dir site test && pnpm --dir site deploy:dry-run && pnpm --dir site test:browser",
     "verify:agent-artifacts": "node scripts/verify-agent-artifacts.mjs",
     "worker:types": "wrangler types"
   },
   "dependencies": {
+    "@astilba/env": "0.2.2",
     "@astilba/tokens": "0.5.0",
     "@astilba/ui": "0.5.0",
     "@astrojs/react": "6.0.1",
