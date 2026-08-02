@@ -6,11 +6,7 @@ import { check as checkSiteBuild } from "../.astilba/env/siteBuild.server.ts";
 import { resolveCanonicalOrigin } from "../src/env/origin.ts";
 
 const siteBuild = checkSiteBuild(process.env);
-const site = resolveCanonicalOrigin(
-  "ASTILBA_SITE",
-  siteBuild,
-  siteBuild.ok ? siteBuild.value.siteOrigin : undefined
-);
+const site = resolveCanonicalOrigin("ASTILBA_SITE", siteBuild, "siteOrigin");
 
 /** @type {import("astro").AstroIntegration} */
 const requireSite = {

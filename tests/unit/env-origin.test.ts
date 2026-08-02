@@ -6,6 +6,14 @@ import { resolveCanonicalOrigin } from "../../src/env/origin.ts";
 
 const docsSource = "ASTILBA_DOCS_SITE";
 const siteSource = "ASTILBA_SITE";
+const invalidOriginShapes = [
+  "http://astilba.com",
+  "https://user@astilba.com",
+  "https://astilba.com/docs",
+  "https://astilba.com?preview=true",
+  "https://astilba.com#fragment",
+  "not a URL",
+];
 
 describe("public build origins", () => {
   it("keeps both optional origins absent for local work", () => {
@@ -15,19 +23,21 @@ describe("public build origins", () => {
     expect(docs).toEqual({ ok: true, value: {} });
     expect(site).toEqual({ ok: true, value: {} });
     expect(
-      resolveCanonicalOrigin(
-        docsSource,
-        docs,
-        docs.ok ? docs.value.docsOrigin : undefined
-      )
+      resolveCanonicalOrigin(docsSource, docs, "docsOrigin")
     ).toBeUndefined();
     expect(
-      resolveCanonicalOrigin(
-        siteSource,
-        site,
-        site.ok ? site.value.siteOrigin : undefined
-      )
+      resolveCanonicalOrigin(siteSource, site, "siteOrigin")
     ).toBeUndefined();
+  });
+
+  it("keeps target entry keys type-specific", () => {
+    const docs = checkDocsBuild({});
+    const site = checkSiteBuild({});
+
+    // @ts-expect-error Docs target has no siteOrigin entry.
+    resolveCanonicalOrigin(docsSource, docs, "siteOrigin");
+    // @ts-expect-error Apex target has no docsOrigin entry.
+    resolveCanonicalOrigin(siteSource, site, "docsOrigin");
   });
 
   it("normalizes the canonical docs origin", () => {
@@ -39,37 +49,54 @@ describe("public build origins", () => {
     });
   });
 
-  it.each([
-    "http://astilba.com",
-    "https://user@astilba.com",
-    "https://astilba.com/docs",
-    "https://astilba.com?preview=true",
-    "https://astilba.com#fragment",
-    "not a URL",
-  ])("rejects an invalid docs origin shape", (value) => {
-    expect(checkDocsBuild({ [docsSource]: value })).toMatchObject({
-      diagnostics: [
-        {
-          code: "ENV_INVALID_VALUE",
-          consumer: "docs",
-          entry: "docsOrigin",
-        },
-      ],
-      ok: false,
-    });
-  });
+  it.each(invalidOriginShapes)(
+    "rejects an invalid docs origin shape",
+    (value) => {
+      expect(checkDocsBuild({ [docsSource]: value })).toMatchObject({
+        diagnostics: [
+          {
+            code: "ENV_INVALID_VALUE",
+            consumer: "docs",
+            entry: "docsOrigin",
+          },
+        ],
+        ok: false,
+      });
+    }
+  );
+
+  it.each(invalidOriginShapes)(
+    "rejects an invalid apex origin shape",
+    (value) => {
+      expect(checkSiteBuild({ [siteSource]: value })).toMatchObject({
+        diagnostics: [
+          {
+            code: "ENV_INVALID_VALUE",
+            consumer: "site",
+            entry: "siteOrigin",
+          },
+        ],
+        ok: false,
+      });
+    }
+  );
 
   it("retains the application-owned canonical origin boundary", () => {
     const docs = checkDocsBuild({ [docsSource]: "https://example.com" });
 
     expect(docs).toMatchObject({ ok: true });
     expect(() =>
-      resolveCanonicalOrigin(
-        docsSource,
-        docs,
-        docs.ok ? docs.value.docsOrigin : undefined
-      )
+      resolveCanonicalOrigin(docsSource, docs, "docsOrigin")
     ).toThrow("ASTILBA_DOCS_SITE must use the canonical deployed origin");
+  });
+
+  it("retains the application-owned apex canonical origin boundary", () => {
+    const site = checkSiteBuild({ [siteSource]: "https://example.com" });
+
+    expect(site).toMatchObject({ ok: true });
+    expect(() =>
+      resolveCanonicalOrigin(siteSource, site, "siteOrigin")
+    ).toThrow("ASTILBA_SITE must use the canonical deployed origin");
   });
 
   it("uses value-free diagnostics for rejected source values", () => {
@@ -78,11 +105,7 @@ describe("public build origins", () => {
 
     let message = "";
     try {
-      resolveCanonicalOrigin(
-        docsSource,
-        docs,
-        docs.ok ? docs.value.docsOrigin : undefined
-      );
+      resolveCanonicalOrigin(docsSource, docs, "docsOrigin");
     } catch (error) {
       message = error instanceof Error ? error.message : String(error);
     }

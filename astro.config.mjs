@@ -24,7 +24,7 @@ const docsBuild = checkDocsBuild(process.env);
 const site = resolveCanonicalOrigin(
   "ASTILBA_DOCS_SITE",
   docsBuild,
-  docsBuild.ok ? docsBuild.value.docsOrigin : undefined
+  "docsOrigin"
 );
 const sitemapLastModified = site ? createDocsSitemapLastModified() : new Map();
 
