@@ -78,19 +78,18 @@ Generated target modules export typed `check(source)` and `load(source)` functio
 
 Read [Lifecycles and projections](/docs/env/lifecycles-and-projections/) for the generated file model.
 
-## Choose the runtime boundary
+## Choose the runtime path
 
-| Runtime | Supported Env surface |
-| --- | --- |
-| Node.js | Declaration authoring, generator, CLI, and generated server targets. |
-| Browser | Isolated public bootstrap loading and projection validation. |
-| Cloudflare Workers | Generated deployment-lifecycle server targets using first-party codecs. Authoring and generation stay on Node.js. |
+| Path | Lifecycle and generated import | Example |
+| --- | --- | --- |
+| Node server | Generate on Node.js, then load a generated server target for the lifecycle your server owns. | [Node server](https://github.com/astilbahq/env/tree/main/examples/node-service) |
+| Cloudflare Worker deployment target | Run a generated deployment-lifecycle target through `@astilba/env/runtime` with built-in codecs. Authoring and generation stay on Node.js. | [Cloudflare Worker](https://github.com/astilbahq/env/tree/main/examples/cloudflare-worker) |
+| Next static shell | Import public build values from the generated browser `.build.ts` module. Bootstrap deployment values through an application-owned route without making the page dynamic. | [Next static shell](https://github.com/astilbahq/env/tree/main/examples/next-static-shell) |
+| Vite browser shell | Import public build values from the generated browser `.build.ts` module, or bootstrap deployment values from an application-owned endpoint and generated browser projection. | [Vite browser shell](https://github.com/astilbahq/env/tree/main/examples/vite) |
 
-Framework pages explain application-owned wiring:
+The Worker path is limited to generated deployment-lifecycle targets with built-in codecs. It does not establish support for declaration authoring, generation, request targets, opaque schemas, or other package exports in Workers.
 
-- [Vite](/docs/env/vite/) adds a private-module browser-graph boundary;
-- [Next.js](/docs/env/nextjs/) wires generated targets and public JSON delivery into App Router or Pages Router; and
-- [Deliver browser configuration](/docs/env/browser-delivery/) defines the framework-neutral endpoint protocol.
+Framework pages explain the application-owned wiring: [Vite](/docs/env/vite/) adds a private-module browser-graph boundary, [Next.js](/docs/env/nextjs/) keeps static shells static, and [Deliver browser configuration](/docs/env/browser-delivery/) defines the framework-neutral endpoint protocol.
 
 Check [Release and support](/docs/env/release-and-support/) before choosing a runtime. Evidence for one package export does not make every Env export portable to that runtime.
 

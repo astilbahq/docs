@@ -25,6 +25,7 @@ Env does not replace your secret manager or `.env` files, and it has no hosted c
 | Check a runtime boundary | [Node.js](/docs/env/nodejs/) or [Browser](/docs/env/browser-runtime/) |
 | Configure a Cloudflare Worker | [Cloudflare Workers](/docs/env/cloudflare-workers/) |
 | Integrate a framework | [Vite](/docs/env/vite/) or [Next.js](/docs/env/nextjs/) |
+| Choose a runtime path | [Node server, Worker deployment target, Next static shell, or Vite browser shell](/docs/env/overview/#choose-the-runtime-path) |
 | Understand build, deployment, and request values | [Lifecycles and projections](/docs/env/lifecycles-and-projections/) |
 | Choose built-in or custom validation | [Validation and Standard Schema](/docs/env/validation-and-standard-schema/) |
 | Serve validated browser configuration | [Deliver browser configuration](/docs/env/browser-delivery/) |

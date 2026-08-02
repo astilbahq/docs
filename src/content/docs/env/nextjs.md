@@ -237,10 +237,8 @@ export function EnvironmentProvider({
 
 Mount the provider in `app/layout.tsx` or `pages/_app.tsx`. Keep dependent children out of the tree until validation succeeds, and replace the sample status text with application-specific UI.
 
-## Choose build or deployment values
+## Keep the static shell static
 
-Use a public `build` entry when a browser value may be fixed during `next build`. Import its generated `.build.ts` module directly.
+For public build values, import the generated browser `.build.ts` module directly. When deployment values vary, keep the page static and make only the application-owned `/api/env` route `force-dynamic`; the browser loads and validates its public projection after the shell is served.
 
-Use a public `deployment` entry and the JSON route when one built Next.js artifact must observe different values across deployments. The application owns the route, canonical origin, caching, authentication, and failure UI.
-
-Read [Deliver browser configuration](/docs/env/browser-delivery/) for the complete protocol boundary. If you are replacing `DynamicEnvScript`, `clientEnv`, or `serverEnv`, continue with [Migrate from next-dynamic-env](/docs/env/migrate-from-next-dynamic-env/).
+There is no `@astilba/env/next` export. The [Next static shell example](https://github.com/astilbahq/env/tree/main/examples/next-static-shell) keeps framework wiring in the application. Read [Deliver browser configuration](/docs/env/browser-delivery/) for the endpoint protocol, canonical-origin, cache, and failure requirements. If you are replacing `DynamicEnvScript`, `clientEnv`, or `serverEnv`, continue with [Migrate from next-dynamic-env](/docs/env/migrate-from-next-dynamic-env/).

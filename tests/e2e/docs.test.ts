@@ -2083,6 +2083,51 @@ test("presents the Env runtime, platform, and framework split", async ({
     sidebar.getByRole("link", { name: "Next.js", exact: true })
   ).toHaveAttribute("href", "/docs/env/nextjs/");
   await expectNoAxeViolations(page);
+
+  await page.goto("/docs/env/overview/");
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "Choose the runtime path",
+    })
+  ).toBeVisible();
+
+  for (const [name, href] of [
+    [
+      "Node server",
+      "https://github.com/astilbahq/env/tree/main/examples/node-service",
+    ],
+    [
+      "Cloudflare Worker",
+      "https://github.com/astilbahq/env/tree/main/examples/cloudflare-worker",
+    ],
+    [
+      "Next static shell",
+      "https://github.com/astilbahq/env/tree/main/examples/next-static-shell",
+    ],
+    [
+      "Vite browser shell",
+      "https://github.com/astilbahq/env/tree/main/examples/vite",
+    ],
+  ]) {
+    await expect(page.getByRole("link", { name, exact: true })).toHaveAttribute(
+      "href",
+      href
+    );
+  }
+  await expectNoAxeViolations(page);
+
+  await page.goto("/docs/env/nextjs/");
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "Keep the static shell static",
+    })
+  ).toBeVisible();
+  await expect(page.locator("main")).toContainText(
+    "make only the application-owned /api/env route force-dynamic"
+  );
+  await expectNoAxeViolations(page);
 });
 
 test("keeps document pagination balanced and uses the ghost treatment", async ({
