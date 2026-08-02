@@ -41,6 +41,12 @@ The plugin rejects imports of:
 
 The failure names the refused import so you can move it behind a server boundary instead of adding an exception.
 
+## Choose build-fixed or deployment-bootstrap values
+
+Use a public `build` entry and its generated browser `.build.ts` module when Vite may fix the value at build time. When one built browser shell must receive deployment values, expose the generated public projection through an application-owned endpoint and bootstrap it in the browser.
+
+The [Vite browser shell example](https://github.com/astilbahq/env/tree/main/examples/vite) demonstrates both choices. Read [Deliver browser configuration](/docs/env/browser-delivery/) for the endpoint protocol, canonical-origin, cache, and failure requirements.
+
 ## Keep endpoint behavior elsewhere
 
 The Vite plugin does not decide:
