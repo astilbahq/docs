@@ -7,6 +7,19 @@ The `@astilba/env/browser` export validates public configuration before browser 
 
 Browser delivery is application-owned. Env validates either a same-origin JSON response or inert JSON that your framework has already transported.
 
+The browser export contains the runtime values below:
+
+| Export | Purpose |
+| --- | --- |
+| `loadBrowserBootstrap` | Fetch and validate a same-origin JSON envelope. |
+| `parseBrowserBootstrap` | Validate an already transported serialized JSON envelope without fetching. |
+| `startBrowserApplication` | Validate with `loadBrowserBootstrap`, then import and start the application module. |
+| `BootstrapFailure` | Identify an expected bootstrap failure with `instanceof` and read its stable `code`. |
+| `BOOTSTRAP_PROTOCOL` | Build an application-owned response with the current `astilba.env.bootstrap/v1` protocol identity. |
+| `MAXIMUM_BOOTSTRAP_BYTES` | Read the current 65,536-byte response limit without duplicating it in application code. |
+
+It also exports the supporting `BootstrapFailureCode`, `BrowserApplicationModule`, `BrowserAudience`, `BrowserProjection`, `BrowserValues`, `LoadBootstrapOptions`, `ParseBootstrapOptions`, `StartBrowserApplicationOptions`, and `ValidatedBootstrap` types. Generated projections provide `BrowserProjection`; application code should import a generated projection rather than construct one.
+
 ## Import only the browser surface
 
 Generate a public browser consumer and import its projection:
@@ -43,11 +56,13 @@ import {
 
 import { projection } from "./.astilba/env/browser/browser.deployment";
 
+const source = document.querySelector("#env")?.textContent ?? "";
+
 try {
   const bootstrap = parseBrowserBootstrap({
     expectedAudience: { origin: window.location.origin },
     projection,
-    source: JSON.parse(document.querySelector("#env")?.textContent ?? ""),
+    source,
   });
 
   renderApplication(bootstrap.values);
@@ -59,7 +74,7 @@ try {
 }
 ```
 
-The source must remain JSON data. Do not replace it with an executable script assignment or a mutable global. Missing or malformed transported JSON follows the same configuration-failure boundary as an invalid bootstrap.
+Pass the serialized JSON text, not the result of `JSON.parse`. Let the framework serialize and escape the envelope for an inert data container; do not interpolate unescaped JSON into HTML yourself. Do not replace the data with an executable script assignment or a mutable global. Missing or malformed transported JSON follows the same configuration-failure boundary as an invalid bootstrap.
 
 ## Delay the application import
 
@@ -105,13 +120,23 @@ try {
 
 Do not continue with ambient, baked, or previously cached values after validation fails. A retry should perform a new validation without weakening the expected audience or projection identity.
 
+The public `BootstrapFailureCode` union is grouped by the boundary that refused the bootstrap:
+
+- request and response: `BOOTSTRAP_REQUEST_ORIGIN_MISMATCH`, `BOOTSTRAP_FETCH_FAILED`, `BOOTSTRAP_REDIRECTED`, `BOOTSTRAP_FINAL_ORIGIN_MISMATCH`, `BOOTSTRAP_HTTP_STATUS_INVALID`, `BOOTSTRAP_INVALID_MIME`, `BOOTSTRAP_BODY_READ_FAILED`, `BOOTSTRAP_BODY_TOO_LARGE`, and `BOOTSTRAP_INVALID_UTF8`;
+- JSON input: `BOOTSTRAP_INVALID_JSON`, `BOOTSTRAP_DUPLICATE_KEY`, `BOOTSTRAP_JSON_TOO_DEEP`, `BOOTSTRAP_JSON_TOO_MANY_KEYS`, and `BOOTSTRAP_NON_PORTABLE_JSON`;
+- envelope identity: `BOOTSTRAP_UNKNOWN_FIELD`, `BOOTSTRAP_FIELD_MISSING`, `BOOTSTRAP_FIELD_INVALID`, `BOOTSTRAP_PROTOCOL_UNSUPPORTED`, `BOOTSTRAP_CONTRACT_MISMATCH`, `BOOTSTRAP_LIFECYCLE_MISMATCH`, `BOOTSTRAP_PROJECTION_MISMATCH`, and `BOOTSTRAP_AUDIENCE_MISMATCH`; and
+- generated projection and values: `BOOTSTRAP_PROJECTION_INVALID`, `BOOTSTRAP_GENERATED_FORMAT_UNSUPPORTED`, `BOOTSTRAP_VALUE_MISSING`, and `BOOTSTRAP_VALUE_INVALID`.
+
+Treat the codes as diagnostics and telemetry identities, not user-facing copy. An unexpected non-Env exception has no Env failure code; map it to an application-owned fallback state.
+
 ## Keep private modules out of the graph
 
 Browser code may import:
 
 - `@astilba/env/browser`;
 - generated `browser/*.build.ts` modules; and
-- generated `browser/*.deployment.ts` or `browser/*.request.ts` projections.
+- generated `browser/*.deployment.ts` or `browser/*.request.ts` projections; and
+- generated `consumers/*.public.json` evidence when an application explicitly needs the value-free public manifest.
 
 It must not import the root package, `@astilba/env/runtime`, the Env configuration file, generated `*.server.ts` targets, or complete generated metadata.
 

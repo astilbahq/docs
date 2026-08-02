@@ -22,7 +22,7 @@ The generated files are snapshots of the current deployment. Fetch them again wh
 
 ## Access one page
 
-Every published documentation page is also available as Markdown. Replace the trailing slash in a documentation URL with `.md`:
+Every published documentation page is also available as Markdown. Replace the trailing slash in a documentation URL with `.md`. The links below are common entry points rather than a complete index; each product text file contains every catalogued page for that product.
 
 - [`/docs/create/overview.md`](https://astilba.com/docs/create/overview.md); Create overview and release context.
 - [`/docs/create/cli-reference.md`](https://astilba.com/docs/create/cli-reference.md); Create command-line reference.

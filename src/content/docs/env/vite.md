@@ -28,7 +28,8 @@ Browser modules may import:
 
 - `@astilba/env/browser`;
 - generated `browser/*.build.ts` values; and
-- generated `browser/*.deployment.ts` or `browser/*.request.ts` projections.
+- generated `browser/*.deployment.ts` or `browser/*.request.ts` projections; and
+- generated `consumers/*.public.json` evidence.
 
 The plugin rejects imports of:
 
@@ -36,7 +37,7 @@ The plugin rejects imports of:
 - `@astilba/env/runtime` and `@astilba/env/vite`;
 - `astilba.env.ts` or `.mts`;
 - generated `*.server.ts` modules;
-- `contract.json`, `snapshot.json`, and consumer metadata; and
+- `contract.json`, `snapshot.json`, and generated `consumers/*.server.json` metadata; and
 - package-owned files outside the public browser runtime.
 
 The failure names the refused import so you can move it behind a server boundary instead of adding an exception.
