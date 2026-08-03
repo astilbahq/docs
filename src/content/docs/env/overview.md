@@ -93,22 +93,18 @@ Framework pages explain the application-owned wiring: [Vite](/docs/env/vite/) ad
 
 Check [Release and support](/docs/env/release-and-support/) before choosing a runtime. Evidence for one package export does not make every Env export portable to that runtime.
 
-## Keep ownership explicit
+## Compose Env with your stack
 
-Env owns:
+Env can replace application-specific configuration parsing, required-value helpers, public and private naming conventions, and projection glue. It complements the systems that store, deliver, inventory, or describe the source values.
 
-- contract compilation and deterministic generated output;
-- public and server projection separation;
-- source checking and redacted diagnostics;
-- browser envelope validation; and
-- value-free compatibility planning.
+| Concern | Existing authority | Env's role |
+| --- | --- | --- |
+| Secret storage and injection | A secret manager, CI system, or deployment platform owns the values and delivers them to the application. | A generated target reads only the selected values inside your application process after delivery. Astilba receives no values; Env provides no secret storage, rotation, or provisioning. |
+| Worker binding types | `wrangler types` describes the complete Worker binding interface. | A generated deployment target decodes mapped string settings and secrets. D1, KV, R2, and service bindings are capabilities, so they stay outside the configuration result and remain available through the Wrangler-generated interface. |
+| Live deployment inventory and preflight | Deployment tooling or application-owned assertions query the platform and decide whether a deployment may proceed. | Env validates the explicit source object at the declared lifecycle. It does not query a provider or prove what is present in a remote deployment. |
+| Server configuration parsing | Hand-written `requiredEnv()` helpers or schema wrappers turn ambient strings into application values. | Generated `check(source)` and `load(source)` operations can replace that parsing while sharing one contract across selected artifacts. |
+| Browser configuration delivery | An application-owned route serves inert, same-origin JSON and owns its HTTP policy. | Env generates the public projection, compatibility identity, and envelope validation; it does not host the route or transport the values. |
 
-Your application and platform own:
-
-- environment variables, secret managers, and provider bindings;
-- when generated targets are checked or loaded;
-- browser routes, trusted canonical origins, and response policy;
-- framework startup and failure presentation; and
-- provisioning, deployment, and live inventory.
+Use Env when one contract replaces repeated parsing or crosses artifact and lifecycle boundaries. Keep your existing parser when one server already has a reliable parser, you have no browser configuration surface, and you do not need to promote the same artifact through several deployments.
 
 Continue with [Configure a Node application](/docs/env/quickstart/) for the smallest working setup.
