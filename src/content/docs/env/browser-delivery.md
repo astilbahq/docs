@@ -181,7 +181,44 @@ await startBrowserApplication({
 
 The imported module must export `start(values, audience)`. Env loads and validates the bootstrap first, imports the application second, then calls `start`.
 
-If your framework has already transported the exact envelope as inert data, use `parseBrowserBootstrap({ source, expectedAudience, projection })`. It applies the same envelope and value checks without fetching. The source remains JSON data; do not turn it into executable JavaScript.
+If your framework has already transported the exact envelope as inert data, use `parseBrowserBootstrap({ source, expectedAudience, projection })`. It applies the same envelope and value checks without fetching. Pass the serialized JSON text as `source`, not the result of `JSON.parse`, and let the framework escape it for its inert data container. Do not interpolate unescaped JSON into HTML or turn the envelope into executable JavaScript.
+
+## Develop with a local HTTP origin
+
+The Env `origin()` codec accepts canonical HTTPS origins and deliberately rejects `localhost` and IP literals. The browser runtime can still validate an exact HTTP `expectedAudience` during local development.
+
+Use local HTTPS, or derive a development-only audience in application code from an allowlist of exact local origins such as `http://localhost:<port>` and `http://127.0.0.1:<port>`. The endpoint must emit that same allowlisted origin in `audience.origin` when the browser uses it as `expectedAudience`; do not override only the client-side expectation. Keep this branch out of production, reject forwarded host headers, and never weaken the production canonical-origin check. Env does not add a development fallback for you.
+
+For example, select one fixed origin for the current development command, then use the selected value in the endpoint envelope:
+
+```ts
+const developmentOrigins = Object.freeze({
+  localhost: "http://localhost:3000",
+  loopback: "http://127.0.0.1:3000",
+});
+
+const audienceOrigin =
+  process.env.NODE_ENV === "development"
+    ? developmentOrigins.localhost
+    : result.value.applicationOrigin;
+
+return Response.json(
+  {
+    audience: { origin: audienceOrigin },
+    consumer: projection.consumer,
+    contract: projection.contract,
+    lifecycle: projection.lifecycle,
+    projection: projection.digest,
+    protocol: BOOTSTRAP_PROTOCOL,
+    values: result.value,
+  },
+  {
+    headers: { "Cache-Control": "private, no-store" },
+  }
+);
+```
+
+Choose `localhost` or `loopback` explicitly in application-owned development configuration. Do not select between them from `Host`, `Forwarded`, or `X-Forwarded-Host`.
 
 ## Use build values without a request
 

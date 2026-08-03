@@ -11,6 +11,8 @@ import { defineEnvironment, env } from "@astilba/env";
 
 `defineEnvironment` validates one complete declaration and returns an opaque `EnvironmentDefinition`. The `env` object creates branded entries, consumers, targets, and rules that only `defineEnvironment` can compile.
 
+`EnvironmentDefinition` is also available as a type-only export. Use it to annotate a boundary that accepts any compiled Env declaration; do not construct or inspect one yourself.
+
 ## `defineEnvironment`
 
 ```ts
@@ -168,6 +170,23 @@ const configuration = await load(process.env, {
 ```
 
 The schema's declared input and output types must exactly match the shapes in the declaration. Validation must settle synchronously; a returned promise produces `ENV_VALIDATOR_ASYNC_UNSUPPORTED`.
+
+An opaque input shape is either `{ kind: "string" }` or an optional string wrapper:
+
+```ts
+input: {
+  kind: "optional",
+  value: { kind: "string" },
+}
+```
+
+An opaque output may use any portable shape above or wrap one with the same `optional` form. Entry presence and schema input are separate decisions:
+
+- with `required: false` and a non-optional input, a missing source omits the entry without calling the validator;
+- with an optional input, a missing source calls the validator with `undefined`; and
+- if the validator returns `undefined` for an optional output, a required entry fails with `ENV_MISSING_VALUE` while an optional entry is omitted.
+
+Returning `undefined` for a non-optional output fails with `ENV_INVALID_VALUE`. The entry builder's `required` option controls whether the whole entry may be absent. A `required` flag inside an object shape controls only that named output property. Omitting a required property, adding an unknown property, or returning another value that does not match the declared shape fails with `ENV_INVALID_VALUE`; omitting a property marked `required: false` is valid.
 
 The CLI `check` command cannot accept application schema implementations. Validate an opaque target through its generated `check` or `load` function.
 

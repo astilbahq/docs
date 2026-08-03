@@ -28,11 +28,12 @@ Fetch https://astilba.com/docs/agent-setup/prompt.md and follow its instructions
 Once connected, ask the client questions such as:
 
 - “Which project recipes does Astilba Create 0.3.0 support?”
+- “Can a generated Astilba Env target run in a Cloudflare Worker?”
 - “Is Astilba Cache ready for production?”
 - “Find the documentation for invalidating related cached values.”
 - “How do the Cloudflare Workers platform and React Router framework support differ?”
 
-The client should search before reading a bounded page or resource. Answers about Create releases should use [Release and support](/docs/create/release-and-support/); answers about Cache availability should use [Implementation status](/docs/cache/api-status/).
+The client should search before reading a bounded page or resource. Answers about Create releases should use [Release and support](/docs/create/release-and-support/); Env runtime or compatibility claims should use [Env release and support](/docs/env/release-and-support/); answers about Cache availability should use [Implementation status](/docs/cache/api-status/).
 
 ## Tools
 
@@ -49,7 +50,7 @@ Every published Markdown page is also exposed as a fixed MCP resource. Resource 
 
 Prefer resources when your client supports them: discovery gives you the canonical page list and a resource read returns the published document directly. Use `search_docs` and `read_doc` when the client exposes tools more reliably than resources.
 
-When you need to make a release or availability claim, read [Release and support](/docs/create/release-and-support/) for Create or [Implementation status](/docs/cache/api-status/) for Cache before relying on examples elsewhere in the documentation.
+When you need to make a release or availability claim, read [Release and support](/docs/create/release-and-support/) for Create, [Env release and support](/docs/env/release-and-support/) for Env, or [Implementation status](/docs/cache/api-status/) for Cache before relying on examples elsewhere in the documentation.
 
 ## Usage limits
 
