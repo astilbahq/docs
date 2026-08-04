@@ -224,7 +224,7 @@ export const ensureBrowserEnvironment = (): Promise<
 };
 ```
 
-The module caches the in-flight, fulfilled, or rejected validation for the current page. This keeps React development remounts and a separate `instrumentation-client.ts` on one request. With the sample above, a rejected promise remains rejected and the provider stays in its error state until the page reloads. If your application offers retry without a reload, it must deliberately replace the cached promise with a new validated load rather than weakening the audience or projection checks.
+The module caches the in-flight, fulfilled, or rejected validation for the current page. This keeps React development remounts and a separate `instrumentation-client.ts` on one request. With the sample above, a rejected promise remains rejected, and the provider stays in its error state until the page reloads. If your application offers retry without a reload, it must deliberately replace the cached promise with a new validated load rather than weakening the audience or projection checks.
 
 Start configuration-dependent instrumentation from the same promise without blocking module evaluation, and handle rejection explicitly:
 
