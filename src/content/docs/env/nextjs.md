@@ -60,6 +60,21 @@ The browser target creates:
 - `.astilba/env/browserDeployment.server.ts`, which checks the application source; and
 - `.astilba/env/browser/browser.deployment.ts`, which contains the public projection and decoder without values.
 
+## Keep server and browser modules separate
+
+Treat the generated server target and browser projection as two different import roots. A small application-owned layout makes the boundary visible:
+
+```text
+environment/
+├── public-env.server.ts       # server target, source checks, response assembly
+├── public-env.client.ts       # browser projection and shared readiness promise
+└── public-env-provider.tsx    # React distribution and application UI policy
+```
+
+Add `import "server-only"` to the server module and `import "client-only"` to the browser module. Do not re-export both through a `public-env` barrel. A Client Component or `instrumentation-client.ts` that reaches a mixed barrel can pull the generated `*.server.ts` target and `@astilba/env/runtime` into Turbopack's browser graph.
+
+The generated `.server.ts` suffix communicates intent, but the application owns this framework boundary. Import server targets directly from server-owned modules; import only `@astilba/env/browser` and generated `browser/*` projections from client-owned modules.
+
 ## Load private configuration on the server
 
 Import a generated server target only from server-owned code:
@@ -174,21 +189,76 @@ export default function handler(
 
 Both response helpers produce the required JSON content type. The Env browser loader also requests with `cache: "no-store"` and refuses redirects.
 
-### Load before rendering dependent UI
+### Share one browser readiness promise
 
-Create a Client Component that owns loading, success, and failure:
+Create one client-only module that owns the bootstrap request. Instrumentation, the provider, and other browser consumers can await the same promise without starting duplicate requests:
 
-```tsx
-// environment-client.tsx
-"use client";
+```ts
+// environment/public-env.client.ts
+import "client-only";
 
-import { loadBrowserBootstrap } from "@astilba/env/browser";
-import { createContext, useEffect, useState } from "react";
+import {
+  loadBrowserBootstrap,
+  type ValidatedBootstrap,
+} from "@astilba/env/browser";
 
 import {
   type Configuration,
   projection,
-} from "./.astilba/env/browser/browser.deployment";
+} from "../.astilba/env/browser/browser.deployment";
+
+let readiness: Promise<ValidatedBootstrap<Configuration>> | undefined;
+
+export const ensureBrowserEnvironment = (): Promise<
+  ValidatedBootstrap<Configuration>
+> => {
+  readiness ??= loadBrowserBootstrap({
+    endpoint: "/api/env",
+    expectedAudience: { origin: window.location.origin },
+    fetch: globalThis.fetch,
+    projection,
+    requestBaseUrl: window.location.href,
+  });
+
+  return readiness;
+};
+```
+
+The module caches the in-flight, fulfilled, or rejected validation for the current page. This keeps React development remounts and a separate `instrumentation-client.ts` on one request. With the sample above, a rejected promise remains rejected, and the provider stays in its error state until the page reloads. If your application offers retry without a reload, it must deliberately replace the cached promise with a new validated load rather than weakening the audience or projection checks.
+
+Start configuration-dependent instrumentation from the same promise without blocking module evaluation, and handle rejection explicitly:
+
+```ts
+// instrumentation-client.ts
+import { ensureBrowserEnvironment } from "./environment/public-env.client";
+import { startInstrumentation } from "./instrumentation";
+
+void ensureBrowserEnvironment()
+  .then(
+    ({ values }) => startInstrumentation(values),
+    () => {
+      // The provider owns the user-visible configuration failure state.
+    }
+  )
+  .catch(() => {
+    // The application owns instrumentation startup failure reporting.
+  });
+```
+
+Do not use an unhandled top-level `await` or start a second bootstrap request from instrumentation.
+
+### Load before rendering dependent UI
+
+Create a Client Component that owns loading, success, and failure while the client-only module owns readiness:
+
+```tsx
+// environment/public-env-provider.tsx
+"use client";
+
+import { createContext, useEffect, useState } from "react";
+
+import type { Configuration } from "../.astilba/env/browser/browser.deployment";
+import { ensureBrowserEnvironment } from "./public-env.client";
 
 export const EnvironmentContext = createContext<
   Readonly<Configuration> | undefined
@@ -211,13 +281,7 @@ export function EnvironmentProvider({
   useEffect(() => {
     let active = true;
 
-    void loadBrowserBootstrap({
-      endpoint: "/api/env",
-      expectedAudience: { origin: window.location.origin },
-      fetch: globalThis.fetch,
-      projection,
-      requestBaseUrl: window.location.href,
-    }).then(
+    void ensureBrowserEnvironment().then(
       ({ values }) => {
         if (active) {
           setState({ status: "ready", values });
@@ -256,6 +320,14 @@ export function EnvironmentProvider({
 ```
 
 Mount the provider in `app/layout.tsx` or `pages/_app.tsx`. Keep dependent children out of the tree until validation succeeds, and replace the sample status text with application-specific UI. This mode adds one no-store configuration request before dependent UI can render.
+
+### Diagnose a browser import leak
+
+If Turbopack reports that it cannot resolve `@astilba/env/runtime` from a Client Component or `instrumentation-client.ts`, inspect the import path before changing package resolution. The usual cause is a client-safe helper importing a barrel that also exports a server component or generated `*.server.ts` target.
+
+Split the modules, add Next's `server-only` and `client-only` sentinels, and confirm that the browser graph reaches only the generated browser projection and `@astilba/env/browser`. Do not alias the runtime to an empty browser module; that would conceal the boundary violation.
+
+`serverExternalPackages: ["@astilba/env"]` can be an application-specific server-bundling choice after the import graph is clean. It does not repair a server module that is reachable from browser code.
 
 ### Keep the static shell static
 

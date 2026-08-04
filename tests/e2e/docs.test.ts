@@ -2145,6 +2145,33 @@ test("presents the Env runtime, platform, and framework split", async ({
   await expect(page.locator("main")).toContainText(
     "This page does not claim support for cacheComponents: true"
   );
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "Keep server and browser modules separate",
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 3,
+      name: "Share one browser readiness promise",
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 3,
+      name: "Diagnose a browser import leak",
+    })
+  ).toBeVisible();
+  await expect(page.locator("main")).toContainText(
+    "Do not re-export both through a public-env barrel"
+  );
+  await expect(page.locator("main")).toContainText(
+    "It does not repair a server module that is reachable from browser code"
+  );
+  await expect(page.locator("main")).toContainText(
+    "Do not alias the runtime to an empty browser module"
+  );
   await expectNoAxeViolations(page);
 });
 
