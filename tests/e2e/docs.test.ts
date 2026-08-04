@@ -2120,12 +2120,30 @@ test("presents the Env runtime, platform, and framework split", async ({
   await page.goto("/docs/env/nextjs/");
   await expect(
     page.getByRole("heading", {
-      level: 2,
+      level: 3,
       name: "Keep the static shell static",
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "Option 1: load through a same-origin JSON route",
+    })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      level: 2,
+      name: "Option 2: transport a serialized envelope through Next.js",
     })
   ).toBeVisible();
   await expect(page.locator("main")).toContainText(
     "make only the application-owned /api/env route force-dynamic"
+  );
+  await expect(page.locator("main")).toContainText(
+    "parseBrowserBootstrap validates the serialized JSON without a fetch"
+  );
+  await expect(page.locator("main")).toContainText(
+    "This page does not claim support for cacheComponents: true"
   );
   await expectNoAxeViolations(page);
 });
