@@ -12,7 +12,7 @@ Use a generated server target wherever Next.js runs server code. When the browse
 
 Both modes use the same generated public projection and validate the same envelope identity. Neither turns the Env envelope into executable JavaScript, writes a `window` global, or interpolates unescaped JSON.
 
-`@astilba/env` 0.2.2 has package-consumer evidence for Next.js 15.5.22 and 16.2.12 across App Router static, App Router request, Pages Router static, and Pages Router request modes. The server side of that evidence uses the Node.js runtime.
+`@astilba/env` 0.2.3 has package-consumer evidence for Next.js 15.5.22 and 16.2.12 across App Router static, App Router request, Pages Router static, and Pages Router request modes. The server side of that evidence uses the Node.js runtime.
 
 The Next.js 16 evidence and the maintained examples use the previous caching model with Cache Components disabled. This page does not claim support for `cacheComponents: true`; `dynamic = "force-dynamic"` belongs to that previous model.
 

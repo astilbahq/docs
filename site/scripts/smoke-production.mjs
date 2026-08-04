@@ -108,7 +108,7 @@ const run = async () => {
   );
   requireBodyIncludes(home, "create-astilba", "Homepage");
   requireBodyIncludes(home, "@astilba/env", "Homepage");
-  requireBodyIncludes(home, "0.2.2 is a public alpha", "Homepage");
+  requireBodyIncludes(home, "0.2.3 is a public alpha", "Homepage");
   requireBodyIncludes(home, "Cache remains a development preview", "Homepage");
 
   const createResponse = await request("/create/");
@@ -156,7 +156,7 @@ const run = async () => {
   const envResponse = await request("/env/");
   requireStatus(envResponse, 200, "Env page");
   const env = await envResponse.text();
-  requireBodyIncludes(env, "0.2.2 · public alpha · local-first", "Env page");
+  requireBodyIncludes(env, "0.2.3 · public alpha · local-first", "Env page");
   requireBodyIncludes(env, "github.com/astilbahq/env", "Env page");
 
   const schemaResponse = await request("/schemas/create/v1.json");
