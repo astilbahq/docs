@@ -1,21 +1,21 @@
 ---
 title: Release and support
-description: Check the package, runtime, export, framework, and public-alpha boundaries of Astilba Env 0.2.2.
+description: Check the package, runtime, export, framework, and public-alpha boundaries of Astilba Env 0.2.3.
 ---
 
-`@astilba/env` 0.2.2 is a public alpha. The package and source are public, so applications can evaluate the complete contract, but the API may change deliberately before a stable release.
+`@astilba/env` 0.2.3 is a public alpha. The package and source are public, so applications can evaluate the complete contract, but the API may change deliberately before a stable release.
 
 Install the exact alpha when reproducibility matters:
 
 ```sh
-pnpm add @astilba/env@0.2.2 --save-exact
+pnpm add @astilba/env@0.2.3 --save-exact
 ```
 
-Version 0.2.2 ensures generated browser-module separator lines contain no trailing whitespace. Version 0.2.1 fixed generated TypeScript narrowing for public `stringList` and `safeInteger` entries, and rejects sparse lists.
+Version 0.2.3 adds complete TSDoc coverage across the package's public declarations without changing the runtime API, exports, or generated protocol. Version 0.2.2 ensures generated browser-module separator lines contain no trailing whitespace. Version 0.2.1 fixed generated TypeScript narrowing for public `stringList` and `safeInteger` entries, and rejects sparse lists.
 
 ## Supported public surface
 
-| Surface | 0.2.2 status |
+| Surface | 0.2.3 status |
 | --- | --- |
 | `defineEnvironment` and `env` builders | Public on supported Node.js releases |
 | `astilba-env generate` and `generate --check` | Public on supported Node.js releases |

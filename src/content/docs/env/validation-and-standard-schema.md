@@ -123,7 +123,7 @@ The schema's declared input and output types must exactly match the declaration 
 
 ## Keep validation synchronous
 
-Env 0.2.2 requires opaque Standard Schema validation to settle synchronously. A returned promise produces `ENV_VALIDATOR_ASYNC_UNSUPPORTED`.
+Env 0.2.3 requires opaque Standard Schema validation to settle synchronously. A returned promise produces `ENV_VALIDATOR_ASYNC_UNSUPPORTED`.
 
 Because the generated operation accepts an arbitrary validator implementation, `check` and `load` return promises for a target that contains an opaque entry even when the validator settles synchronously.
 
