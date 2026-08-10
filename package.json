@@ -12,6 +12,7 @@
     "dev": "astro dev",
     "env:check": "astilba-env generate --check",
     "env:generate": "astilba-env generate",
+    "env:release:check": "node scripts/verify-env-release.mjs",
     "knip": "knip",
     "lint": "ultracite check",
     "lint:fix": "ultracite fix",
@@ -28,7 +29,7 @@
     "test:browser:run": "playwright test",
     "test:watch": "vitest",
     "typecheck": "pnpm check",
-    "verify": "pnpm env:check && pnpm panda:codegen && pnpm lint && pnpm check && pnpm test && pnpm knip && pnpm deploy:dry-run && pnpm test:browser:run && pnpm verify:site",
+    "verify": "pnpm env:release:check && pnpm env:check && pnpm panda:codegen && pnpm lint && pnpm check && pnpm test && pnpm knip && pnpm deploy:dry-run && pnpm test:browser:run && pnpm verify:site",
     "verify:site": "pnpm --dir site check && pnpm --dir site test && pnpm --dir site deploy:dry-run && pnpm --dir site test:browser",
     "verify:agent-artifacts": "node scripts/verify-agent-artifacts.mjs",
     "worker:types": "wrangler types"

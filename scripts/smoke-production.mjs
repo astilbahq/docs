@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+
 import { GLOBAL_SECURITY_HEADERS } from "../src/docs/security.ts";
 import {
   ASTILBA_ORIGIN,
@@ -7,6 +9,10 @@ import {
 } from "../src/docs/urls.ts";
 
 const CANONICAL_ORIGIN = ASTILBA_ORIGIN;
+const packageJson = JSON.parse(
+  await readFile(new URL("../package.json", import.meta.url), "utf8")
+);
+const ENV_VERSION = packageJson.dependencies["@astilba/env"];
 const CREATE_HTML_PATH = withDocsBase("/create/overview/");
 const CREATE_MARKDOWN_PATH = withDocsBase("/create/overview.md");
 const ENV_HTML_PATH = withDocsBase("/env/overview/");
@@ -488,7 +494,7 @@ const PRODUCT_DISCOVERY_CHECKS = [
     ],
     documentSetPath: withDocsBase("/_llms-txt/astilba-create.txt"),
     label: "Create",
-    skillHeading: "# Astilba Create documentation",
+    skillMarkers: ["# Astilba Create documentation"],
     skillName: "astilba-create-docs",
     skillUrl: withDocsBase(
       "/.well-known/agent-skills/astilba-create-docs/SKILL.md"
@@ -502,10 +508,14 @@ const PRODUCT_DISCOVERY_CHECKS = [
       "# Validation and Standard Schema",
       "# Release and support",
       "# Migrate from next-dynamic-env",
+      `@astilba/env\` ${ENV_VERSION} is a public alpha`,
     ],
     documentSetPath: withDocsBase("/_llms-txt/astilba-env.txt"),
     label: "Env",
-    skillHeading: "# Astilba Env documentation",
+    skillMarkers: [
+      "# Astilba Env documentation",
+      `\`@astilba/env\` ${ENV_VERSION} as a public alpha`,
+    ],
     skillName: "astilba-env-docs",
     skillUrl: withDocsBase(
       "/.well-known/agent-skills/astilba-env-docs/SKILL.md"
@@ -538,7 +548,7 @@ const checkProductDiscovery = async (discovery, product) => {
   requireGlobalSecurityHeaders(skillResponse, `${product.label} Agent Skill`);
   requireBodyMarkers(
     await skillResponse.text(),
-    [product.skillHeading],
+    product.skillMarkers,
     `${product.label} Agent Skill`
   );
 
@@ -863,6 +873,38 @@ const checkMcp = async () => {
   ) {
     throw new Error(
       "[production-smoke] MCP search_docs did not return the expected Env resource."
+    );
+  }
+
+  const envReleaseUri = docsUrl("/env/release-and-support.md");
+  const envReleaseSearch = await callMcp("tools/call", {
+    arguments: { productId: "env", query: "Env release and support" },
+    name: "search_docs",
+  });
+  const envReleaseResults = envReleaseSearch?.structuredContent?.results;
+
+  if (
+    !Array.isArray(envReleaseResults) ||
+    envReleaseResults[0]?.uri !== envReleaseUri
+  ) {
+    throw new Error(
+      "[production-smoke] MCP search_docs did not rank Env release and support first."
+    );
+  }
+
+  const envReleaseRead = await callMcp("tools/call", {
+    arguments: { limit: 1024, uri: envReleaseUri },
+    name: "read_doc",
+  });
+  const envReleaseText = Array.isArray(envReleaseRead?.content)
+    ? envReleaseRead.content
+        .map((item) => (typeof item?.text === "string" ? item.text : ""))
+        .join("\n")
+    : "";
+
+  if (!envReleaseText.includes(`${ENV_VERSION} is a public alpha`)) {
+    throw new Error(
+      "[production-smoke] MCP read_doc returned stale Env release content."
     );
   }
 };

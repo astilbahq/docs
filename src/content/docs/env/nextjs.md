@@ -14,6 +14,8 @@ Both modes use the same generated public projection and validate the same envelo
 
 `@astilba/env` 0.2.3 has package-consumer evidence for Next.js 15.5.22 and 16.2.12 across App Router static, App Router request, Pages Router static, and Pages Router request modes. The server side of that evidence uses the Node.js runtime.
 
+The maintained independent-pnpm example invokes Next's webpack builder because default Turbopack cannot resolve the exact-registry dependency from that repository fixture layout. The package-consumer matrix also validates a default `next build`; this is not a general Env or Turbopack incompatibility.
+
 The Next.js 16 evidence and the maintained examples use the previous caching model with Cache Components disabled. This page does not claim support for `cacheComponents: true`; `dynamic = "force-dynamic"` belongs to that previous model.
 
 This page does not claim support for Next.js Edge Runtime or a Next.js deployment on Cloudflare Workers. The separate [Cloudflare Workers](/docs/env/cloudflare-workers/) boundary admits only the documented direct Worker-handler path.
@@ -450,4 +452,4 @@ For local HTTP development, select `serverExpectedOrigin` from the same exact de
 
 In Pages Router, export `getServerSideProps` from every page that needs deployment values; it cannot run in `pages/_app.tsx`. Each page passes the serialized source and `serverExpectedOrigin` through `pageProps` to the provider in `_app.tsx`. Do not use `getStaticProps` for deployment values that must change without rebuilding.
 
-There is no `@astilba/env/next` export. The [Next static shell example](https://github.com/astilbahq/env/tree/main/examples/next-static-shell) keeps framework wiring in the application. Read [Deliver browser configuration](/docs/env/browser-delivery/) for the complete envelope protocol, canonical-origin, cache, and failure requirements. If you are replacing `DynamicEnvScript`, `clientEnv`, or `serverEnv`, continue with [Migrate from next-dynamic-env](/docs/env/migrate-from-next-dynamic-env/).
+There is no `@astilba/env/next` export. The [Next static shell example](https://github.com/astilbahq/env/tree/main/examples/next-static-shell) is an executable adoption fixture that keeps framework wiring in the application. Its combined target and request-URL audience are local fixture wiring, not the production route pattern. For production, use the separate public target and trusted configured origin shown on this page. Read [Deliver browser configuration](/docs/env/browser-delivery/) for the complete envelope protocol, canonical-origin, cache, and failure requirements. If you are replacing `DynamicEnvScript`, `clientEnv`, or `serverEnv`, continue with [Migrate from next-dynamic-env](/docs/env/migrate-from-next-dynamic-env/).

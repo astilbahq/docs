@@ -3,9 +3,15 @@ title: Migrate from next-dynamic-env
 description: Replace next-dynamic-env proxies and script injection with an explicit Env contract and generated application boundaries.
 ---
 
-Astilba Env covers the build-once deployment use case of [`next-dynamic-env`](https://github.com/ReesMorris/next-dynamic-env), but it does not preserve that package's API or runtime mechanism. The migration replaces ambient proxies and script injection with an explicit contract, generated browser and server modules, and application-owned inert JSON delivery.
+[`next-dynamic-env`](https://github.com/ReesMorris/next-dynamic-env) is retired and deprecated on npm. Astilba Env covers its build-once deployment use case, but does not preserve that package's API or runtime mechanism. The migration replaces ambient proxies and script injection with an explicit contract, generated browser and server modules, and application-owned inert JSON delivery.
 
 Treat this as an architectural migration, not a package rename.
+
+Install the exact public-alpha release before declaring the replacement contract:
+
+```sh
+pnpm add @astilba/env@0.2.3 --save-exact
+```
 
 ## Map the concepts
 
