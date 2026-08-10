@@ -40,13 +40,13 @@ The plugin rejects imports of:
 - `contract.json`, `snapshot.json`, and generated `consumers/*.server.json` metadata; and
 - package-owned files outside the public browser runtime.
 
-The failure names the refused import so you can move it behind a server boundary instead of adding an exception.
+The plugin emits the stable `ENV_BROWSER_PRIVATE_IMPORT` failure code. Use Vite's import trace to locate the refused edge, then move it behind a server boundary instead of adding an exception.
 
 ## Choose build-fixed or deployment-bootstrap values
 
 Use a public `build` entry and its generated browser `.build.ts` module when Vite may fix the value at build time. When one built browser shell must receive deployment values, expose the generated public projection through an application-owned endpoint and bootstrap it in the browser.
 
-The [Vite browser shell example](https://github.com/astilbahq/env/tree/main/examples/vite) demonstrates both choices. Read [Deliver browser configuration](/docs/env/browser-delivery/) for the endpoint protocol, canonical-origin, cache, and failure requirements.
+The [Vite browser shell example](https://github.com/astilbahq/env/tree/main/examples/vite) is an executable adoption fixture that demonstrates both choices. Its `Host`-derived audience fallback is restricted to exact local `localhost` and loopback forms, and its combined server target deliberately exercises a private secret. For production wiring, use a separate public bootstrap target and a configured canonical HTTPS audience as described in [Deliver browser configuration](/docs/env/browser-delivery/).
 
 ## Keep endpoint behavior elsewhere
 

@@ -82,6 +82,27 @@ startServer(configuration);
 
 Both operations return owned, frozen values. Diagnostics contain stable codes and logical identities where appropriate; they do not contain rejected values, fragments, lengths, or hashes.
 
+## Audit the runtime export
+
+Generated server targets import `@astilba/env/runtime` for you. Application code should normally import the generated target's typed `check` or `load` function rather than construct a target definition itself.
+
+The runtime export is public so generated modules can use one stable boundary and advanced consumers can audit every dependency:
+
+| Export | Purpose |
+| --- | --- |
+| `checkProcessTarget` | Validate and resolve a generated target with built-in codecs without throwing for configuration failures. |
+| `loadProcessTarget` | Resolve a generated target with built-in codecs or throw `EnvironmentConfigurationError`. |
+| `checkProcessTargetWithSchemas` | Resolve a Node.js target with application-owned Standard Schema validators and return a Promise of the result. |
+| `loadProcessTargetWithSchemas` | Resolve a Node.js target with Standard Schema validators or reject with `EnvironmentConfigurationError`. |
+| `EnvironmentConfigurationError` | Identify a failed `load*` operation and expose its value-free `diagnostics`. Direct construction is rejected. |
+| `ProcessSource` | Describe the application-owned object from which a generated target reads raw values. |
+| `ProcessTargetDefinition` | Describe the generated target definition consumed by the runtime. |
+| `ProcessTargetSchemas` | Map an opaque entry name to its application-owned Standard Schema validator. |
+| `StandardSchemaV1` | Describe the minimal Standard Schema v1 contract accepted for private opaque entries. |
+| `StandardSchemaResult` | Describe the immediate success or failure result returned by that validator contract. |
+
+The `*WithSchemas` operations return Promises, but validators must settle synchronously. A Promise or thenable from a validator produces `ENV_VALIDATOR_ASYNC_UNSUPPORTED`. The workerd conditional export does not execute opaque validators and admits deployment targets only.
+
 ## Resolve request values explicitly
 
 Node.js targets may also resolve request-lifecycle values from an application-owned object:

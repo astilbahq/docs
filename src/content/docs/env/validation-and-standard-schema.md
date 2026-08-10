@@ -121,6 +121,8 @@ const configuration = await load(process.env, { serviceOptions });
 
 The schema's declared input and output types must exactly match the declaration shapes. Extra or missing schema keys fail the generated type gate.
 
+Env has no first-party Zod adapter or named schema-library guarantee. You may pass any implementation that structurally satisfies Standard Schema v1 for the declared private opaque Node.js target; verify that library and schema version in your application, and keep its validation synchronous.
+
 ## Keep validation synchronous
 
 Env 0.2.3 requires opaque Standard Schema validation to settle synchronously. A returned promise produces `ENV_VALIDATOR_ASYNC_UNSUPPORTED`.

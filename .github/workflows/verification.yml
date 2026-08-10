@@ -186,12 +186,18 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Verify documented Env release surfaces
+        run: pnpm env:release:check
+
       - name: Require the documented Env release on npm
         env:
           ASTILBA_ENV_PACKAGE: "@astilba/env"
-          ASTILBA_ENV_VERSION: "0.2.2"
           NPM_CONFIG_REGISTRY: https://registry.npmjs.org/
         run: |
+          ASTILBA_ENV_VERSION="$(
+            node -p 'require("./package.json").dependencies["@astilba/env"]'
+          )"
+
           if ! resolved_version="$(
             npm view "$ASTILBA_ENV_PACKAGE@$ASTILBA_ENV_VERSION" version
           )"; then

@@ -61,13 +61,13 @@ The source column describes an `env.process` source such as `process.env`. The b
 | Builder | Source and output | Important options and defaults | Browser portable |
 | --- | --- | --- | --- |
 | `boolean(options?)` | Exact source token to `boolean`. | `trueInput: "true"`; `falseInput: "false"`; `blank: "missing"`. | Yes |
-| `enum(values, options?)` | Exact source string to the declared string union. | One or more unique portable strings. | Yes |
+| `enum(values, options?)` | Exact source string to the declared string union. | 1–1,024 unique portable strings; see the declaration limits below. | Yes |
 | `integer(options)` | Trimmed signed decimal to a safe integer in range. | Required `minimum` and `maximum`; `blank: "missing"`. | No |
 | `json(shape, options?)` | Bounded JSON text to the exact typed shape. | `blank: "missing"`. | Yes |
 | `origin(options?)` | Canonical HTTPS origin string. | No path, query, fragment, credentials, IP literal, or `localhost`; default port and trailing slash are normalised away. | Yes |
 | `safeInteger(options)` | Canonical decimal to a safe integer in range. | Required `minimum` and `maximum`; no leading `+`, whitespace, or non-canonical leading zero; `blank: "missing"`. | Yes |
 | `string(options?)` | Preserved portable string. | `minimumCodePoints: 0`; `maximumCodePoints: 65_535`. Empty string is valid unless you raise the minimum. | Yes |
-| `stringList(options?)` | Comma-separated source to a readonly string array. | Empty items `drop`; 0–64 items; 1–1,024 code points per item. | Yes |
+| `stringList(options?)` | Comma-separated source to a readonly string array. | Empty items `drop`; defaults to 0–64 items and 1–1,024 code points per item. | Yes |
 | `text(options?)` | Optional trim-aware server string. | `normalise: "preserve"`; `blank: "missing"`; 1–65,535 code points. | No |
 | `secret(options?)` | Preserved private string with no trimming. | `blank: "missing"`; 1–65,535 code points. | No; private only |
 | `opaque(options)` | Private source string through a caller-supplied synchronous Standard Schema v1 validator. | Exact `input` and `output` shapes plus value-free `semantics` and `revision`. | No; private only |
@@ -137,6 +137,18 @@ Shape kinds are:
 
 Objects are exact: unknown properties are rejected. Values are copied into frozen, owned data before the application receives them.
 
+### Declaration limits
+
+Env bounds declaration size and portable value work before runtime resolution:
+
+| Surface | Limit |
+| --- | --- |
+| Enum choices | 1–1,024 unique choices; each choice is at most 65,535 UTF-8 bytes and all choices together are at most 65,536 bytes. |
+| String lists | Defaults to at most 64 items and 1,024 code points per item. Options may raise those values to at most 1,024 items or 65,536 code points per item, while `maximumItems × maximumItemCodePoints` must not exceed 65,536. |
+| Portable shapes | At most 8 levels and 256 shape nodes. Arrays declare at most 1,024 items; objects declare at most 256 unique keys. |
+| Portable object keys | At most 255 UTF-8 bytes; `__proto__`, `constructor`, and `prototype` are rejected. |
+| Portable string values | At most 65,536 UTF-8 bytes when copied through a declared portable shape. |
+
 ### Opaque schemas
 
 Use `opaque` only for private semantics that a built-in codec cannot express:
@@ -203,7 +215,9 @@ An explicit list must contain at least one unique entry. Omitting the list selec
 env.server()
 ```
 
-Browser consumers may select only public entries using `boolean`, `enum`, `json`, `origin`, `safeInteger`, `string`, or `stringList`.
+Browser consumers may select only public entries using `boolean`, `enum`, `json`, `origin`, `safeInteger`, `string`, or `stringList`. They cannot select an entry that belongs to an `env.together` rule; co-presence rules are server-projection only in 0.2.
+
+A browser consumer that selects one or more build entries requires exactly one complete build target. This gives generation one unambiguous source mapping for the emitted browser values.
 
 ## Process targets
 
@@ -216,7 +230,7 @@ env.process("server", {
 
 The first argument names an existing consumer. The record maps logical entry names to raw source names.
 
-A target must bind all entries selected by that consumer for one lifecycle. Split build, deployment, and request bindings into separate targets. You can define alternate complete targets for the same consumer and lifecycle when your application needs different source mappings.
+A target must bind all entries selected by that consumer for one lifecycle. Split build, deployment, and request bindings into separate targets. One target cannot map two logical entries to the same raw source name. You can define alternate complete targets for the same consumer and lifecycle when your application needs different source mappings.
 
 ## Co-presence rules
 
@@ -234,4 +248,4 @@ rules: [
 
 Resolution succeeds when all rule entries are present or all are absent. A partial set returns `ENV_RULE_VIOLATION` with the logical rule and entry names, not their values.
 
-Rule entries must belong to the same lifecycle where a consumer resolves them. Keep a co-presence rule within one operational configuration unit.
+Each rule requires at least two unique entries from the same lifecycle. Co-presence rules are server-projection only in 0.2; browser consumers cannot select rule entries. A server consumer that selects any entry in a rule must select every entry in that rule. Keep a co-presence rule within one operational configuration unit.

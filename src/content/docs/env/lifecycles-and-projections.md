@@ -14,11 +14,11 @@ The result is one declaration with several generated interfaces, not one mutable
 
 | Lifecycle | Resolve it when | Artifact effect |
 | --- | --- | --- |
-| `build` | Producing an application artifact | The resolved public value is emitted into a generated browser `.build.ts` module. Changing it requires another build. |
+| `build` | Producing an application artifact | A browser-selected value is emitted into a generated browser `.build.ts` module; a server-only selection resolves through a generated Node.js build target. Changing either requires another build. |
 | `deployment` | Starting or configuring one deployment | Application artifact bytes stay unchanged. Server code loads it from an explicit source; browser code receives it through a validated bootstrap. |
 | `request` | Handling one request or tenant context | Pass a request-owned source to the generated target. Do not retain the result in process-global state or an unpartitioned cache. |
 
-Only public entries have a build builder. Env does not offer `env.private.build`: embedding a private value in an artifact would make the artifact configuration-specific and copy the value into durable bytes.
+Only public entries have a build builder. Env does not offer `env.private.build`: embedding a private value in an artifact would make the artifact configuration-specific and copy the value into durable bytes. A browser consumer that selects build entries requires exactly one complete build target so generation has one unambiguous source mapping.
 
 Use deployment values for configuration that should change between environments without rebuilding. Use request values only when the value genuinely differs per request or tenant; the explicit source and lifetime are part of the safety boundary.
 
@@ -38,12 +38,13 @@ consumers: {
 - private entry names and codecs;
 - private source bindings;
 - server-only codecs;
+- co-presence rules and their entries;
 - complete contract metadata; and
 - configuration values.
 
 `env.server(...)` may select public and private entries. Calling `env.server()` with no list selects every declared entry. Prefer an explicit list when a process has more than one independently deployed artifact.
 
-Calling `env.browser()` with no list also selects every entry, then rejects the declaration if any selection is private or uses a server-only codec. An explicit browser list makes the exposure decision easier to review.
+Calling `env.browser()` with no list also selects every entry, then rejects the declaration if any selection is private, uses a server-only codec, or belongs to a co-presence rule. Co-presence rules are server-projection only in 0.2. An explicit browser list makes the exposure decision easier to review.
 
 ## Bind one complete lifecycle per target
 

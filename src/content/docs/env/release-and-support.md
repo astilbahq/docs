@@ -11,7 +11,7 @@ Install the exact alpha when reproducibility matters:
 pnpm add @astilba/env@0.2.3 --save-exact
 ```
 
-Version 0.2.3 adds complete TSDoc coverage across the package's public declarations without changing the runtime API, exports, or generated protocol. Version 0.2.2 ensures generated browser-module separator lines contain no trailing whitespace. Version 0.2.1 fixed generated TypeScript narrowing for public `stringList` and `safeInteger` entries, and rejects sparse lists.
+Version 0.2.3 adds complete TSDoc coverage across the package's public declarations and introduces the executable adoption-example suite without changing the runtime API, exports, or generated protocol. The maintained Node.js, Cloudflare Workers, Next.js, and Vite examples now consume the exact registry release. Version 0.2.2 ensures generated browser-module separator lines contain no trailing whitespace. Version 0.2.1 fixed generated TypeScript narrowing for public `stringList` and `safeInteger` entries, and rejects sparse lists.
 
 ## Supported public surface
 
@@ -39,7 +39,8 @@ Version 0.2.3 adds complete TSDoc coverage across the package's public declarati
 | Run the generator, CLI, or planner | Supported | Blocked | Blocked |
 | Import a generated server target with first-party codecs | Supported | Blocked | Supported for deployment lifecycle only |
 | Import a generated target with `opaque` Standard Schema validators | Supported | Blocked | Not admitted |
-| Import `@astilba/env/browser` and public generated browser modules | Not the browser production target | Supported | Blocked |
+| Import `@astilba/env/browser` | Supported for server-side envelope assembly, but not as a Node.js configuration target | Supported | Blocked |
+| Import generated public browser modules | Supported for server-side envelope assembly and build tooling | Supported | Blocked |
 | Import `@astilba/env/vite` | Supported in Vite configuration | Blocked | Blocked |
 
 The package supports these Node.js ranges:
@@ -51,6 +52,23 @@ The package supports these Node.js ranges:
 The Cloudflare Workers path does not require `nodejs_compat` for Env. It accepts a Wrangler-generated `Env` binding interface without an index signature, reads only the declared binding names, and leaves unrelated capability bindings to application code.
 
 Runtime support is export-specific. Evidence for the generated runtime does not make the declaration builders, CLI, browser runtime, or Vite plugin portable to workerd.
+
+## Executable evidence
+
+Support claims are backed by package-consumer and maintained-example runs rather than inferred from type declarations alone:
+
+| Evidence lane | Exercised versions and boundary |
+| --- | --- |
+| Node.js and TypeScript | Node.js 22.14.0, 22.23.2, 24.18.1, and 26.5.1; TypeScript 6.0.3 and 7.0.2. |
+| Package managers | Clean exact-registry consumers with npm and pnpm. |
+| Operating systems | Linux release lanes and a Windows Node.js 22.14.0 package-consumer lane. |
+| Vite | Vite 8.1.5 package-consumer evidence for the browser boundary. |
+| Next.js | Next.js 15.5.22 and 16.2.12 across App Router static, App Router request, Pages Router static, and Pages Router request modes. |
+| Cloudflare Workers | Wrangler 4.115.0 with compatibility date `2026-07-29` and bundled workerd `1.20260722.1`; only the narrow generated deployment-target path documented below is admitted. |
+| Portable runtime comparison | Bun 1.3.14 exercises portable generated-runtime equivalence; this is not a declaration-authoring, generator, or CLI support claim. |
+| Maintained examples | Exact-registry 0.2.3 applications for Node.js, Cloudflare Workers, a Next.js static shell, and Vite. |
+
+The maintained Next.js example is an isolated pnpm application and deliberately invokes Next's webpack builder because default Turbopack cannot resolve the exact-registry dependency from that repository fixture layout. The package-consumer matrix also passes a default `next build`; do not infer a general Env or Turbopack incompatibility from the example command.
 
 ## Package boundaries
 
@@ -97,7 +115,7 @@ Env does not inject inline JavaScript, write to `window`, mutate HTML, or choose
 Plan for these constraints in 0.2:
 
 - generated files are application-owned build artifacts and must be regenerated when the declaration changes;
-- public build values require an explicit build source during generation;
+- public build values selected by a browser consumer require an explicit build source during generation;
 - custom Standard Schema validation is available only for private server `opaque` entries;
 - browser projections use Env's portable built-in codecs;
 - compatibility plans contain descriptors and change classifications, never configuration values;

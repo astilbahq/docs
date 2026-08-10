@@ -1,11 +1,11 @@
 ---
 title: Deliver browser configuration
-description: Generate a public projection, serve an inert same-origin JSON envelope, and validate it before browser application startup.
+description: Generate a public projection, deliver an inert same-origin JSON envelope, and validate it before browser application startup.
 ---
 
-Env delivers browser deployment and request configuration as inert JSON. Your application owns the endpoint; the generated projection and browser runtime validate that the response belongs to the expected contract, consumer, lifecycle, and origin before application code uses it.
+Env accepts browser deployment and request configuration as inert JSON. Your application either owns a same-origin endpoint or transports safely escaped serialized JSON through its framework. The generated projection and browser runtime validate that the envelope belongs to the expected contract, consumer, lifecycle, and origin before application code uses it.
 
-This adds one configuration request. Use a public build entry instead when a value may be fixed in the browser artifact.
+Endpoint delivery adds one configuration request. Framework-transported delivery adds no separate request, but the envelope participates in the rendered response. Use a public build entry instead when a value may be fixed in the browser artifact.
 
 ## Declare a browser target
 

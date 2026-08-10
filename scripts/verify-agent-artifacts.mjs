@@ -38,6 +38,10 @@ if (!siteValue) {
 
 const site = new URL(siteValue);
 const dist = resolve(process.cwd(), "dist");
+const packageJson = JSON.parse(
+  await readFile(resolve(process.cwd(), "package.json"), "utf8")
+);
+const envVersion = packageJson.dependencies["@astilba/env"];
 const toArtifactPath = (path) => path.replace(/^\/+/, "");
 const docsArtifact = (path) => toArtifactPath(withDocsBase(path));
 
@@ -562,6 +566,11 @@ assertIncludes(envSkillArtifact, envSkill, "# Astilba Env documentation");
 assertIncludes(
   envSkillArtifact,
   envSkill,
+  `\`@astilba/env\` ${envVersion} as a public alpha`
+);
+assertIncludes(
+  envSkillArtifact,
+  envSkill,
   docsUrl("/env/release-and-support.md")
 );
 assertIncludes(envSkillArtifact, envSkill, docsUrl("/mcp"));
@@ -804,7 +813,7 @@ assertIncludes(
   "Astilba Cache remains an unreleased preview"
 );
 assertIncludes(llmsArtifact, llmsIndex, "Create 0.3.0 is released");
-assertIncludes(llmsArtifact, llmsIndex, "Env 0.2.3 is a public alpha");
+assertIncludes(llmsArtifact, llmsIndex, `Env ${envVersion} is a public alpha`);
 assertIncludes(llmsArtifact, llmsIndex, mcpUrl);
 const llmsFullArtifact = docsArtifact("/llms-full.txt");
 assertIncludes(
@@ -987,7 +996,11 @@ assertIncludes(
   "unreleased source preview"
 );
 assertIncludes(agentSetupArtifact, agentSetupPrompt, "create-astilba` 0.3.0");
-assertIncludes(agentSetupArtifact, agentSetupPrompt, "@astilba/env` 0.2.3");
+assertIncludes(
+  agentSetupArtifact,
+  agentSetupPrompt,
+  `@astilba/env\` ${envVersion}`
+);
 assertIncludes(agentSetupArtifact, agentSetupPrompt, "Env release and support");
 assertIncludes(agentSetupArtifact, agentSetupPrompt, "public alpha");
 assertIncludes(agentSetupArtifact, agentSetupPrompt, "inline-script transport");
