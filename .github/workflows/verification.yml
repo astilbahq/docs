@@ -186,6 +186,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts
 
+      - name: Verify documented Env release surfaces
+        run: pnpm env:release:check
+
       - name: Require the documented Env release on npm
         env:
           ASTILBA_ENV_PACKAGE: "@astilba/env"

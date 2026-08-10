@@ -10,8 +10,8 @@ In this guide, you will replace direct `process.env` reads with one typed deploy
 Env 0.2.3 requires a supported Node.js release:
 
 - Node.js 22.14.0 or later within Node 22;
-- Node.js 24; or
-- Node.js 26.
+- Node.js 24.x; or
+- Node.js 26.x.
 
 The default `astilba.env.ts` filename requires an ESM package with `"type": "module"`. A lowercase `.mts` configuration file works without changing the package type.
 
