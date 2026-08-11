@@ -18,9 +18,7 @@ const CREATE_MARKDOWN_PATH = withDocsBase("/create/overview.md");
 const ENV_HTML_PATH = withDocsBase("/env/overview/");
 const ENV_MARKDOWN_PATH = withDocsBase("/env/overview.md");
 const ENV_INVENTORY_HTML_PATH = withDocsBase("/env/inventory-and-drift/");
-const ENV_INVENTORY_MARKDOWN_PATH = withDocsBase(
-  "/env/inventory-and-drift.md"
-);
+const ENV_INVENTORY_MARKDOWN_PATH = withDocsBase("/env/inventory-and-drift.md");
 const ENV_WORKERS_HTML_PATH = withDocsBase("/env/cloudflare-workers/");
 const ENV_WORKERS_MARKDOWN_PATH = withDocsBase("/env/cloudflare-workers.md");
 const HTML_PATH = withDocsBase("/cache/overview/");

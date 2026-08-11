@@ -64,7 +64,7 @@ The observed format is deliberately strict:
 
 - the top-level object has only `entries` and `format`;
 - each entry has only `name`;
-- names use Env's uppercase source-name form and are unique under ASCII case folding;
+- names match `[A-Z_][A-Z0-9_]{0,127}` and are unique under ASCII case folding;
 - at most 2,048 names and 1 MiB of JSON are accepted; and
 - the CLI rejects symbolic links, invalid UTF-8, malformed JSON, unknown fields, and unsupported formats.
 

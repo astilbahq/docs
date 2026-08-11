@@ -824,7 +824,6 @@ assertIncludes(
 );
 assertIncludes(llmsArtifact, llmsIndex, "Create 0.3.0 is released");
 assertIncludes(llmsArtifact, llmsIndex, `Env ${envVersion} is a public alpha`);
-assertIncludes(llmsArtifact, llmsIndex, docsUrl("/env/inventory-and-drift/"));
 assertIncludes(llmsArtifact, llmsIndex, mcpUrl);
 const llmsFullArtifact = docsArtifact("/llms-full.txt");
 assertIncludes(
@@ -854,6 +853,11 @@ if (firstCreateHeading !== "# Create") {
 
 const envSet = artifacts.get(docsArtifact("/_llms-txt/astilba-env.txt"));
 const firstEnvHeading = envSet.match(/^# .+$/m)?.[0];
+assertIncludes(
+  docsArtifact("/_llms-txt/astilba-env.txt"),
+  envSet,
+  "/docs/env/inventory-and-drift/"
+);
 
 if (firstEnvHeading !== "# Env") {
   throw new Error(
