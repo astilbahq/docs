@@ -1,6 +1,6 @@
 ---
 title: Declaration reference
-description: Reference the Env 0.2 declaration fields, entry builders, codecs, consumers, targets, and co-presence rules.
+description: Reference the Env 0.3 declaration fields, entry builders, codecs, consumers, targets, and co-presence rules.
 ---
 
 The root `@astilba/env` export contains two runtime values:
@@ -215,7 +215,7 @@ An explicit list must contain at least one unique entry. Omitting the list selec
 env.server()
 ```
 
-Browser consumers may select only public entries using `boolean`, `enum`, `json`, `origin`, `safeInteger`, `string`, or `stringList`. They cannot select an entry that belongs to an `env.together` rule; co-presence rules are server-projection only in 0.2.
+Browser consumers may select only public entries using `boolean`, `enum`, `json`, `origin`, `safeInteger`, `string`, or `stringList`. They cannot select an entry that belongs to an `env.together` rule; co-presence rules are server-projection only in 0.3.
 
 A browser consumer that selects one or more build entries requires exactly one complete build target. This gives generation one unambiguous source mapping for the emitted browser values.
 
@@ -248,4 +248,4 @@ rules: [
 
 Resolution succeeds when all rule entries are present or all are absent. A partial set returns `ENV_RULE_VIOLATION` with the logical rule and entry names, not their values.
 
-Each rule requires at least two unique entries from the same lifecycle. Co-presence rules are server-projection only in 0.2; browser consumers cannot select rule entries. A server consumer that selects any entry in a rule must select every entry in that rule. Keep a co-presence rule within one operational configuration unit.
+Each rule requires at least two unique entries from the same lifecycle. Co-presence rules are server-projection only in 0.3; browser consumers cannot select rule entries. A server consumer that selects any entry in a rule must select every entry in that rule. Keep a co-presence rule within one operational configuration unit.

@@ -547,7 +547,7 @@ assertExact(
         name: "astilba-env-docs",
         type: "skill-md",
         description:
-          "Consult Astilba's public Env documentation to integrate the 0.2 configuration contract compiler without weakening browser, server, platform, or lifecycle boundaries.",
+          "Consult Astilba's public Env documentation to integrate the 0.3 configuration contract compiler without weakening browser, server, platform, inventory, or lifecycle boundaries.",
         url: `/${envSkillArtifact}`,
         digest: envSkillDigest,
       },
@@ -572,6 +572,16 @@ assertIncludes(
   envSkillArtifact,
   envSkill,
   docsUrl("/env/release-and-support.md")
+);
+assertIncludes(
+  envSkillArtifact,
+  envSkill,
+  docsUrl("/env/inventory-and-drift.md")
+);
+assertIncludes(
+  envSkillArtifact,
+  envSkill,
+  "Treat inventory as value-free name evidence only"
 );
 assertIncludes(envSkillArtifact, envSkill, docsUrl("/mcp"));
 assertIncludes(
@@ -843,6 +853,11 @@ if (firstCreateHeading !== "# Create") {
 
 const envSet = artifacts.get(docsArtifact("/_llms-txt/astilba-env.txt"));
 const firstEnvHeading = envSet.match(/^# .+$/m)?.[0];
+assertIncludes(
+  docsArtifact("/_llms-txt/astilba-env.txt"),
+  envSet,
+  "/docs/env/inventory-and-drift/"
+);
 
 if (firstEnvHeading !== "# Env") {
   throw new Error(

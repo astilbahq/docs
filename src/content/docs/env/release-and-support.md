@@ -1,25 +1,26 @@
 ---
 title: Release and support
-description: Check the package, runtime, export, framework, and public-alpha boundaries of Astilba Env 0.2.3.
+description: Check the package, CLI, runtime, framework, and public-alpha boundaries of Astilba Env 0.3.0.
 ---
 
-`@astilba/env` 0.2.3 is a public alpha. The package and source are public, so applications can evaluate the complete contract, but the API may change deliberately before a stable release.
+`@astilba/env` 0.3.0 is a public alpha. The package and source are public, so applications can evaluate the complete contract, but the API may change deliberately before a stable release.
 
 Install the exact alpha when reproducibility matters:
 
 ```sh
-pnpm add @astilba/env@0.2.3 --save-exact
+pnpm add @astilba/env@0.3.0 --save-exact
 ```
 
-Version 0.2.3 adds complete TSDoc coverage across the package's public declarations and introduces the executable adoption-example suite without changing the runtime API, exports, or generated protocol. The maintained Node.js, Cloudflare Workers, Next.js, and Vite examples now consume the exact registry release. Version 0.2.2 ensures generated browser-module separator lines contain no trailing whitespace. Version 0.2.1 fixed generated TypeScript narrowing for public `stringList` and `safeInteger` entries, and rejects sparse lists.
+Version 0.3.0 adds provider-neutral contract inventory export and name-drift checking for process targets. It adds no provider client, value sync, provider-kind evidence, JavaScript package export, browser API, runtime API, or generated-module protocol. Version 0.2.3 added complete TSDoc coverage and the executable adoption-example suite.
 
 ## Supported public surface
 
-| Surface | 0.2.3 status |
+| Surface | 0.3.0 status |
 | --- | --- |
 | `defineEnvironment` and `env` builders | Public on supported Node.js releases |
 | `astilba-env generate` and `generate --check` | Public on supported Node.js releases |
 | `astilba-env check --target ID` | Public for targets the CLI can validate |
+| `astilba-env inventory export` and `inventory check` | Public for provider-neutral process-target name evidence |
 | `astilba-env plan --base GIT_REF` | Public on supported Node.js releases |
 | Generated Node.js `check` and `load` functions | Public |
 | Generated Cloudflare Workers deployment targets | Public with first-party codecs; see the narrow runtime boundary below |
@@ -66,7 +67,7 @@ Support claims are backed by package-consumer and maintained-example runs rather
 | Next.js | Next.js 15.5.22 and 16.2.12 across App Router static, App Router request, Pages Router static, and Pages Router request modes. |
 | Cloudflare Workers | Wrangler 4.115.0 with compatibility date `2026-07-29` and bundled workerd `1.20260722.1`; only the narrow generated deployment-target path documented below is admitted. |
 | Portable runtime comparison | Bun 1.3.14 exercises portable generated-runtime equivalence; this is not a declaration-authoring, generator, or CLI support claim. |
-| Maintained examples | Exact-registry 0.2.3 applications for Node.js, Cloudflare Workers, a Next.js static shell, and Vite. |
+| Maintained examples | Exact-registry applications for Node.js, Cloudflare Workers, a Next.js static shell, and Vite. Check each example's lockfile for its admitted package version. |
 
 The maintained Next.js example is an isolated pnpm application and deliberately invokes Next's webpack builder because default Turbopack cannot resolve the exact-registry dependency from that repository fixture layout. The package-consumer matrix also passes a default `next build`; do not infer a general Env or Turbopack incompatibility from the example command.
 
@@ -84,7 +85,7 @@ There is no `@astilba/env/next` export. Next.js support uses the same generated 
 
 ## Cloudflare Workers boundary
 
-Env 0.2 adds generated process-target support that was not part of 0.1. The admitted Workers surface is deliberately limited to:
+Env's admitted Workers surface is deliberately limited to:
 
 - a generated server target;
 - the `deployment` lifecycle;
@@ -112,7 +113,7 @@ Env does not inject inline JavaScript, write to `window`, mutate HTML, or choose
 
 ## Alpha boundaries
 
-Plan for these constraints in 0.2:
+Plan for these constraints in 0.3:
 
 - generated files are application-owned build artifacts and must be regenerated when the declaration changes;
 - public build values selected by a browser consumer require an explicit build source during generation;
@@ -121,5 +122,7 @@ Plan for these constraints in 0.2:
 - compatibility plans contain descriptors and change classifications, never configuration values;
 - diagnostics are deliberately redacted; and
 - framework-specific startup, routing, authentication, and failure UI remain application responsibilities.
+
+The inventory CLI is also deliberately narrow. It compares declared process-target names with a strict application-supplied name list. It does not query providers, inspect values or provider kinds, infer closed ownership, sync or prune configuration, or replace runtime `check` and `load` validation.
 
 The public [Env repository](https://github.com/astilbahq/env) is the source and issue tracker for the alpha. Report a contract, generation, runtime, or browser-boundary defect there.

@@ -17,6 +17,8 @@ const CREATE_HTML_PATH = withDocsBase("/create/overview/");
 const CREATE_MARKDOWN_PATH = withDocsBase("/create/overview.md");
 const ENV_HTML_PATH = withDocsBase("/env/overview/");
 const ENV_MARKDOWN_PATH = withDocsBase("/env/overview.md");
+const ENV_INVENTORY_HTML_PATH = withDocsBase("/env/inventory-and-drift/");
+const ENV_INVENTORY_MARKDOWN_PATH = withDocsBase("/env/inventory-and-drift.md");
 const ENV_WORKERS_HTML_PATH = withDocsBase("/env/cloudflare-workers/");
 const ENV_WORKERS_MARKDOWN_PATH = withDocsBase("/env/cloudflare-workers.md");
 const HTML_PATH = withDocsBase("/cache/overview/");
@@ -438,7 +440,7 @@ const checkCreateDocs = () =>
 
 const checkEnvDocs = () =>
   checkProductDocs({
-    htmlMarkers: ["Astilba Env", "The 0.2 release is a public alpha"],
+    htmlMarkers: ["Astilba Env", "The 0.3 release is a public alpha"],
     htmlPath: ENV_HTML_PATH,
     label: "Env",
     markdownMarkers: ["# Overview", "@astilba/env", "public alpha"],
@@ -461,6 +463,24 @@ const checkEnvWorkersDocs = () =>
       "nodejs_compat",
     ],
     markdownPath: ENV_WORKERS_MARKDOWN_PATH,
+    negotiateMarkdown: true,
+  });
+
+const checkEnvInventoryDocs = () =>
+  checkProductDocs({
+    htmlMarkers: [
+      "Check name inventory drift",
+      "astilba.env.contract-inventory/v1",
+      "Env never infers closed ownership",
+    ],
+    htmlPath: ENV_INVENTORY_HTML_PATH,
+    label: "Env inventory",
+    markdownMarkers: [
+      "# Check name inventory drift",
+      "astilba.env.observed-name-inventory/v1",
+      "REQUIRED_MISSING",
+    ],
+    markdownPath: ENV_INVENTORY_MARKDOWN_PATH,
     negotiateMarkdown: true,
   });
 
@@ -916,6 +936,7 @@ const runChecks = async () => {
     checkDirectMarkdown(),
     checkCreateDocs(),
     checkEnvDocs(),
+    checkEnvInventoryDocs(),
     checkEnvWorkersDocs(),
     checkMissingMarkdown(),
     checkDiscovery(),

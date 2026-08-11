@@ -10,12 +10,12 @@ Treat this as an architectural migration, not a package rename.
 Install the exact public-alpha release before declaring the replacement contract:
 
 ```sh
-pnpm add @astilba/env@0.2.3 --save-exact
+pnpm add @astilba/env@0.3.0 --save-exact
 ```
 
 ## Map the concepts
 
-| `next-dynamic-env` | Astilba Env 0.2 |
+| `next-dynamic-env` | Astilba Env 0.3 |
 | --- | --- |
 | `createDynamicEnv({ client, server })` | [`defineEnvironment({ entries, consumers, targets })`](/docs/env/declaration-reference/#defineenvironment) |
 | `clientEnv` proxy | Generated browser build configuration or validated bootstrap values |
@@ -144,7 +144,7 @@ If the Yup schema represents application business rules instead of configuration
 
 ## Account for intentional non-compatibilities
 
-Env 0.2 does not provide compatibility exports or shims for:
+Env does not provide compatibility exports or shims for:
 
 - `createDynamicEnv`;
 - `clientEnv` or `serverEnv`;

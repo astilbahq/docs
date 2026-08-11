@@ -5,7 +5,7 @@ description: Understand Astilba Env's contract model, generated boundaries, supp
 
 Astilba Env turns one portable TypeScript declaration into generated configuration interfaces for the artifacts that consume them. It keeps browser and server projections physically separate, distinguishes build, deployment, and request values, and validates values at the lifecycle where they become available.
 
-The 0.2 release is a public alpha. Use it when explicit configuration boundaries are worth adopting before the API reaches stability.
+The 0.3 release is a public alpha. Use it when explicit configuration boundaries are worth adopting before the API reaches stability.
 
 ## Decide whether Env fits
 
@@ -15,7 +15,8 @@ The 0.2 release is a public alpha. Use it when explicit configuration boundaries
 | Keep private names and bindings out of browser bundles | Browser consumers receive generated public projections only. |
 | Validate build, deployment, and request values separately | Each entry declares its lifecycle; each generated target resolves one lifecycle. |
 | Run without an Astilba service | Generation, checking, and planning are local; the application owns value storage and delivery. |
-| Validate Worker bindings without a Node.js compatibility layer | Env 0.2 admits a narrow generated deployment-target path for Cloudflare Workers. |
+| Compare declared names with an application-owned provider list | Export a value-free target inventory, convert the provider's names to Env's strict observed format, and check open or closed ownership without giving Env provider credentials. |
+| Validate Worker bindings without a Node.js compatibility layer | Env admits a narrow generated deployment-target path for Cloudflare Workers. |
 | Inject arbitrary configuration through inline JavaScript | Not supported. Browser deployment and request values use inert, same-origin JSON. |
 | Import one mutable environment object everywhere | Not supported. Generated modules create explicit artifact boundaries. |
 | Provision secrets or platform bindings | Not supported. Env validates application-owned sources; it does not operate providers. |
@@ -102,9 +103,10 @@ Env can replace application-specific configuration parsing, required-value helpe
 | Secret storage and injection | A secret manager, CI system, or deployment platform owns the values and delivers them to the application. | A generated target reads only the selected values inside your application process after delivery. Astilba receives no values; Env provides no secret storage, rotation, or provisioning. |
 | Worker binding types | `wrangler types` describes the complete Worker binding interface. | A generated deployment target decodes mapped string settings and secrets. D1, KV, R2, and service bindings are capabilities, so they stay outside the configuration result and remain available through the Wrangler-generated interface. |
 | Live deployment inventory and preflight | Deployment tooling or application-owned assertions query the platform and decide whether a deployment may proceed. | Env validates the explicit source object at the declared lifecycle. It does not query a provider or prove what is present in a remote deployment. |
+| Declared-name drift | Application-owned tooling converts a provider or platform name list into Env's strict observed format. | `inventory export` publishes the declared name contract; `inventory check` compares names and required presence. Env never receives values or provider credentials. |
 | Server configuration parsing | Hand-written `requiredEnv()` helpers or schema wrappers turn ambient strings into application values. | Generated `check(source)` and `load(source)` operations can replace that parsing while sharing one contract across selected artifacts. |
 | Browser configuration delivery | An application-owned route serves inert, same-origin JSON, or a framework safely transports the serialized envelope as inert data. The application owns the HTTP and rendering policy. | Env generates the public projection, compatibility identity, and envelope validation; it does not host a route or choose the transport. |
 
 Use Env when one contract replaces repeated parsing or crosses artifact and lifecycle boundaries. Keep your existing parser when one server already has a reliable parser, you have no browser configuration surface, and you do not need to promote the same artifact through several deployments.
 
-Continue with [Configure a Node application](/docs/env/quickstart/) for the smallest working setup.
+Continue with [Configure a Node application](/docs/env/quickstart/) for the smallest working setup, or [Check name inventory drift](/docs/env/inventory-and-drift/) when duplicated name lists are the problem.

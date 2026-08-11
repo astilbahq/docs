@@ -3,7 +3,7 @@ title: Cloudflare Workers
 description: Generate a deployment target on Node.js and validate Wrangler bindings directly inside a Cloudflare Worker.
 ---
 
-Env 0.2 admits a narrow Cloudflare Workers runtime path: a generated server target for the `deployment` lifecycle may call `check(env)` or `load(env)` inside a Worker handler when every selected entry uses a first-party Env codec.
+Env 0.3.0 admits a narrow Cloudflare Workers runtime path: a generated server target for the `deployment` lifecycle may call `check(env)` or `load(env)` inside a Worker handler when every selected entry uses a first-party Env codec.
 
 Authoring, generation, CLI checks, and planning still run on a [supported Node.js release](/docs/env/nodejs/). The Worker imports the generated target and the `@astilba/env/runtime` dependency behind it; it does not import the root package, browser runtime, CLI, or Vite integration.
 
@@ -91,9 +91,9 @@ The same built Worker artifact can use another binding set:
 }
 ```
 
-Env validates values at runtime; it does not inventory either binding set or decide when a changed set should redeploy.
+Env validates values at runtime. Its provider-neutral inventory command can compare the declared string names with an application-supplied name list; it does not call Cloudflare, inspect binding kinds, or decide when a changed set should redeploy.
 
-Choose the latest compatibility date supported by your installed Wrangler release. Env does not impose its own date floor. The 0.2.0 admission evidence uses stock Wrangler 4.115.0 and its bundled workerd at compatibility date `2026-07-29`; it does not replace Wrangler's transitive runtime.
+Choose the latest compatibility date supported by your installed Wrangler release. Env does not impose its own date floor. The [0.3.0 release matrix](https://github.com/astilbahq/env/actions/runs/31482997555) exercises the exact packed archive with stock Wrangler 4.115.0 and its bundled workerd at compatibility date `2026-07-29`; it does not replace Wrangler's transitive runtime.
 
 ## Generate Cloudflare's binding types
 
@@ -148,7 +148,7 @@ Unselected bindings are different: Env does not read or reject them. Keep `CACHE
 
 Env's generated runtime does not need the [`nodejs_compat` compatibility flag](https://developers.cloudflare.com/workers/runtime-apis/nodejs/) for this path. Add that flag only when other application dependencies require Node.js APIs.
 
-The Env 0.2 Workers claim includes:
+The Env 0.3.0 Workers claim includes:
 
 - generated server targets for the `deployment` lifecycle;
 - first-party Env codecs; and
@@ -168,8 +168,8 @@ Env does not provide:
 
 - Worker, route, or binding provisioning;
 - secret storage or rotation;
-- live Cloudflare binding inventory;
+- a live Cloudflare binding query or Wrangler-specific parser;
 - a Cloudflare provider API client; or
 - automatic deployment or redeployment planning.
 
-Wrangler and Cloudflare own those operations. See the official [Wrangler configuration reference](https://developers.cloudflare.com/workers/wrangler/configuration/) for binding configuration and required-secret behavior.
+Wrangler and Cloudflare own those operations. If duplicated string-binding names are the problem, convert a Wrangler-produced name list into Env's provider-neutral observed format and follow [Check name inventory drift](/docs/env/inventory-and-drift/). See the official [Wrangler configuration reference](https://developers.cloudflare.com/workers/wrangler/configuration/) for binding configuration and required-secret behavior.

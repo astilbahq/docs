@@ -81,6 +81,13 @@ const envSections = [
         sourcePath: "src/content/docs/env/browser-delivery.md",
       },
       {
+        key: "inventory-and-drift",
+        label: "Check name inventory drift",
+        slug: "inventory-and-drift",
+        icon: "approve-check-circle",
+        sourcePath: "src/content/docs/env/inventory-and-drift.md",
+      },
+      {
         key: "migrate-from-next-dynamic-env",
         label: "Migrate from next-dynamic-env",
         slug: "migrate-from-next-dynamic-env",
@@ -143,7 +150,7 @@ export const envProduct = {
   description:
     "A local-first configuration contract compiler with explicit lifecycles and physically separated browser and server projections.",
   availabilityNote:
-    "Released as @astilba/env 0.2.3 for public-alpha evaluation. Expect deliberate breaking changes before a stable release.",
+    "Released as @astilba/env 0.3.0 for public-alpha evaluation. Expect deliberate breaking changes before a stable release.",
   homePath: "/env/",
   repositoryUrl: "https://github.com/astilbahq/env",
   status: {
@@ -151,11 +158,11 @@ export const envProduct = {
     variant: "caution",
   },
   defaultPage: "overview",
-  defaultVersion: "0.2",
+  defaultVersion: "0.3",
   versions: [
     {
-      id: "0.2",
-      label: "0.2",
+      id: "0.3",
+      label: "0.3",
       lifecycle: "latest",
       basePath: "env",
       sections: envSections,

@@ -16,7 +16,10 @@ const requiredMarkers = new Map([
   ["astro.config.mjs", [`Astilba Env ${version} is a public alpha`]],
   [
     "public/.well-known/agent-skills/astilba-env-docs/SKILL.md",
-    [`\`@astilba/env\` ${version} as a public alpha`],
+    [
+      `\`@astilba/env\` ${version} as a public alpha`,
+      "Treat inventory as value-free name evidence only",
+    ],
   ],
   [
     "public/agent-setup/prompt.md",
@@ -45,6 +48,15 @@ const requiredMarkers = new Map([
   [
     "src/content/docs/env/migrate-from-next-dynamic-env.md",
     [`pnpm add @astilba/env@${version} --save-exact`],
+  ],
+  [
+    "src/content/docs/env/inventory-and-drift.md",
+    [
+      `Env ${version} can make one declaration`,
+      "astilba.env.contract-inventory/v1",
+      "astilba.env.observed-name-inventory/v1",
+      "Env never infers closed ownership",
+    ],
   ],
   ["src/content/docs/env/nodejs.md", [`Env ${version} supports:`]],
   [

@@ -22,7 +22,7 @@ describe("documentation sitemap", () => {
     );
     const sourcePaths = docsSitemapSources.map(({ sourcePath }) => sourcePath);
 
-    expect(docsSitemapSources).toHaveLength(44);
+    expect(docsSitemapSources).toHaveLength(45);
     expect(new Set(canonicalPaths).size).toBe(canonicalPaths.length);
     expect(new Set(sourcePaths).size).toBe(sourcePaths.length);
     expect(sourcePaths).toEqual(
@@ -38,6 +38,7 @@ describe("documentation sitemap", () => {
         "src/content/docs/env/lifecycles-and-projections.md",
         "src/content/docs/env/validation-and-standard-schema.md",
         "src/content/docs/env/browser-delivery.md",
+        "src/content/docs/env/inventory-and-drift.md",
         "src/content/docs/env/migrate-from-next-dynamic-env.md",
         "src/content/docs/env/declaration-reference.md",
         "src/content/docs/env/cli-reference.md",

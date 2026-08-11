@@ -8,10 +8,10 @@ next: false
 
 Astilba Env is a local-first configuration contract compiler for TypeScript. You declare which values each application artifact needs, when those values may be resolved, and where they may be exposed. Env generates typed browser and server modules from that contract.
 
-`@astilba/env` 0.2.3 is a public alpha. It is intended for evaluation and controlled adoption while the contract is still free to improve.
+`@astilba/env` 0.3.0 is a public alpha. It is intended for evaluation and controlled adoption while the contract is still free to improve.
 
 ```sh
-pnpm add @astilba/env@0.2.3 --save-exact
+pnpm add @astilba/env@0.3.0 --save-exact
 ```
 
 Env does not replace your secret manager or `.env` files, and it has no hosted control plane. Generation and checking read only the source values their current operation needs, inside your project. Public build values selected by a browser consumer are deliberately emitted into generated `.build.ts` modules; public build values selected only by a server consumer resolve through a generated server target. Other generated evidence is value-free. Env does not send your values to Astilba.
@@ -22,6 +22,7 @@ Env does not replace your secret manager or `.env` files, and it has no hosted c
 | --- | --- |
 | Decide whether Env fits | [Overview](/docs/env/overview/) |
 | Add Env to a Node application | [Configure a Node application](/docs/env/quickstart/) |
+| Compare declared names with a provider or platform list | [Check name inventory drift](/docs/env/inventory-and-drift/) |
 | Check a runtime boundary | [Node.js](/docs/env/nodejs/) or [Browser](/docs/env/browser-runtime/) |
 | Configure a Cloudflare Worker | [Cloudflare Workers](/docs/env/cloudflare-workers/) |
 | Integrate a framework | [Vite](/docs/env/vite/) or [Next.js](/docs/env/nextjs/) |
