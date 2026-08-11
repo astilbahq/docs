@@ -573,6 +573,16 @@ assertIncludes(
   envSkill,
   docsUrl("/env/release-and-support.md")
 );
+assertIncludes(
+  envSkillArtifact,
+  envSkill,
+  docsUrl("/env/inventory-and-drift.md")
+);
+assertIncludes(
+  envSkillArtifact,
+  envSkill,
+  "Treat inventory as value-free name evidence only"
+);
 assertIncludes(envSkillArtifact, envSkill, docsUrl("/mcp"));
 assertIncludes(
   createSkillArtifact,
@@ -814,6 +824,7 @@ assertIncludes(
 );
 assertIncludes(llmsArtifact, llmsIndex, "Create 0.3.0 is released");
 assertIncludes(llmsArtifact, llmsIndex, `Env ${envVersion} is a public alpha`);
+assertIncludes(llmsArtifact, llmsIndex, docsUrl("/env/inventory-and-drift/"));
 assertIncludes(llmsArtifact, llmsIndex, mcpUrl);
 const llmsFullArtifact = docsArtifact("/llms-full.txt");
 assertIncludes(
