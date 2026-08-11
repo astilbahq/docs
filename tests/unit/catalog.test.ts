@@ -52,7 +52,7 @@ describe("documentation catalog", () => {
     const version = getDefaultVersion(env);
     const page = getDefaultPage(env, version);
 
-    expect(version.id).toBe("0.2");
+    expect(version.id).toBe("0.3");
     expect(version.lifecycle).toBe("latest");
     expect(page.key).toBe("overview");
     expect(env.repositoryUrl).toBe("https://github.com/astilbahq/env");
@@ -176,6 +176,7 @@ describe("documentation catalog", () => {
         label: "Guides",
         pages: [
           "Deliver browser configuration",
+          "Check name inventory drift",
           "Migrate from next-dynamic-env",
         ],
       },

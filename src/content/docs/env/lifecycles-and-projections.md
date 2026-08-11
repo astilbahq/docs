@@ -44,7 +44,7 @@ consumers: {
 
 `env.server(...)` may select public and private entries. Calling `env.server()` with no list selects every declared entry. Prefer an explicit list when a process has more than one independently deployed artifact.
 
-Calling `env.browser()` with no list also selects every entry, then rejects the declaration if any selection is private, uses a server-only codec, or belongs to a co-presence rule. Co-presence rules are server-projection only in 0.2. An explicit browser list makes the exposure decision easier to review.
+Calling `env.browser()` with no list also selects every entry, then rejects the declaration if any selection is private, uses a server-only codec, or belongs to a co-presence rule. Co-presence rules are server-projection only in 0.3. An explicit browser list makes the exposure decision easier to review.
 
 ## Bind one complete lifecycle per target
 

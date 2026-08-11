@@ -438,7 +438,7 @@ const checkCreateDocs = () =>
 
 const checkEnvDocs = () =>
   checkProductDocs({
-    htmlMarkers: ["Astilba Env", "The 0.2 release is a public alpha"],
+    htmlMarkers: ["Astilba Env", "The 0.3 release is a public alpha"],
     htmlPath: ENV_HTML_PATH,
     label: "Env",
     markdownMarkers: ["# Overview", "@astilba/env", "public alpha"],

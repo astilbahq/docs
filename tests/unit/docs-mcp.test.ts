@@ -380,13 +380,13 @@ describe("generated MCP corpus", () => {
       searchDocs(corpus, {
         productId: "env",
         query: "Cloudflare Workers",
-        versionId: "0.2",
+        versionId: "0.3",
       })[0]
     ).toMatchObject({
       productId: "env",
       title: "Cloudflare Workers",
       uri: `${docsOrigin}/docs/env/cloudflare-workers.md`,
-      versionId: "0.2",
+      versionId: "0.3",
     });
   });
 

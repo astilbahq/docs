@@ -1,9 +1,9 @@
 ---
 title: CLI reference
-description: Generate Env modules, validate a target, plan contract changes, consume JSON output, and interpret exit statuses.
+description: Generate Env modules, validate values, compare name inventories, plan contract changes, and consume stable machine output.
 ---
 
-The `astilba-env` command compiles `astilba.env.ts` in the current package. It generates project-owned interfaces, checks current values without exposing them, and compares value-free planning snapshots.
+The `astilba-env` command compiles `astilba.env.ts` in the current package. It generates project-owned interfaces, checks current values without exposing them, compares value-free name inventories, and compares value-free planning snapshots.
 
 Run it through your package manager:
 
@@ -18,6 +18,8 @@ Inside `package.json` scripts, call `astilba-env` directly.
 ```text
 astilba-env generate [--config PATH] [--check] [--json]
 astilba-env check --target ID [--config PATH] [--json]
+astilba-env inventory export --target ID [--config PATH] [--json]
+astilba-env inventory check --target ID --observed PATH [--ownership open|closed] [--config PATH] [--json]
 astilba-env plan --base GIT_REF [--config PATH] [--json]
 ```
 
@@ -96,6 +98,35 @@ The exact diagnostic fields depend on the failure. Values, value fragments, leng
 
 The CLI cannot validate an `opaque` entry because it has no application schema implementation. Import the target's generated `check(source, schemas)` function instead.
 
+## `inventory export`
+
+Compile the declared names for one process target:
+
+```sh
+pnpm exec astilba-env inventory export --target serverDeployment
+```
+
+Without `--json`, the command writes a canonical `astilba.env.contract-inventory/v1` document. It contains logical entry IDs, source names, lifecycle, visibility, and required presence; it contains no values or provider-kind claims.
+
+With `--json`, the document is the `inventory` field inside `astilba.env.cli.inventory/v1`.
+
+## `inventory check`
+
+Compare the target with a strict application-supplied name list:
+
+```sh
+pnpm exec astilba-env inventory check \
+  --target serverDeployment \
+  --observed ./observed-names.json \
+  --ownership closed
+```
+
+The observed document uses `astilba.env.observed-name-inventory/v1` and contains only `{ "name": "..." }` entries. Env does not query a provider or accept provider-native output; convert the provider's response in application-owned tooling.
+
+Ownership defaults to `open`. Required absence fails in both modes. Optional absence is a notice. Unexpected names are notices in open mode and failures in explicitly selected closed mode.
+
+Read [Check name inventory drift](/docs/env/inventory-and-drift/) for the schemas, issue codes, trust boundary, and CI workflow.
+
 ## `plan`
 
 Compare the current declaration with a generated snapshot committed at a Git revision:
@@ -134,6 +165,7 @@ Machine formats are versioned independently:
 | --- | --- |
 | `generate` | `astilba.env.cli.generate/v1` |
 | `check` | `astilba.env.cli.check/v1` |
+| `inventory export` and `inventory check` | `astilba.env.cli.inventory/v1` |
 | `plan` | `astilba.env.cli.plan/v1` |
 | Any command error | `astilba.env.cli.error/v1` |
 
@@ -143,8 +175,8 @@ Check the `format` field before consuming other fields. Treat a newer or unknown
 
 | Status | Meaning |
 | --- | --- |
-| `0` | Command completed successfully. A plan also has no consumer with `UNKNOWN` confidence. |
-| `1` | Invalid configuration, stale or invalid generated output, command failure, or a plan with unknown confidence. |
+| `0` | Command completed successfully. An inventory is acceptable under its ownership mode; a plan has no consumer with `UNKNOWN` confidence. |
+| `1` | Invalid configuration, stale or invalid generated output, inventory drift or invalid evidence, command failure, or a plan with unknown confidence. |
 | `2` | Invalid command syntax, target name, configuration extension, or Git reference. |
 
 Do not parse human-readable output for automation. Use `--json`, the versioned format field, and the exit status together.
