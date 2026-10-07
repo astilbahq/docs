@@ -1,19 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended",
-    ":dependencyDashboard",
-    ":approveMajorUpdates",
-    ":semanticCommits",
-    ":pinDevDependencies",
-    "group:monorepos",
-    "schedule:weekly"
-  ],
-  "timezone": "Europe/London",
-  "rangeStrategy": "pin",
-  "minimumReleaseAge": "3 days",
-  "prConcurrentLimit": 5,
-  "prHourlyLimit": 2,
+  "extends": ["github>astilbahq/create:renovate-default"],
   "lockFileMaintenance": {
     "enabled": true,
     "schedule": ["before 5am on monday"],
@@ -21,28 +8,14 @@
   },
   "packageRules": [
     {
-      "description": "Manage the Node engine floor by hand; exact dependency pins must not turn it into a single patch release.",
-      "matchDepTypes": ["engines"],
-      "enabled": false
-    },
-    {
-      "description": "Group safe non-major development dependencies into one verified maintenance change.",
-      "groupName": "routine development dependencies",
-      "groupSlug": "routine-development-dependencies",
-      "matchManagers": ["npm"],
-      "matchDepTypes": ["devDependencies"],
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "matchCurrentVersion": "!/^0/",
-      "matchPackageNames": ["!parse5", "!wrangler"]
-    },
-    {
       "description": "Group safe non-major runtime dependencies while keeping their merge manually reviewed.",
       "groupName": "routine runtime dependencies",
       "groupSlug": "routine-runtime-dependencies",
       "matchManagers": ["npm"],
       "matchDepTypes": ["dependencies"],
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "matchCurrentVersion": "!/^0/"
+      "matchCurrentVersion": "!/^0/",
+      "automerge": false
     },
     {
       "description": "Keep Astro and Starlight changes together for one documentation-shell review.",
@@ -66,29 +39,6 @@
         "ultracite",
         "vitest"
       ]
-    },
-    {
-      "description": "Auto-merge non-major development-tool updates after verification succeeds.",
-      "matchDepTypes": ["devDependencies"],
-      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
-      "matchCurrentVersion": "!/^0/",
-      "automerge": true
-    },
-    {
-      "description": "Never auto-merge a major update.",
-      "matchUpdateTypes": ["major"],
-      "automerge": false
-    },
-    {
-      "description": "Require a maintainer merge for updates to zero-major packages.",
-      "matchManagers": ["npm"],
-      "matchCurrentVersion": "/^0\\./",
-      "automerge": false
-    },
-    {
-      "description": "Require a maintainer merge for every GitHub Actions update.",
-      "matchManagers": ["github-actions"],
-      "automerge": false
     },
     {
       "description": "Require a maintainer merge for security-sensitive build tooling.",
