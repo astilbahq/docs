@@ -5,7 +5,10 @@ allowBuilds:
   sharp: true
   workerd: true
 minimumReleaseAge: 1440
+engineStrict: true
 overrides:
+  # unifont 0.7.5 requires Node 22.19 through Undici 8.
+  unifont@0.7.5: 0.7.4
   # GHSA-vfj7-8cjw-p6xm: upstream has no fixed release.
   braces@3.0.3: npm:@dieub/braces-depth-guard@3.0.3-pn.3
   "@expressive-code/core@0.44.2>postcss-nested": 7.0.2
@@ -18,6 +21,3 @@ overrides:
   undici@>=7.0.0 <7.29.1: 7.29.1
   js-yaml@>=4.0.0 <4.3.2: 4.3.2
   smol-toml@>=1.0.0 <1.9.0: 1.9.0
-minimumReleaseAgeExclude:
-  - "@astilba/*"
-  - create-astilba
