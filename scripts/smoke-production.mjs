@@ -13,8 +13,6 @@ const packageJson = JSON.parse(
   await readFile(new URL("../package.json", import.meta.url), "utf8")
 );
 const ENV_VERSION = packageJson.dependencies["@astilba/env"];
-const CREATE_HTML_PATH = withDocsBase("/create/overview/");
-const CREATE_MARKDOWN_PATH = withDocsBase("/create/overview.md");
 const ENV_HTML_PATH = withDocsBase("/env/overview/");
 const ENV_MARKDOWN_PATH = withDocsBase("/env/overview.md");
 const ENV_INVENTORY_HTML_PATH = withDocsBase("/env/inventory-and-drift/");
@@ -429,15 +427,6 @@ const checkProductDocs = async ({
   );
 };
 
-const checkCreateDocs = () =>
-  checkProductDocs({
-    htmlMarkers: ["Astilba Create", "four recipe v2"],
-    htmlPath: CREATE_HTML_PATH,
-    label: "Create",
-    markdownMarkers: ["# Overview", "create-astilba"],
-    markdownPath: CREATE_MARKDOWN_PATH,
-  });
-
 const checkEnvDocs = () =>
   checkProductDocs({
     htmlMarkers: ["Astilba Env", "The 0.3 release is a public alpha"],
@@ -506,20 +495,6 @@ const checkMissingMarkdown = async () => {
 };
 
 const PRODUCT_DISCOVERY_CHECKS = [
-  {
-    documentSetMarkers: [
-      "<SYSTEM>Astilba Create:",
-      "# Create",
-      "# Release and support",
-    ],
-    documentSetPath: withDocsBase("/_llms-txt/astilba-create.txt"),
-    label: "Create",
-    skillMarkers: ["# Astilba Create documentation"],
-    skillName: "astilba-create-docs",
-    skillUrl: withDocsBase(
-      "/.well-known/agent-skills/astilba-create-docs/SKILL.md"
-    ),
-  },
   {
     documentSetMarkers: [
       "<SYSTEM>Astilba Env:",
@@ -642,7 +617,6 @@ const checkSitemap = async () => {
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"'
     ) ||
     !sitemap.includes(`<loc>${docsUrl("/")}</loc>`) ||
-    !sitemap.includes(`<loc>${docsUrl("/create/overview/")}</loc>`) ||
     !sitemap.includes(`<loc>${docsUrl("/env/overview/")}</loc>`) ||
     !sitemap.includes(`<loc>${docsUrl("/env/cloudflare-workers/")}</loc>`) ||
     !/<lastmod>\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z<\/lastmod>/.test(
@@ -862,23 +836,6 @@ const checkMcp = async () => {
     );
   }
 
-  const createSearch = await callMcp("tools/call", {
-    arguments: { productId: "create", query: "project ownership manifest" },
-    name: "search_docs",
-  });
-  const createResults = createSearch?.structuredContent?.results;
-
-  if (
-    !Array.isArray(createResults) ||
-    !createResults.some(
-      (result) => result?.uri === docsUrl("/create/project-manifest.md")
-    )
-  ) {
-    throw new Error(
-      "[production-smoke] MCP search_docs did not return the expected Create resource."
-    );
-  }
-
   const envSearch = await callMcp("tools/call", {
     arguments: { productId: "env", query: "Wrangler binding types" },
     name: "search_docs",
@@ -934,7 +891,6 @@ const runChecks = async () => {
   const results = await Promise.allSettled([
     checkMarkdown(),
     checkDirectMarkdown(),
-    checkCreateDocs(),
     checkEnvDocs(),
     checkEnvInventoryDocs(),
     checkEnvWorkersDocs(),

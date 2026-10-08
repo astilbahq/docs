@@ -9,14 +9,11 @@ const requiredFiles = [
   "404.html",
   "_headers",
   "cache/index.html",
-  "create/index.html",
-  "create/new/index.html",
   "env/index.html",
   "index.html",
   "llms.txt",
   "mcp/server-card",
   "robots.txt",
-  "schemas/create/v1.json",
   "site.js",
   "sitemap-site.xml",
   "sitemap.xml",
@@ -47,10 +44,7 @@ const [
   home,
   notFound,
   cache,
-  create,
-  createConfigurator,
   env,
-  schema,
   headers,
   robots,
   sitemap,
@@ -60,10 +54,7 @@ const [
   readArtifact("index.html"),
   readArtifact("404.html"),
   readArtifact("cache/index.html"),
-  readArtifact("create/index.html"),
-  readArtifact("create/new/index.html"),
   readArtifact("env/index.html"),
-  readArtifact("schemas/create/v1.json"),
   readArtifact("_headers"),
   readArtifact("robots.txt"),
   readArtifact("sitemap.xml"),
@@ -77,7 +68,6 @@ assertIncludes(
   'href="https://astilba.com/cache/" rel="canonical"',
   "Cache page"
 );
-assertIncludes(home, "create-astilba", "Homepage");
 assertIncludes(home, "@astilba/env", "Homepage");
 assertIncludes(home, "0.3.0 is a public alpha", "Homepage");
 assertIncludes(home, "Cache remains a development preview", "Homepage");
@@ -93,62 +83,12 @@ assertIncludes(
 );
 assertIncludes(cache, "No npm package", "Cache page");
 assertIncludes(
-  create,
-  'href="https://astilba.com/create/" rel="canonical"',
-  "Create page"
-);
-assertIncludes(create, "four recipe v2 contracts", "Create page");
-assertIncludes(create, "github.com/astilbahq/create", "Create page");
-assertIncludes(
   env,
   'href="https://astilba.com/env/" rel="canonical"',
   "Env page"
 );
 assertIncludes(env, "0.3.0 · public alpha · local-first", "Env page");
 assertIncludes(env, "github.com/astilbahq/env", "Env page");
-assertIncludes(
-  createConfigurator,
-  'href="https://astilba.com/create/new/" rel="canonical"',
-  "Create configurator"
-);
-assertIncludes(
-  createConfigurator,
-  'data-generator-version="0.3.0"',
-  "Create configurator"
-);
-assertIncludes(
-  createConfigurator,
-  "astilba-control--appearance_primary",
-  "Create configurator shared controls"
-);
-assertIncludes(
-  createConfigurator,
-  "astilba-field-root",
-  "Create configurator shared fields"
-);
-for (const association of [
-  'for="destination"',
-  'id="destination"',
-  'aria-describedby="destination-help"',
-]) {
-  assertIncludes(
-    createConfigurator,
-    association,
-    "Create configurator field associations"
-  );
-}
-for (const recipe of [
-  "typescript-library",
-  "react-vite-spa",
-  "astro-static-site",
-  "cloudflare-worker-service",
-]) {
-  assertIncludes(
-    createConfigurator,
-    `value="${recipe}"`,
-    "Create configurator"
-  );
-}
 assertIncludes(headers, "Content-Security-Policy:", "Static headers");
 assertIncludes(headers, "clipboard-write=(self)", "Static permissions policy");
 assertIncludes(
@@ -160,11 +100,6 @@ assertIncludes(
   sitemap,
   "https://astilba.com/docs/sitemap.xml",
   "Sitemap index"
-);
-assertIncludes(
-  skills,
-  '"url": "/docs/.well-known/agent-skills/astilba-create-docs/SKILL.md"',
-  "Agent Skills discovery"
 );
 assertIncludes(
   skills,
@@ -182,20 +117,10 @@ assertIncludes(
   "API catalog"
 );
 
-const createSchema = JSON.parse(schema);
-if (
-  createSchema.$id !== "https://astilba.com/schemas/create/v1.json" ||
-  createSchema.properties?.schemaVersion?.const !== 1
-) {
-  throw new Error("Create schema must publish the v1 manifest contract.");
-}
-
 for (const [label, source] of [
   ["Homepage", home],
   ["Not-found page", notFound],
   ["Cache page", cache],
-  ["Create page", create],
-  ["Create configurator", createConfigurator],
   ["Env page", env],
 ]) {
   if (
