@@ -25,8 +25,7 @@
   },
   "vulnerabilityAlerts": {
     "enabled": true,
-    "labels": ["dependencies", "security"],
-    "minimumReleaseAge": "3 days"
+    "labels": ["dependencies", "security"]
   },
   "packageRules": [
     {
