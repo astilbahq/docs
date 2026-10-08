@@ -14,11 +14,6 @@ const skillDefinitions = [
   },
   {
     description:
-      "Consult Astilba's public Create documentation to generate or evaluate projects with the released CLI, supported recipes, and explicit safety boundaries.",
-    name: "astilba-create-docs",
-  },
-  {
-    description:
       "Consult Astilba's public Env documentation to integrate the 0.3 configuration contract compiler without weakening browser, server, platform, inventory, or lifecycle boundaries.",
     name: "astilba-env-docs",
   },

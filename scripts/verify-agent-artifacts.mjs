@@ -211,7 +211,6 @@ const getFrontmatterString = (
 const requiredArtifacts = [
   docsArtifact("/.well-known/api-catalog"),
   docsArtifact("/.well-known/agent-skills/astilba-cache-docs/SKILL.md"),
-  docsArtifact("/.well-known/agent-skills/astilba-create-docs/SKILL.md"),
   docsArtifact("/.well-known/agent-skills/astilba-env-docs/SKILL.md"),
   docsArtifact("/.well-known/agent-skills/index.json"),
   docsArtifact("/.well-known/mcp/catalog.json"),
@@ -220,7 +219,6 @@ const requiredArtifacts = [
   docsArtifact("/agent-setup/prompt.md"),
   CONTENT_SECURITY_POLICY_ASSET_PATH.slice(1),
   docsArtifact("/_llms-txt/astilba-cache.txt"),
-  docsArtifact("/_llms-txt/astilba-create.txt"),
   docsArtifact("/_llms-txt/astilba-env.txt"),
   docsArtifact("/_mcp/docs.json"),
   docsArtifact("/agents/llms-txt.md"),
@@ -231,16 +229,10 @@ const requiredArtifacts = [
   docsArtifact("/cache/index.html"),
   docsArtifact("/cache/overview.md"),
   docsArtifact("/cache/overview/index.html"),
-  docsArtifact("/create.md"),
-  docsArtifact("/create/index.html"),
-  docsArtifact("/create/overview.md"),
   docsArtifact("/env.md"),
   docsArtifact("/env/index.html"),
   docsArtifact("/env/overview.md"),
   docsArtifact("/env/overview/index.html"),
-  docsArtifact("/create/overview/index.html"),
-  docsArtifact("/create/recipes.md"),
-  docsArtifact("/create/release-and-support.md"),
   docsArtifact("/index.md"),
   docsArtifact("/index.html"),
   docsArtifact("/llms-full.txt"),
@@ -499,20 +491,13 @@ assertExact("_headers", "Content-Signal values", contentSignals, [
 const cacheSkillArtifact = docsArtifact(
   "/.well-known/agent-skills/astilba-cache-docs/SKILL.md"
 );
-const createSkillArtifact = docsArtifact(
-  "/.well-known/agent-skills/astilba-create-docs/SKILL.md"
-);
 const envSkillArtifact = docsArtifact(
   "/.well-known/agent-skills/astilba-env-docs/SKILL.md"
 );
 const cacheSkill = artifacts.get(cacheSkillArtifact);
-const createSkill = artifacts.get(createSkillArtifact);
 const envSkill = artifacts.get(envSkillArtifact);
 const cacheSkillDigest = `sha256:${createHash("sha256")
   .update(cacheSkill)
-  .digest("hex")}`;
-const createSkillDigest = `sha256:${createHash("sha256")
-  .update(createSkill)
   .digest("hex")}`;
 const envSkillDigest = `sha256:${createHash("sha256")
   .update(envSkill)
@@ -536,14 +521,6 @@ assertExact(
         digest: cacheSkillDigest,
       },
       {
-        name: "astilba-create-docs",
-        type: "skill-md",
-        description:
-          "Consult Astilba's public Create documentation to generate or evaluate projects with the released CLI, supported recipes, and explicit safety boundaries.",
-        url: `/${createSkillArtifact}`,
-        digest: createSkillDigest,
-      },
-      {
         name: "astilba-env-docs",
         type: "skill-md",
         description:
@@ -557,11 +534,6 @@ assertExact(
 assertIncludes(cacheSkillArtifact, cacheSkill, "# Astilba Cache documentation");
 assertIncludes(cacheSkillArtifact, cacheSkill, docsUrl("/cache/api-status.md"));
 assertIncludes(cacheSkillArtifact, cacheSkill, docsUrl("/mcp"));
-assertIncludes(
-  createSkillArtifact,
-  createSkill,
-  "# Astilba Create documentation"
-);
 assertIncludes(envSkillArtifact, envSkill, "# Astilba Env documentation");
 assertIncludes(
   envSkillArtifact,
@@ -584,26 +556,11 @@ assertIncludes(
   "Treat inventory as value-free name evidence only"
 );
 assertIncludes(envSkillArtifact, envSkill, docsUrl("/mcp"));
-assertIncludes(
-  createSkillArtifact,
-  createSkill,
-  docsUrl("/create/release-and-support.md")
-);
-assertIncludes(createSkillArtifact, createSkill, docsUrl("/mcp"));
-assertIncludes(
-  createSkillArtifact,
-  createSkill,
-  "`create-astilba` 0.3.0 and its four recipe v2 contracts"
-);
 
 const pageUrl = docsUrl("/cache/overview/");
 const markdownUrl = docsUrl("/cache/overview.md");
 const cacheHomeUrl = docsUrl("/cache/");
 const cacheHomeMarkdownUrl = docsUrl("/cache.md");
-const createPageUrl = docsUrl("/create/overview/");
-const createMarkdownUrl = docsUrl("/create/overview.md");
-const createHomeUrl = docsUrl("/create/");
-const createHomeMarkdownUrl = docsUrl("/create.md");
 const envPageUrl = docsUrl("/env/overview/");
 const envMarkdownUrl = docsUrl("/env/overview.md");
 const envHomeUrl = docsUrl("/env/");
@@ -612,7 +569,6 @@ const homeUrl = docsUrl("/");
 const homeMarkdownUrl = docsUrl("/index.md");
 const llmsUrl = docsUrl("/llms.txt");
 const cacheSetUrl = docsUrl("/_llms-txt/astilba-cache.txt");
-const createSetUrl = docsUrl("/_llms-txt/astilba-create.txt");
 const envSetUrl = docsUrl("/_llms-txt/astilba-env.txt");
 const mcpUrl = docsUrl("/mcp");
 const apiCatalogUrl = new URL(API_CATALOG_PATH, site).href;
@@ -815,14 +771,12 @@ assertExact(
 const llmsArtifact = docsArtifact("/llms.txt");
 const llmsIndex = artifacts.get(llmsArtifact);
 assertIncludes(llmsArtifact, llmsIndex, cacheSetUrl);
-assertIncludes(llmsArtifact, llmsIndex, createSetUrl);
 assertIncludes(llmsArtifact, llmsIndex, envSetUrl);
 assertIncludes(
   llmsArtifact,
   llmsIndex,
   "Astilba Cache remains an unreleased preview"
 );
-assertIncludes(llmsArtifact, llmsIndex, "Create 0.3.0 is released");
 assertIncludes(llmsArtifact, llmsIndex, `Env ${envVersion} is a public alpha`);
 assertIncludes(llmsArtifact, llmsIndex, mcpUrl);
 const llmsFullArtifact = docsArtifact("/llms-full.txt");
@@ -839,15 +793,6 @@ const firstCacheHeading = cacheSet.match(/^# .+$/m)?.[0];
 if (firstCacheHeading !== "# Cache") {
   throw new Error(
     `[agent-artifacts] The Cache document set must begin with Cache, found ${JSON.stringify(firstCacheHeading)}.`
-  );
-}
-
-const createSet = artifacts.get(docsArtifact("/_llms-txt/astilba-create.txt"));
-const firstCreateHeading = createSet.match(/^# .+$/m)?.[0];
-
-if (firstCreateHeading !== "# Create") {
-  throw new Error(
-    `[agent-artifacts] The Create document set must begin with Create, found ${JSON.stringify(firstCreateHeading)}.`
   );
 }
 
@@ -869,10 +814,6 @@ const html = artifacts.get(docsArtifact("/cache/overview/index.html"));
 assertLink(html, "alternate", markdownUrl);
 assertLink(html, "describedby", llmsUrl);
 
-const createHtml = artifacts.get(docsArtifact("/create/overview/index.html"));
-assertLink(createHtml, "alternate", createMarkdownUrl);
-assertLink(createHtml, "describedby", llmsUrl);
-
 const envHtml = artifacts.get(docsArtifact("/env/overview/index.html"));
 assertLink(envHtml, "alternate", envMarkdownUrl);
 assertLink(envHtml, "describedby", llmsUrl);
@@ -890,11 +831,6 @@ const cacheHomeArtifact = docsArtifact("/cache/index.html");
 const cacheHomeHtml = artifacts.get(cacheHomeArtifact);
 assertLink(cacheHomeHtml, "alternate", cacheHomeMarkdownUrl);
 assertLink(cacheHomeHtml, "describedby", llmsUrl);
-
-const createHomeArtifact = docsArtifact("/create/index.html");
-const createHomeHtml = artifacts.get(createHomeArtifact);
-assertLink(createHomeHtml, "alternate", createHomeMarkdownUrl);
-assertLink(createHomeHtml, "describedby", llmsUrl);
 
 const mcpUsageHtml = artifacts.get(docsArtifact("/agents/mcp/index.html"));
 assertLink(mcpUsageHtml, "alternate", docsUrl("/agents/mcp.md"));
@@ -915,11 +851,6 @@ const llmsUsageMarkdown = artifacts.get(llmsUsageArtifact);
 assertIncludes(llmsUsageArtifact, llmsUsageMarkdown, "# LLMs.txt");
 assertIncludes(llmsUsageArtifact, llmsUsageMarkdown, llmsUrl);
 assertIncludes(llmsUsageArtifact, llmsUsageMarkdown, mcpUrl);
-assertIncludes(
-  llmsUsageArtifact,
-  llmsUsageMarkdown,
-  docsUrl("/create/overview.md")
-);
 assertIncludes(
   llmsUsageArtifact,
   llmsUsageMarkdown,
@@ -954,20 +885,6 @@ assertIncludes(
   withDocsBase("/cache/overview/")
 );
 
-const createHomeMarkdownArtifact = docsArtifact("/create.md");
-const createHomeMarkdown = artifacts.get(createHomeMarkdownArtifact);
-assertIncludes(
-  createHomeMarkdownArtifact,
-  createHomeMarkdown,
-  `canonical: ${JSON.stringify(createHomeUrl)}`
-);
-assertIncludes(createHomeMarkdownArtifact, createHomeMarkdown, "# Create");
-assertIncludes(
-  createHomeMarkdownArtifact,
-  createHomeMarkdown,
-  withDocsBase("/create/overview/")
-);
-
 const envHomeMarkdownArtifact = docsArtifact("/env.md");
 const envHomeMarkdown = artifacts.get(envHomeMarkdownArtifact);
 assertIncludes(
@@ -993,11 +910,6 @@ assertIncludes(agentSetupArtifact, agentSetupPrompt, mcpUrl);
 assertIncludes(
   agentSetupArtifact,
   agentSetupPrompt,
-  "astilba-create-docs/SKILL.md"
-);
-assertIncludes(
-  agentSetupArtifact,
-  agentSetupPrompt,
   "astilba-cache-docs/SKILL.md"
 );
 assertIncludes(
@@ -1010,7 +922,6 @@ assertIncludes(
   agentSetupPrompt,
   "unreleased source preview"
 );
-assertIncludes(agentSetupArtifact, agentSetupPrompt, "create-astilba` 0.3.0");
 assertIncludes(
   agentSetupArtifact,
   agentSetupPrompt,
@@ -1053,19 +964,6 @@ assertIncludes(
   'source: "https://github.com/astilbahq/docs/blob/main/src/content/docs/cache/overview.md"'
 );
 
-const createOverviewArtifact = docsArtifact("/create/overview.md");
-const createOverviewMarkdown = artifacts.get(createOverviewArtifact);
-assertIncludes(
-  createOverviewArtifact,
-  createOverviewMarkdown,
-  `canonical: ${JSON.stringify(createPageUrl)}`
-);
-assertIncludes(
-  createOverviewArtifact,
-  createOverviewMarkdown,
-  "The current release is `create-astilba` 0.3.0"
-);
-
 const envOverviewArtifact = docsArtifact("/env/overview.md");
 const envOverviewMarkdown = artifacts.get(envOverviewArtifact);
 assertIncludes(
@@ -1080,26 +978,6 @@ assertIncludes(
   'source: "https://github.com/astilbahq/docs/blob/main/src/content/docs/env/overview.md"'
 );
 
-const createRecipesArtifact = docsArtifact("/create/recipes.md");
-assertIncludes(
-  createRecipesArtifact,
-  artifacts.get(createRecipesArtifact),
-  "pnpm-lock.yaml"
-);
-
-const createReleaseArtifact = docsArtifact("/create/release-and-support.md");
-const createReleaseMarkdown = artifacts.get(createReleaseArtifact);
-assertIncludes(
-  createReleaseArtifact,
-  createReleaseMarkdown,
-  "canonical lockfiles needed to verify generation"
-);
-assertIncludes(
-  createReleaseArtifact,
-  createReleaseMarkdown,
-  "includes a provenance attestation"
-);
-
 for (const field of [
   "title",
   "description",
@@ -1110,14 +988,8 @@ for (const field of [
   "lifecycle",
   "source",
 ]) {
-  assertIncludes(createOverviewArtifact, createOverviewMarkdown, `${field}: `);
+  assertIncludes(envOverviewArtifact, envOverviewMarkdown, `${field}: `);
 }
-
-assertIncludes(
-  createOverviewArtifact,
-  createOverviewMarkdown,
-  'source: "https://github.com/astilbahq/docs/blob/main/src/content/docs/create/overview.md"'
-);
 
 const robotsArtifact = docsArtifact("/robots.txt");
 const robots = artifacts.get(robotsArtifact);
@@ -1139,7 +1011,6 @@ assertExact(
   artifacts.get(docsArtifact("/sitemap-0.xml"))
 );
 assertIncludes(sitemapArtifact, sitemap, pageUrl);
-assertIncludes(sitemapArtifact, sitemap, createPageUrl);
 assertIncludes(sitemapArtifact, sitemap, envPageUrl);
 
 console.log(

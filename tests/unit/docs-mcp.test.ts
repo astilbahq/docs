@@ -29,12 +29,6 @@ const getSitePageFixture = (
         description: "A portable server-side TypeScript cache.",
         title: "Cache",
       };
-    case "create":
-      return {
-        content: "# Create\n\nExplore the public Create documentation.",
-        description: "A deterministic TypeScript project generator.",
-        title: "Create",
-      };
     case "env":
       return {
         content: "# Env\n\nExplore the public Env documentation.",

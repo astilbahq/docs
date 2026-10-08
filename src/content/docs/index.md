@@ -6,15 +6,9 @@ tableOfContents: false
 
 Astilba builds portable infrastructure tools and libraries with explicit correctness boundaries. These docs describe each released or reviewed surface, what its guarantees cost, and which parts remain incomplete.
 
-The products are at different lifecycle stages. Create has a public release; Env is a 0.3 public alpha; Cache is a source-reviewed development preview. Read each product's status page before treating an example as a supported setup.
+The products are at different lifecycle stages. Env is a 0.3 public alpha; Cache is a source-reviewed development preview. Read each product's status page before treating an example as a supported setup.
 
 ## Products
-
-### [Create](/docs/create/)
-
-A deterministic CLI that generates complete TypeScript projects from four maintained recipes.
-
-`create-astilba` 0.3.0 is released on npm. [Configure a paste-ready command](https://astilba.com/create/new/), start with [Create your first project](/docs/create/quickstart/), compare the [recipe catalog](/docs/create/recipes/), or check the exact [release and support](/docs/create/release-and-support/) boundary.
 
 ### [Env](/docs/env/)
 
@@ -36,7 +30,6 @@ Start with the [overview](/docs/cache/overview/), check the [implementation stat
 
 Each product owns its own version tree and release boundary:
 
-- For Create, [Release and support](/docs/create/release-and-support/) records the public package, runtime, recipes, and omitted capabilities supported by 0.3.0.
 - For Env, [Release and support](/docs/env/release-and-support/) records the 0.3 public-alpha package, runtime, exports, and framework boundary.
 - For Cache, [Implementation status](/docs/cache/api-status/) is the authoritative ledger for the reviewed source snapshot, partial behavior, placeholders, and missing release gates.
 

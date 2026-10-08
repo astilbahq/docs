@@ -104,11 +104,6 @@ describe("documentation sidebar model", () => {
     expect(known.product.href).toBe("/docs/cache/");
     expect(known.product.options).toMatchObject([
       {
-        href: "/docs/create/",
-        label: "Create",
-        selected: false,
-      },
-      {
         href: "/docs/env/",
         label: "Env",
         selected: false,
@@ -121,10 +116,6 @@ describe("documentation sidebar model", () => {
     ]);
     expect(known.version?.label).toBe("Unreleased");
     expect(unknown.products).toMatchObject([
-      {
-        label: "Create",
-        href: "/docs/create/",
-      },
       {
         label: "Env",
         href: "/docs/env/",
@@ -143,14 +134,14 @@ describe("documentation sidebar model", () => {
     expect(productHome.product.href).toBe("/docs/cache/");
     expect(productHome.version?.label).toBe("Unreleased");
 
-    const createPage = createDocsSidebarContext("/docs/create/overview/");
-    expect(createPage.mode).toBe("product");
-    if (createPage.mode !== "product") {
+    const envPage = createDocsSidebarContext("/docs/env/overview/");
+    expect(envPage.mode).toBe("product");
+    if (envPage.mode !== "product") {
       throw new Error("Expected a product sidebar context.");
     }
-    expect(createPage.product.label).toBe("Create");
-    expect(createPage.version?.label).toBe("0.3");
-    expect(createPage.version?.meta).toBe("Latest");
+    expect(envPage.product.label).toBe("Env");
+    expect(envPage.version?.label).toBe("0.3");
+    expect(envPage.version?.meta).toBe("Latest");
   });
 
   it("uses direct product links outside a product context", () => {
@@ -160,11 +151,6 @@ describe("documentation sidebar model", () => {
     expect(home).toMatchObject({
       mode: "catalog",
       products: [
-        {
-          ariaLabel: "Create documentation",
-          href: "/docs/create/",
-          label: "Create",
-        },
         {
           ariaLabel: "Env documentation",
           href: "/docs/env/",

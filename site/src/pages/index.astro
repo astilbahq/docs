@@ -1,24 +1,9 @@
 ---
 import { LinkButton } from "@astilba/ui/link-button";
 import BrandMark from "../components/BrandMark.astro";
-import CreateProof from "../components/CreateProof.astro";
+import ExecutionProof from "../components/ExecutionProof.astro";
 import GuaranteeRows from "../components/GuaranteeRows.astro";
 import SiteLayout from "../layouts/SiteLayout.astro";
-
-const createGuarantees = [
-  {
-    guarantee: "A complete plan is validated before Create publishes a destination.",
-    boundary: "Unsafe paths, collisions, link failures, and invalid metadata stop generation.",
-  },
-  {
-    guarantee: "Recipes are maintained as whole projects.",
-    boundary: "The catalog stays small instead of exposing unverified feature combinations.",
-  },
-  {
-    guarantee: "Ownership evidence travels with the repository.",
-    boundary: "The manifest records managed, seeded, structured, metadata, and linked output separately.",
-  },
-] as const;
 
 const envGuarantees = [
   {
@@ -71,10 +56,10 @@ const cacheGuarantees = [
         <LinkButton
           appearance="primary"
           className="action"
-          href="/create/new/"
+          href="/docs/env/quickstart/"
           size="large"
         >
-          Configure a project
+          Configure a Node application
           <span aria-hidden="true">→</span>
         </LinkButton>
         <LinkButton
@@ -90,39 +75,20 @@ const cacheGuarantees = [
       </div>
       <p class="release-line">
         <span class="status-dot" aria-hidden="true"></span>
-        <span><code>create-astilba</code> 0.3.0 is released · <code>@astilba/env</code> 0.3.0 is a public alpha · Cache remains a development preview</span>
+        <span><code>@astilba/env</code> 0.3.0 is a public alpha · Cache remains a development preview</span>
       </p>
     </div>
 
     <div class="hero__proof">
       <BrandMark class="hero__mark" />
-      <CreateProof />
-    </div>
-  </section>
-
-  <section aria-labelledby="create-heading" class="section-shell ruled-section">
-    <div class="section-heading">
-      <div>
-        <p class="eyebrow">01 · Released product</p>
-        <h2 id="create-heading">Create</h2>
-      </div>
-      <span class="lifecycle-badge">0.3.0 on npm</span>
-    </div>
-    <p class="section-intro">
-      A deterministic CLI that creates an independent TypeScript repository with pinned
-      tooling, verification, security workflows, and explicit ownership evidence.
-    </p>
-    <GuaranteeRows rows={[...createGuarantees]} />
-    <div class="section-actions">
-      <a href="/create/">Explore Create <span aria-hidden="true">→</span></a>
-      <a href="/create/new/">Configure your first project <span aria-hidden="true">→</span></a>
+      <ExecutionProof />
     </div>
   </section>
 
   <section aria-labelledby="env-heading" class="section-shell ruled-section">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">02 · Public alpha</p>
+        <p class="eyebrow">01 · Public alpha</p>
         <h2 id="env-heading">Env</h2>
       </div>
       <span class="lifecycle-badge">0.3.0 public alpha</span>
@@ -141,7 +107,7 @@ const cacheGuarantees = [
   <section aria-labelledby="cache-heading" class="section-shell ruled-section">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">03 · Development preview</p>
+        <p class="eyebrow">02 · Development preview</p>
         <h2 id="cache-heading">Cache</h2>
       </div>
       <span class="lifecycle-badge">Unreleased preview</span>
@@ -161,7 +127,7 @@ const cacheGuarantees = [
   <section aria-labelledby="docs-heading" class="section-shell ruled-section docs-formats">
     <div class="section-heading section-heading--compact">
       <div>
-        <p class="eyebrow">04 · One public corpus</p>
+        <p class="eyebrow">03 · One public corpus</p>
         <h2 id="docs-heading">For people and agents</h2>
       </div>
     </div>
@@ -175,7 +141,7 @@ const cacheGuarantees = [
         <span>Browse the documentation</span>
         <span aria-hidden="true">↗</span>
       </a>
-      <a href="/docs/create/overview.md">
+      <a href="/docs/env/overview.md">
         <span class="format-list__label">Markdown</span>
         <span>Read a product page as Markdown</span>
         <span aria-hidden="true">↗</span>

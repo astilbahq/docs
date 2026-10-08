@@ -1112,9 +1112,9 @@ test("searches the production Pagefind index", async ({ page }) => {
   ).toBeVisible();
   await dialog
     .getByRole("textbox", { name: "Search" })
-    .fill("Project manifest");
+    .fill("Check name inventory drift");
   await expect(
-    dialog.getByRole("link", { name: /Project manifest/i }).first()
+    dialog.getByRole("link", { name: /Check name inventory drift/i }).first()
   ).toBeVisible();
   await dialog.getByRole("textbox", { name: "Search" }).fill("MCP Server");
   await expect(
@@ -1557,14 +1557,6 @@ test("targets each public product source from product pages", async ({
     page.locator('a[href*="github.com/astilbahq/cache"]')
   ).toHaveCount(0);
 
-  await page.goto("/docs/create/overview/");
-  await expect(
-    page.getByRole("link", {
-      name: "Astilba Create on GitHub",
-      exact: true,
-    })
-  ).toHaveAttribute("href", "https://github.com/astilbahq/create");
-
   await page.goto("/docs/env/overview/");
   await expect(
     page.getByRole("link", {
@@ -1592,16 +1584,6 @@ test("uses product-aware document titles", async ({ page }) => {
     "Cache | Astilba"
   );
 
-  await page.goto("/docs/create/quickstart/");
-  await expect(page).toHaveTitle("Create your first project | Astilba Create");
-
-  await page.goto("/docs/create/");
-  await expect(page).toHaveTitle("Create | Astilba");
-  await expect(page.locator('meta[property="og:title"]')).toHaveAttribute(
-    "content",
-    "Create | Astilba"
-  );
-
   await page.goto("/docs/env/migrate-from-next-dynamic-env/");
   await expect(page).toHaveTitle("Migrate from next-dynamic-env | Astilba Env");
   await expectNoAxeViolations(page);
@@ -1620,15 +1602,15 @@ test("uses product-aware document titles", async ({ page }) => {
 test("nests level-three headings beneath their page-outline parent", async ({
   page,
 }) => {
-  await page.goto("/docs/create/project-manifest/");
+  await page.goto("/docs/env/declaration-reference/");
 
   const outline = page.locator("starlight-toc");
   const parent = outline.getByRole("link", {
-    name: "Interpret ownership",
+    name: "Built-in codecs",
     exact: true,
   });
   const child = outline.getByRole("link", {
-    name: "Managed files",
+    name: "Boolean options",
     exact: true,
   });
 
@@ -1643,7 +1625,7 @@ test("nests level-three headings beneath their page-outline parent", async ({
         link.closest("ul")?.parentElement?.querySelector(":scope > a")
           ?.textContent
     )
-  ).toBe("Interpret ownership");
+  ).toBe("Built-in codecs");
 
   const [parentLabelBounds, childLabelBounds] = await Promise.all(
     [parent, child].map((link) => link.locator("span").boundingBox())
@@ -1659,7 +1641,7 @@ test("nests level-three headings beneath their page-outline parent", async ({
 test("omits terminal window headers without removing useful code titles", async ({
   page,
 }) => {
-  await page.goto("/docs/create/quickstart/");
+  await page.goto("/docs/env/quickstart/");
 
   const terminalFrames = page.locator(".expressive-code .frame.is-terminal");
   const terminalFrameCount = await terminalFrames.count();
@@ -1727,12 +1709,6 @@ test("presents products and copies the agent setup prompt from the homepage", as
   ).toHaveCount(0);
   await expect(
     sidebar.getByRole("link", {
-      name: "Create documentation",
-      exact: true,
-    })
-  ).toHaveAttribute("href", "/docs/create/");
-  await expect(
-    sidebar.getByRole("link", {
       name: "Env documentation",
       exact: true,
     })
@@ -1759,7 +1735,7 @@ test("presents products and copies the agent setup prompt from the homepage", as
     name: "Read the docs",
     exact: true,
   });
-  await expect(primaryAction).toHaveAttribute("href", "/docs/create/");
+  await expect(primaryAction).toHaveAttribute("href", "/docs/env/");
   await expect(primaryAction).toHaveCSS("height", "40px");
   await expect(primaryAction).toHaveCSS("padding-inline", "14px");
   const primarySelection = await primaryAction.evaluate((element) => {
@@ -1777,15 +1753,6 @@ test("presents products and copies the agent setup prompt from the homepage", as
   await primaryAction.hover();
   await expect(primaryAction).toHaveCSS("background-color", "rgb(42, 42, 42)");
   await expect(primaryAction).toHaveCSS("color", "rgb(255, 255, 255)");
-
-  const createProduct = page.getByRole("article").filter({
-    has: page.getByRole("heading", { level: 3, name: "Create" }),
-  });
-  await expect(createProduct).toContainText("Released");
-  await expect(createProduct).toContainText("create-astilba 0.3.0");
-  await expect(
-    createProduct.getByRole("link", { name: "Create" })
-  ).toHaveAttribute("href", "/docs/create/");
 
   const envProduct = page.getByRole("article").filter({
     has: page.getByRole("heading", { level: 3, name: "Env" }),
@@ -1936,8 +1903,8 @@ test("presents Cache as a distinct product home", async ({ page }) => {
   await productTrigger.focus();
   await productTrigger.press("Enter");
   const productMenu = page.getByRole("menu");
-  const createProduct = productMenu.getByRole("menuitem", {
-    name: /Create/,
+  const alternateProduct = productMenu.getByRole("menuitem", {
+    name: /Env/,
   });
   const cacheProduct = productMenu.getByRole("menuitem", {
     name: /Cache/,
@@ -1950,55 +1917,21 @@ test("presents Cache as a distinct product home", async ({ page }) => {
   await expect(keyboardHighlightedProduct).toHaveCount(1);
   await expect(keyboardHighlightedProduct).toHaveCSS("outline-style", "solid");
   await expect(keyboardHighlightedProduct).toHaveCSS("outline-width", "2px");
-  await createProduct.hover();
+  await alternateProduct.hover();
   await expect(productMenu).toHaveAttribute("data-input-modality", "pointer");
-  await expect(createProduct).toHaveCSS("outline-style", "none");
+  await expect(alternateProduct).toHaveCSS("outline-style", "none");
   await page.keyboard.press("Escape");
   await expect(productMenu).toBeHidden();
   await expect(productTrigger).toBeFocused();
   await productTrigger.click();
-  await createProduct.click();
-  await expect(page).toHaveURL(/\/docs\/create\/$/);
+  await alternateProduct.click();
+  await expect(page).toHaveURL(/\/docs\/env\/$/);
   await page.goBack();
   await expect(
     sidebar.getByRole("link", { name: "Overview", exact: true })
   ).toHaveAttribute("href", "/docs/cache/overview/");
   await expect(
     page.getByRole("banner").getByRole("link", { name: "Cache", exact: true })
-  ).toHaveAttribute("aria-current", "page");
-  await expectNoAxeViolations(page);
-});
-
-test("presents Create as a distinct released product home", async ({
-  page,
-}) => {
-  await page.goto("/docs/create/");
-
-  const title = page.getByRole("heading", { level: 1, name: "Create" });
-  await expect(title).toBeVisible();
-  await expect(title).toHaveCSS("font-size", "56px");
-  await expect(
-    page.getByText(
-      "Generate a verified TypeScript project from one maintained Astilba recipe."
-    )
-  ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Read the docs", exact: true })
-  ).toHaveAttribute("href", "/docs/create/overview/");
-  await expect(page.getByText("create-astilba 0.3.0")).toBeVisible();
-
-  const sidebar = page.locator("#starlight__sidebar");
-  await expect(
-    sidebar.getByRole("button", {
-      name: "Choose product. Current product: Create",
-      exact: true,
-    })
-  ).toBeVisible();
-  await expect(
-    sidebar.getByRole("link", { name: "Overview", exact: true })
-  ).toHaveAttribute("href", "/docs/create/overview/");
-  await expect(
-    page.getByRole("banner").getByRole("link", { name: "Create", exact: true })
   ).toHaveAttribute("aria-current", "page");
   await expectNoAxeViolations(page);
 });

@@ -33,8 +33,7 @@ The structure borrows TanStack's useful multi-library context and Better Auth's 
 
 ## Current scope
 
-- Two independently versioned products: the released Create CLI and the unreleased Cache preview.
-- Eight Create pages tied to the public `create-astilba` release, package artifact, recipe contracts, and source repository.
+- Two independently versioned products: the public-alpha Env compiler and the unreleased Cache preview.
 - Sixteen progressively disclosed Cache pages backed by a reviewed private-source snapshot, public platform behavior, and approved public copy.
 - One unpublished, non-public Cache chaos evidence app documented in the Workers guide, with its required local workerd witness kept separate from deployed measurements and production support.
 - Base UI context switching and animated, session-persisted sidebar sections.
@@ -134,7 +133,7 @@ A rollback immediately creates the active deployment but does not roll back Clou
 
 The homepage and each catalogued documentation page have sibling `.md` representations. Product pages include YAML provenance for their canonical page, product, documentation version, lifecycle, and public source file. HTML pages advertise that representation with `rel="alternate"`, point to the site-wide `llms.txt` index with `rel="describedby"`, and return the authored Markdown at the same canonical URL when a client explicitly requests `text/markdown`.
 
-Production builds also create `/docs/llms-small.txt`, `/docs/llms-full.txt`, product-specific Create and Cache document sets under `/docs/_llms-txt/`, `/docs/robots.txt`, the documentation sitemap, and a digest-verified Agent Skills discovery index under `/docs/.well-known/agent-skills/`. The product skills teach agents to consult the public corpus and preserve each release boundary; they do not embed private product material.
+Production builds also create `/docs/llms-small.txt`, `/docs/llms-full.txt`, product-specific Env and Cache document sets under `/docs/_llms-txt/`, `/docs/robots.txt`, the documentation sitemap, and a digest-verified Agent Skills discovery index under `/docs/.well-known/agent-skills/`. The product skills teach agents to consult the public corpus and preserve each release boundary; they do not embed private product material.
 
 The same public build generates a bounded corpus for the stateless MCP endpoint at `https://astilba.com/docs/mcp`. Every published Markdown page is a fixed resource, while `search_docs` and `read_doc` provide read-only compatibility for clients whose resource support is limited. Every accepted POST consumes one unit from a Cloudflare-native per-source-IP, per-colo rate limit; tool calls and resource reads consume an additional unit because they perform the expensive operations. This is an abuse guard rather than a per-user quota: clients behind shared egress share capacity, and requests without Cloudflare's edge address use one anonymous fallback. MCP failures emit structured, searchable error events, while production logs and traces are independently sampled at 10% and 1%. The Worker accepts no arbitrary URL, account state, or private handbook content, and creates a fresh MCP server and transport for every request.
 
@@ -142,11 +141,11 @@ Machine-readable discovery includes an RFC 9727 API catalog, the current experim
 
 A separate, feature-detected WebMCP tool returns the current page's Markdown in bounded chunks. It prefers the current `document.modelContext.registerTool` API, with legacy `navigator.modelContext.registerTool` and `provideContext` fallbacks for compatible browsers and scanners.
 
-Each product document set follows its typed sidebar order. Create identifies its supported npm release and recipe contracts; Cache states that the package is unreleased and not installable. HTTP responses and `robots.txt` allow search indexing, real-time AI input, and model training. The production artifact check keeps those signals, negotiated representations, links, and skill digests aligned.
+Each product document set follows its typed sidebar order. Env identifies its public-alpha npm release and supported integrations; Cache states that the package is unreleased and not installable. HTTP responses and `robots.txt` allow search indexing, real-time AI input, and model training. The production artifact check keeps those signals, negotiated representations, links, and skill digests aligned.
 
 ## Keeping product status current
 
-Treat `src/content/docs/create/release-and-support.md` as Create's released-surface ledger and `src/content/docs/cache/api-status.md` as Cache's preview ledger. Update the relevant ledger first when behavior changes, then reconcile the overview, catalog metadata, runtime status, concepts, and examples against it. Verify Create claims from the public release, package artifact, tagged source, generated contracts, and tests. Verify Cache claims from the reviewed source snapshot, intended public exports, observable behavior, and tests; do not infer shipped support from an internal source file or engineering milestone tag.
+Treat `src/content/docs/env/release-and-support.md` as Env's public-alpha ledger and `src/content/docs/cache/api-status.md` as Cache's preview ledger. Update the relevant ledger first when behavior changes, then reconcile the overview, catalog metadata, runtime status, concepts, and examples against it. Verify Env claims from the public release, package artifact, tagged source, generated contracts, and tests. Verify Cache claims from the reviewed source snapshot, intended public exports, observable behavior, and tests; do not infer shipped support from an internal source file or engineering milestone tag.
 
 ## Content boundary
 
